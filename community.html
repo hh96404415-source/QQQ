@@ -487,11 +487,15 @@
   #shopTip{font-size:12px;font-weight:700;color:#8fa1bd;text-align:center;margin:12px 0 0}
 
 
+  .fac::after{content:'';position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);
+    width:78%;height:14px;border-radius:50%;pointer-events:none;z-index:-1;
+    background:radial-gradient(ellipse at center,rgba(0,0,0,.45) 0%,rgba(0,0,0,.18) 46%,rgba(0,0,0,0) 76%);
+    filter:blur(3px)}
   .fac img.fico{display:block;object-fit:contain;pointer-events:none;
-    filter:drop-shadow(0 5px 8px rgba(0,0,0,.45))}
-  .fac.lv1 img.fico{width:64px;height:64px}
-  .fac.lv2 img.fico{width:84px;height:84px}
-  .fac.lv3 img.fico{width:108px;height:108px}
+    filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+  .fac.lv1 img.fico{width:72px;height:72px}
+  .fac.lv2 img.fico{width:98px;height:98px}
+  .fac.lv3 img.fico{width:128px;height:128px}
   .shopCard img.fico{width:76px;height:76px;object-fit:contain;pointer-events:none;
     filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
 </style>
@@ -925,7 +929,7 @@
       lv:[ {cost:10, ico:'🛝', label:'滑梯'},
            {cost:24, ico:'🎠', label:'旋轉木馬'},
            {cost:48, ico:'🎡', label:'摩天輪'} ] },
-    { id:'pond', name:'水池',   x:8,  y:80,
+    { id:'pond', name:'水池',   x:15, y:80,
       lv:[ {cost:6,  ico:'💧', label:'小水窪'},
            {cost:16, ico:'🪷', label:'荷花池'},
            {cost:36, ico:'⛲', label:'噴泉'} ] }
@@ -976,9 +980,10 @@
         var im = document.createElement('img');
         im.className = 'fico';
         im.alt = '';
-        im.src = 'images/fac/' + f.id + lv + '.webp';
+        im.src = 'images/fac/' + f.id + lv + '.webp?v=3';
         im.onerror = function () { if (im.parentNode) im.parentNode.removeChild(im); };
         im.onload = function () { if (ico.parentNode) ico.parentNode.removeChild(ico); };
+        if (im.complete && im.naturalWidth) { if (ico.parentNode) ico.parentNode.removeChild(ico); }
         d.appendChild(im);
       }
       if (lv) {
@@ -1135,9 +1140,10 @@
           var fim = document.createElement('img');
           fim.className = 'fico';
           fim.alt = '';
-          fim.src = 'images/fac/' + f.id + lv + '.webp';
+          fim.src = 'images/fac/' + f.id + lv + '.webp?v=3';
           fim.onerror = function () { if (fim.parentNode) fim.parentNode.removeChild(fim); };
           fim.onload = function () { if (ico.parentNode) ico.parentNode.removeChild(ico); };
+          if (fim.complete && fim.naturalWidth) { if (ico.parentNode) ico.parentNode.removeChild(ico); }
           card.appendChild(fim);
         }
         if (lv) {

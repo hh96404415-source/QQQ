@@ -27,7 +27,7 @@
 .fac.sway img.fico,.fac.sway .fico{animation:mbSway 7s ease-in-out infinite;transform-origin:50% 100%}\
 .fac.bob img.fico,.fac.bob .fico{animation:mbBob 4.2s ease-in-out infinite}\
 .fac.glow{animation:mbPulse 5s ease-in-out infinite}\
-.fac.pond img.fico{animation:mbPulse 4.5s ease-in-out infinite}\
+.fac.water img.fico{animation:mbPulse 4.5s ease-in-out infinite}\
 .shopCard{animation:mbBob 6s ease-in-out infinite}\
 .shopCard:nth-child(2n){animation-delay:-2s}\
 .shopCard:nth-child(3n){animation-delay:-3.4s}\
@@ -106,7 +106,7 @@
       if (!el) return;
       if (kind === 'tree') el.classList.add('sway');
       else if (kind === 'ride') el.classList.add('bob');
-      else if (kind === 'pond') el.classList.add('pond');
+      else if (kind === 'pond') el.classList.add('water');
       else el.classList.add('glow');
     }
   };
