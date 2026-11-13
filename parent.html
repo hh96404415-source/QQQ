@@ -130,8 +130,7 @@
   <span class="sub">本週學習報告</span>
   <span id="srcTag" class="srcTag demo">示範數據</span>
   <div id="who">
-    <button class="whoBtn on" data-uid="demo_a">陳小明</button>
-    <button class="whoBtn" data-uid="demo_b">李美欣</button>
+    <span class="whoBtn on" id="whoName">—</span>
   </div>
   <a id="toKid" href="community.html">去小孩那一邊 →</a>
 </div>
@@ -645,21 +644,13 @@ function render(uid) {
       '數據有偏差就照講，唔會為咗好睇而修飾。';
 }
 
-document.querySelectorAll('.whoBtn').forEach(function (b) {
-  b.addEventListener('click', function () {
-    var uid = b.getAttribute('data-uid');
-    if (window.Player && uid !== window.Player.cur()) { window.Player.switchTo(uid); return; }
-    document.querySelectorAll('.whoBtn').forEach(function (x) { x.classList.remove('on'); });
-    b.classList.add('on');
-    render(uid);
-  });
-});
-
-/* 預設顯示「現在是哪一位小朋友」——跟另外三頁同一位 */
-var startUid = (window.Player && window.Player.cur()) || 'demo_a';
-document.querySelectorAll('.whoBtn').forEach(function (b) {
-  b.classList.toggle('on', b.getAttribute('data-uid') === startUid);
-});
+/* 這部機只綁一位小朋友：名字沒有下拉、不能換人 */
+var whoNameEl = document.getElementById('whoName');
+var startUid = (window.Player && (window.Player.cur() || (window.Player.bound() && window.Player.bound().id))) || 'demo_a';
+if (whoNameEl) {
+  var pm = (window.Player && window.Player.meta) ? window.Player.meta() : null;
+  whoNameEl.textContent = pm && pm.id ? (pm.nick || pm.name) : '未登入';
+}
 render(startUid);
 
 /* 點標籤切換「真實紀錄 / 示範數據」 */

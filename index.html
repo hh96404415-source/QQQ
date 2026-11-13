@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%B2%3C/text%3E%3C/svg%3E">
 <title>三問 · 登入</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.92em%22 font-size=%2292%22%3E%F0%9F%90%B2%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="fonts/theme.css">
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -17,47 +17,41 @@
       background:radial-gradient(ellipse at 50% 38%,rgba(11,18,32,.05),rgba(11,18,32,.82) 74%)}
 
   .wrap{position:relative;height:100%;display:flex;flex-direction:column;
-        align-items:center;justify-content:center;padding:24px;gap:18px;text-align:center}
+        align-items:center;justify-content:center;padding:24px;gap:16px;text-align:center}
 
-  .brand{font-size:15px;letter-spacing:6px;color:#93a4bd;font-weight:800}
-  h1{margin:0;font-size:clamp(26px,3.6vmin,36px);font-weight:900;letter-spacing:1px}
-  .sub{margin:0;color:#93a4bd;font-size:15px}
+  .brand{font-size:15px;letter-spacing:6px;color:#93a4bd;font-weight:800;
+         user-select:none;-webkit-user-select:none;cursor:default}
+  h1{margin:0;font-size:clamp(24px,3.4vmin,34px);font-weight:900;letter-spacing:1px}
+  .sub{margin:0;color:#93a4bd;font-size:15px;line-height:1.7}
 
-  /* ── 選人 ── */
-  .kids{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:6px}
-  .kid{width:clamp(200px,26vmin,260px);padding:22px 18px 18px;border-radius:24px;cursor:pointer;
-       border:3px solid rgba(255,255,255,.12);background:rgba(15,23,42,.82);
-       display:flex;flex-direction:column;align-items:center;gap:8px;
-       transition:transform .16s cubic-bezier(.34,1.56,.64,1),border-color .16s,box-shadow .16s}
-  .kid:hover{transform:translateY(-6px);border-color:#fbbf24;box-shadow:0 18px 40px rgba(251,191,36,.18)}
-  .kid:active{transform:scale(.97)}
-  .kid .ava{font-size:56px;line-height:1}
-  .kid .nm{font-size:24px;font-weight:900}
-  .kid .tg{font-size:13px;color:#93a4bd;font-weight:800}
-  .kid .pt{font-size:13px;color:#fbbf24;font-weight:800;margin-top:2px}
-
-  /* ── 裝置 ── */
-  .dev{margin-top:6px;font-size:13px;color:#7f8ea8;line-height:1.9;max-width:620px}
-  .dev b{color:#cbd5e1;font-family:ui-monospace,Consolas,monospace;letter-spacing:1px}
-  .dev .warn{color:#fbbf24}
-
-  /* ── PIN ── */
-  .dots{display:flex;gap:16px;margin:10px 0 4px}
-  .dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.35);transition:.14s}
-  .dot.on{background:#fbbf24;border-color:#fbbf24;transform:scale(1.15)}
-  .pad{display:grid;grid-template-columns:repeat(3,minmax(0,86px));gap:12px;margin-top:6px}
-  .key{height:64px;border-radius:18px;border:2px solid rgba(255,255,255,.12);
+  /* ── 6 位數 ── */
+  .dots{display:flex;gap:14px;margin:6px 0 2px}
+  .dot{width:44px;height:56px;border-radius:14px;border:2px solid rgba(255,255,255,.18);
+       background:rgba(15,23,42,.72);display:flex;align-items:center;justify-content:center;
+       font-size:26px;font-weight:900;color:#fbbf24;transition:.14s}
+  .dot.on{border-color:#fbbf24;box-shadow:0 0 0 3px rgba(251,191,36,.14)}
+  .pad{display:grid;grid-template-columns:repeat(3,minmax(0,86px));gap:12px;margin-top:12px}
+  .key{height:62px;border-radius:18px;border:2px solid rgba(255,255,255,.12);
        background:rgba(30,41,59,.85);color:#e2e8f0;font-size:26px;font-weight:900;cursor:pointer;
        font-family:inherit;transition:transform .1s,background .12s}
   .key:hover{background:rgba(51,65,85,.95)}
   .key:active{transform:scale(.93)}
   .key.fn{font-size:20px;color:#94a3b8}
-  .shake{animation:shk .32s}
-  @keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+  .shake{animation:shk .34s}
+  @keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-9px)}75%{transform:translateX(9px)}}
 
-  .back{border:0;background:transparent;color:#64748b;font-family:inherit;font-size:14px;
-        font-weight:800;cursor:pointer;padding:8px;text-decoration:underline}
-  .back:hover{color:#cbd5e1}
+  .err{color:#fca5a5;font-size:14px;font-weight:800;min-height:22px;max-width:520px;line-height:1.6}
+  .hint{color:#64748b;font-size:13px;max-width:520px;line-height:1.8}
+
+  /* ── 歡迎回來 ── */
+  #hello{display:flex;flex-direction:column;align-items:center;gap:10px}
+  #hello .ava{font-size:76px;line-height:1;filter:drop-shadow(0 0 24px rgba(251,191,36,.55))}
+  #hello .nm{font-size:clamp(26px,4vmin,40px);font-weight:900}
+  #hello .gd{font-size:14px;color:#93a4bd;font-weight:800}
+  .go{margin-top:6px;padding:14px 34px;border-radius:999px;border:0;cursor:pointer;
+      font-family:inherit;font-size:20px;font-weight:900;color:#3b2405;
+      background:linear-gradient(180deg,#fde047,#f59e0b);box-shadow:0 10px 26px rgba(245,158,11,.35)}
+  .go:active{transform:scale(.96)}
 
   footer{position:fixed;left:0;right:0;bottom:14px;text-align:center;font-size:13px;color:#64748b}
   footer a,footer button{color:#93a4bd;font-weight:800;text-decoration:none;
@@ -76,12 +70,26 @@
                border-top:1px solid rgba(255,255,255,.07);font-size:13.5px}
   #logBox .row b{color:#e2e8f0}
   #logBox .row i{font-style:normal;color:#7f8ea8;font-size:12px}
-  #logBox .row code{font-family:ui-monospace,Consolas,monospace;color:#fbbf24;font-size:12px}
   #logBox .empty{color:#64748b;font-size:13px;padding:14px 0}
   #logBox .x{float:right;border:0;background:rgba(255,255,255,.08);color:#cbd5e1;
              border-radius:10px;padding:6px 12px;font-family:inherit;font-weight:800;cursor:pointer}
 
-  .err{color:#fca5a5;font-size:14px;font-weight:800;min-height:20px}
+  /* ── 家長：解除綁定 ── */
+  #ubMask{position:fixed;inset:0;z-index:70;background:rgba(5,9,16,.82);
+          display:flex;align-items:center;justify-content:center;padding:24px}
+  #ubBox{width:min(480px,100%);background:#0f172a;border:2px solid rgba(255,255,255,.14);
+         border-radius:20px;padding:22px;text-align:left}
+  #ubBox h3{margin:0 0 8px;font-size:19px}
+  #ubBox p{margin:0 0 14px;font-size:13.5px;color:#94a3b8;line-height:1.8}
+  #ubBox .row{display:flex;gap:10px;margin-top:14px}
+  #ubBox .btn{flex:1;padding:12px;border-radius:14px;border:2px solid rgba(255,255,255,.14);
+              background:rgba(30,41,59,.9);color:#e2e8f0;font-family:inherit;font-weight:900;
+              font-size:15px;cursor:pointer}
+  #ubBox .btn.danger{background:rgba(127,29,29,.55);border-color:rgba(248,113,113,.5);color:#fecaca}
+  #ubBox .btn:active{transform:scale(.97)}
+  #ubBox input{width:100%;padding:14px;border-radius:14px;border:2px solid rgba(255,255,255,.16);
+               background:rgba(2,6,23,.7);color:#fbbf24;font-family:inherit;font-size:24px;
+               font-weight:900;letter-spacing:10px;text-align:center}
 
   .hidden{display:none !important}
 </style>
@@ -90,89 +98,95 @@
 <div id="bg"></div>
 
 <div class="wrap">
-  <div class="brand">三 問</div>
+  <div class="brand" id="brand">三 問</div>
 
-  <!-- ① 選人 -->
-  <section id="step1" style="display:flex;flex-direction:column;align-items:center;gap:12px">
-    <h1>今天是你嗎？</h1>
-    <p class="sub">選一個名字，再輸入 4 位密碼</p>
-    <div class="kids" id="kids"></div>
-    <div class="dev" id="devLine"></div>
+  <!-- ① 已綁定：歡迎回來 -->
+  <section id="stepHello" class="hidden">
+    <div id="hello">
+      <span class="ava" id="hAva">🐲</span>
+      <span class="nm" id="hName">小明</span>
+      <span class="gd" id="hGrade"></span>
+      <button class="go" id="hGo" type="button">開始玩 →</button>
+      <span class="hint" style="margin-top:10px;font-size:12px;color:#64748b">這部機已經記住你，下次開頁不用再打數字</span>
+    </div>
   </section>
 
-  <!-- ② PIN -->
-  <section id="step2" class="hidden" style="display:flex;flex-direction:column;align-items:center;gap:10px">
-    <h1 id="pinWho">輸入密碼</h1>
-    <p class="sub">4 位數字</p>
-    <div class="dots" id="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+  <!-- ② 未綁定：輸入 6 位數字 -->
+  <section id="stepKey" class="hidden">
+    <h1>你的 6 位數字</h1>
+    <p class="sub" id="keySub">家長把密碼填在名冊裡，打一次就記住這部機</p>
+    <div class="dots" id="dots"></div>
     <div class="pad" id="pad"></div>
     <div class="err" id="err"></div>
-    <button class="back" id="back">← 不是我</button>
   </section>
 </div>
 
-<footer>示範模式 · PIN 隨便 4 位都可以　|　<button id="logOpen" type="button">登入紀錄</button>　|　<a href="parent.html">家長看報告 →</a></footer>
+<footer>
+  <button id="logOpen" type="button">登入紀錄</button>　|　<a href="parent.html">家長看報告 →</a>
+</footer>
 
 <div id="logMask" class="hidden">
   <div id="logBox">
     <button class="x" id="logClose" type="button">關閉</button>
     <h3>登入紀錄</h3>
-    <p>誰在什麼時候、用哪台裝置登入。正式部署時「裝置」是路由器給的 MAC，可以對回家長的名單。</p>
+    <p>這部機什麼時候、用哪個密碼登入過。要換人：長按首頁的「三 問」3 秒。</p>
     <div id="logRows"></div>
+  </div>
+</div>
+
+<div id="ubMask" class="hidden">
+  <div id="ubBox">
+    <h3>解除這部機的綁定？</h3>
+    <p>解除之後要重新輸入 6 位數字才能玩。小朋友的星星、寵物不會被刪。</p>
+    <input id="ubCode" type="tel" inputmode="numeric" maxlength="6" placeholder="再打一次 6 位數">
+    <div class="err" id="ubErr" style="margin-top:8px"></div>
+    <div class="row">
+      <button class="btn" id="ubCancel" type="button">取消</button>
+      <button class="btn danger" id="ubOk" type="button">解除綁定</button>
+    </div>
   </div>
 </div>
 
 <script src="player.js"></script>
 <script>
 (function () {
-  var DEV_KEY = 'dsh__device';
   var LOG_KEY = 'dsh__login_log';
+  var QA_KEY = 'dsh_qa';
+  var DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec';
+  var DEFAULT_TOKEN = 'CHANGE_ME_TO_A_RANDOM_LONG_STRING';
 
-  /* ── 裝置識別 ────────────────────────────────────────────────
-     真的部署時 MAC 由路由器提供（OpenWrt 的 DHCP 綁定），
-     瀏覽器**讀不到 MAC**，所以：
-       ?mac=AA:BB:CC:DD:EE:01  → 有就照用（路由器／入口頁帶進來）
-       沒有                      → 用瀏覽器特徵算一個穩定 ID 代替，並標明是示範用
-     ─────────────────────────────────────────────────────────── */
-  function hash(s) {
-    var h = 5381;
-    for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
-    return h;
+  var stepHello = document.getElementById('stepHello');
+  var stepKey = document.getElementById('stepKey');
+  var dotsEl = document.getElementById('dots');
+  var errEl = document.getElementById('err');
+  var keySub = document.getElementById('keySub');
+  var buf = '';
+  var busy = false;
+  var failCount = 0;
+
+  /* ── GAS 連線設定：優先用挑戰頁那組 ─────────────────────── */
+  function gasCfg() {
+    var o = {};
+    try { o = JSON.parse(localStorage.getItem(QA_KEY) || '{}'); } catch (e) {}
+    return { url: o.url || DEFAULT_GAS, token: o.token || DEFAULT_TOKEN };
   }
 
-  function device() {
-    var q = new URLSearchParams(location.search).get('mac');
-    if (q) {
-      var mac = q.toUpperCase();
-      localStorage.setItem(DEV_KEY, JSON.stringify({ mac: mac, from: 'router' }));
-      return { mac: mac, from: 'router' };
-    }
-    var saved = {};
-    try { saved = JSON.parse(localStorage.getItem(DEV_KEY) || '{}'); } catch (e) {}
-    if (saved && saved.mac) return saved;
-
-    var raw = [navigator.userAgent, screen.width, screen.height, screen.colorDepth,
-               navigator.language, Intl.DateTimeFormat().resolvedOptions().timeZone || '',
-               navigator.hardwareConcurrency || 0].join('|');
-    var h1 = hash(raw), h2 = hash(raw.split('').reverse().join(''));
-    var id = ('0000000' + (h1 & 0xFFFFFFF).toString(16)).slice(-7).toUpperCase() + '-' +
-             ('0000000' + (h2 & 0xFFFFFFF).toString(16)).slice(-7).toUpperCase();
-    var o = { mac: 'DEMO-' + id, from: 'demo', fp: h1 };
-    localStorage.setItem(DEV_KEY, JSON.stringify(o));
-    return o;
+  function post(body) {
+    var c = gasCfg();
+    body.token = c.token;
+    return fetch(c.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+      redirect: 'follow'
+    }).then(function (r) { return r.json(); });
   }
 
-  function lastLogin(pid) {
+  /* ── 登入紀錄 ────────────────────────────────────────────── */
+  function pushLogin(st) {
     var rows = [];
     try { rows = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch (e) {}
-    for (var i = rows.length - 1; i >= 0; i--) if (rows[i].id === pid) return rows[i];
-    return null;
-  }
-
-  function pushLogin(pid, dev) {
-    var rows = [];
-    try { rows = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch (e) {}
-    rows.push({ t: Date.now(), id: pid, mac: dev.mac, from: dev.from, ua: navigator.userAgent.slice(0, 120) });
+    rows.push({ t: Date.now(), id: st.id, name: st.name || '', ua: navigator.userAgent.slice(0, 120) });
     if (rows.length > 60) rows = rows.slice(-60);
     localStorage.setItem(LOG_KEY, JSON.stringify(rows));
   }
@@ -185,103 +199,185 @@
     return Math.floor(d / 86400000) + ' 天前';
   }
 
-  var dev = device();
-  var picked = null;
-
-  /* ── 選人 ─────────────────────────────────────────────────── */
-  var kids = document.getElementById('kids');
-  Player.players.forEach(function (p) {
-    var b = document.createElement('button');
-    b.className = 'kid';
-    b.type = 'button';
-    var last = lastLogin(p.id);
-    b.innerHTML =
-      '<span class="ava">' + p.emoji + '</span>' +
-      '<span class="nm">' + p.name + '</span>' +
-      '<span class="tg">' + p.tag + '</span>' +
-      '<span class="pt">🐾 ' + p.pet + '</span>' +
-      '<span class="tg" style="color:#64748b;font-size:12px">' +
-        (last ? '上次：' + ago(last.t) : '第一次來') + '</span>';
-    b.addEventListener('click', function () { pick(p); });
-    kids.appendChild(b);
-  });
-
-  var dl = document.getElementById('devLine');
-  dl.innerHTML = dev.from === 'router'
-    ? '這台裝置：<b>' + dev.mac + '</b><br><span style="font-size:12px">（由路由器提供，會記在家長的名單上）</span>'
-    : '這台裝置：<b>' + dev.mac + '</b><br>' +
-      '<span style="font-size:12px" class="warn">示範模式：瀏覽器讀不到真正的 MAC，' +
-      '這裡用裝置特徵代替；正式部署由路由器（OpenWrt DHCP 綁定）提供。</span>';
-
-  /* ── PIN ──────────────────────────────────────────────────── */
-  var step1 = document.getElementById('step1');
-  var step2 = document.getElementById('step2');
-  var dots = document.getElementById('dots').children;
-  var errEl = document.getElementById('err');
-  var buf = '';
+  /* ── 鍵盤 ────────────────────────────────────────────────── */
+  for (var i = 0; i < 6; i++) {
+    var d = document.createElement('span');
+    d.className = 'dot';
+    dotsEl.appendChild(d);
+  }
+  var dots = dotsEl.children;
 
   function paint() {
-    for (var i = 0; i < 4; i++) dots[i].classList.toggle('on', i < buf.length);
+    for (var i = 0; i < 6; i++) {
+      var on = i < buf.length;
+      dots[i].classList.toggle('on', on);
+      dots[i].textContent = on ? '●' : '';
+    }
   }
+  paint();
 
-  function pick(p) {
-    picked = p;
-    buf = '';
-    paint();
-    errEl.textContent = '';
-    document.getElementById('pinWho').textContent = p.name + '，輸入密碼';
-    step1.classList.add('hidden');
-    step2.classList.remove('hidden');
-  }
-
-  document.getElementById('back').addEventListener('click', function () {
-    step2.classList.add('hidden');
-    step1.classList.remove('hidden');
-    picked = null; buf = '';
+  /* 錯誤訊息裡的「先用示範帳號」是每次重畫的，用委派接 */
+  errEl.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('#demoGo') : null;
+    if (a) { e.preventDefault(); bindDemo(); }
   });
 
   var pad = document.getElementById('pad');
-  ['1', '2', '3', '4', '5', '6', '7', '8', '9', '←', '0', '✓'].forEach(function (k) {
+  ['1', '2', '3', '4', '5', '6', '7', '8', '9', '←', '0', ''].forEach(function (k) {
     var b = document.createElement('button');
-    b.className = 'key' + (k === '←' || k === '✓' ? ' fn' : '');
     b.type = 'button';
+    if (!k) { b.style.visibility = 'hidden'; pad.appendChild(b); return; }
+    b.className = 'key' + (k === '←' ? ' fn' : '');
     b.textContent = k;
     b.addEventListener('click', function () {
-      if (k === '←') { buf = buf.slice(0, -1); paint(); return; }
-      if (k === '✓') { submit(); return; }
-      if (buf.length >= 4) return;
-      buf += k; paint();
-      if (buf.length === 4) setTimeout(submit, 130);
+      if (busy) return;
+      if (k === '←') { buf = buf.slice(0, -1); paint(); errEl.textContent = ''; return; }
+      if (buf.length >= 6) return;
+      buf += k; paint(); errEl.textContent = '';
+      if (buf.length === 6) submit();
     });
     pad.appendChild(b);
   });
 
+  document.addEventListener('keydown', function (e) {
+    if (stepKey.classList.contains('hidden') || busy) return;
+    if (/^[0-9]$/.test(e.key)) {
+      if (buf.length < 6) { buf += e.key; paint(); if (buf.length === 6) submit(); }
+    } else if (e.key === 'Backspace') { buf = buf.slice(0, -1); paint(); }
+  });
+
+  function shake() {
+    dotsEl.classList.remove('shake');
+    void dotsEl.offsetWidth;
+    dotsEl.classList.add('shake');
+  }
+
   function submit() {
-    if (buf.length < 4) { errEl.textContent = '要 4 位數字'; return; }
-    if (!picked) { return; }
-    /* 示範模式：任何 4 位都接受（正式版由 GAS 驗 PIN） */
-    pushLogin(picked.id, dev);
-    Player.login(picked.id);
+    if (busy) return;
+    if (buf.length !== 6) { errEl.textContent = '要 6 位數字'; return; }
+    busy = true;
+    errEl.textContent = '正在核對…';
+    keySub.textContent = '第一次會慢一點，之後就自動進來了';
+
+    post({ action: 'login', pin: buf }).then(function (r) {
+      if (r && r.ok && r.student && r.student.id) {
+        done(r.student);
+        return;
+      }
+      busy = false;
+      failCount++;
+      shake();
+      buf = ''; paint();
+      var msg;
+      if (r && r.error === 'token 錯誤') {
+        msg = '連上了，但 token 不對。請家長在 GAS 把 CONFIG.TOKEN 改成跟網頁一樣。';
+      } else if (r && /未知 action/.test(r.error)) {
+        msg = '名冊還沒開通：家長要把「登入」那段加進 GAS 再部署一次。';
+      } else if (r && r.error) {
+        msg = r.error;
+      } else {
+        msg = '核對不到，再試一次。';
+      }
+      errEl.innerHTML = msg + '<br>' + demoLink();
+    }).catch(function () {
+      busy = false;
+      failCount++;
+      shake();
+      buf = ''; paint();
+      errEl.innerHTML = '連不上名冊（網絡或 GAS 沒開）。<br>' + demoLink();
+    });
+  }
+
+  /* 錯誤時都給一條「先用示範帳號」的後路 */
+  function demoLink() {
+    return '<a href="#" id="demoGo" style="color:#fbbf24">先用示範帳號玩 →</a>';
+  }
+
+  function bindDemo() {
+    done({ id: 'demo_a', name: '陳小明', nick: '小明', emoji: '🐲', grade: '示範帳號' });
+  }
+
+  function done(st) {
+    Player.bind(st);
+    pushLogin(st);
     location.href = 'community.html';
   }
 
-  /* ── 登入紀錄 ─────────────────────────────────────────────── */
+  /* ── 已綁定：歡迎回來 ────────────────────────────────────── */
+  function showHello() {
+    var m = Player.meta();
+    document.getElementById('hAva').textContent = m.emoji;
+    document.getElementById('hName').textContent = m.nick || m.name;
+    document.getElementById('hGrade').textContent = m.tag || '';
+    stepKey.classList.add('hidden');
+    stepHello.classList.remove('hidden');
+    document.getElementById('hGo').addEventListener('click', function () {
+      location.href = 'community.html';
+    });
+  }
+
+  if (Player.bound()) {
+    showHello();
+  } else {
+    stepHello.classList.add('hidden');
+    stepKey.classList.remove('hidden');
+  }
+
+  /* ── 家長：長按「三 問」3 秒 → 解除綁定 ─────────────────── */
+  var brand = document.getElementById('brand');
+  var holdTimer = null;
+  function startHold() {
+    if (!Player.bound()) return;
+    holdTimer = setTimeout(function () {
+      document.getElementById('ubMask').classList.remove('hidden');
+      document.getElementById('ubCode').value = '';
+      document.getElementById('ubErr').textContent = '';
+    }, 2500);
+  }
+  function endHold() { clearTimeout(holdTimer); }
+  brand.addEventListener('pointerdown', startHold);
+  brand.addEventListener('pointerup', endHold);
+  brand.addEventListener('pointerleave', endHold);
+  brand.addEventListener('pointercancel', endHold);
+
+  document.getElementById('ubCancel').addEventListener('click', function () {
+    document.getElementById('ubMask').classList.add('hidden');
+  });
+  document.getElementById('ubOk').addEventListener('click', function () {
+    var code = (document.getElementById('ubCode').value || '').trim();
+    var ubErr = document.getElementById('ubErr');
+    if (!/^\d{6}$/.test(code)) { ubErr.textContent = '要 6 位數字'; return; }
+    ubErr.textContent = '核對中…';
+    post({ action: 'login', pin: code }).then(function (r) {
+      var m = Player.meta();
+      if (r && r.ok && r.student && String(r.student.id) === String(m.id)) {
+        Player.unbind();
+        location.reload();
+      } else {
+        ubErr.textContent = '這不是這位小朋友的密碼。';
+      }
+    }).catch(function () {
+      /* 連不上就接受本機已有的綁定（避免被鎖在外面） */
+      Player.unbind();
+      location.reload();
+    });
+  });
+
+  /* ── 登入紀錄 ────────────────────────────────────────────── */
   var logMask = document.getElementById('logMask');
   document.getElementById('logOpen').addEventListener('click', function () {
     var rows = [];
     try { rows = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch (e) {}
     var box = document.getElementById('logRows');
     if (!rows.length) {
-      box.innerHTML = '<div class="empty">還沒有紀錄。任何人登入一次就會出現在這裡。</div>';
+      box.innerHTML = '<div class="empty">還沒有紀錄。登入一次就會出現在這裡。</div>';
     } else {
       box.innerHTML = rows.slice(-20).reverse().map(function (r) {
-        var p = Player.meta(r.id);
         var d = new Date(r.t);
         var hh = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
-        return '<div class="row"><b>' + p.emoji + ' ' + p.name + '</b>' +
+        return '<div class="row"><b>' + (r.name || r.id) + '</b>' +
           '<i>' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hh + '</i>' +
-          '<code>' + r.mac + '</code>' +
-          '<i>' + (r.from === 'router' ? '路由器' : '示範') + '</i></div>';
+          '<i>' + ago(r.t) + '</i></div>';
       }).join('');
     }
     logMask.classList.remove('hidden');
@@ -291,13 +387,6 @@
   });
   logMask.addEventListener('click', function (e) {
     if (e.target === logMask) logMask.classList.add('hidden');
-  });
-
-  document.addEventListener('keydown', function (e) {
-    if (step2.classList.contains('hidden')) return;
-    if (/^[0-9]$/.test(e.key)) { if (buf.length < 4) { buf += e.key; paint(); if (buf.length === 4) setTimeout(submit, 130); } }
-    else if (e.key === 'Backspace') { buf = buf.slice(0, -1); paint(); }
-    else if (e.key === 'Enter') submit();
   });
 })();
 </script>
