@@ -923,6 +923,8 @@
     var qaCfg = (function () {
       try { return JSON.parse(localStorage.getItem(QA_KEY) || '{}') || {}; } catch (e) { return {}; }
     })();
+    /* 舊的預設 token 已經換掉：留著會一直 401，直接換成新的 */
+    if (qaCfg && qaCfg.token === 'CHANGE_ME_TO_A_RANDOM_LONG_STRING') qaCfg.token = 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
     var qaPool = [];          /* 已取回、還沒出的題 */
     var qaPending = false;
     var qaLog = [];           /* 待回傳的作答（湊滿 3 題送 complete_set） */
@@ -1101,7 +1103,7 @@
       /* 家用一鍵連線：把已知的 Web App 網址與預設 token 填好並直接啟用 */
       var QA_HOME = {
         url: 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec',
-        token: 'CHANGE_ME_TO_A_RANDOM_LONG_STRING',
+        token: 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC',
         uid: 'kid01',
         pin: ''
       };

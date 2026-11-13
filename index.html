@@ -153,7 +153,7 @@
   var LOG_KEY = 'dsh__login_log';
   var QA_KEY = 'dsh_qa';
   var DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec';
-  var DEFAULT_TOKEN = 'CHANGE_ME_TO_A_RANDOM_LONG_STRING';
+  var DEFAULT_TOKEN = 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
 
   var stepHello = document.getElementById('stepHello');
   var stepKey = document.getElementById('stepKey');
@@ -175,7 +175,7 @@
       if (qs.get('token')) o.token = qs.get('token');
       try { localStorage.setItem(QA_KEY, JSON.stringify({ url: o.url, token: o.token || DEFAULT_TOKEN, uid: o.uid || 'kid01', pin: o.pin || '', on: true })); } catch (e) {}
     }
-    return { url: o.url || DEFAULT_GAS, token: o.token || DEFAULT_TOKEN };
+    return { url: o.url || DEFAULT_GAS, token: (o.token && o.token !== 'CHANGE_ME_TO_A_RANDOM_LONG_STRING') ? o.token : DEFAULT_TOKEN };
   }
 
   function gasHost() {
