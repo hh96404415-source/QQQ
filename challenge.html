@@ -171,6 +171,7 @@
     border:1px solid rgba(255,255,255,.14)}
   .qaBtns button:active{transform:scale(.96)}
   #qaSave{background:rgba(96,165,250,.25);border-color:#60a5fa;color:#dbeafe}
+  #qaAuto{background:linear-gradient(180deg,#fbbf24,#f59e0b);border-color:#fcd34d;color:#3b2405}
   #qaMsg{margin-top:12px;font-size:12.5px;font-weight:800;line-height:1.6;color:#94a3b8;white-space:pre-wrap}
 
   /* 怪物圖鑑 */
@@ -372,6 +373,7 @@
       <label>PIN</label>
       <input id="qaPin" placeholder="孩子設定的 4 位 PIN">
       <div class="qaBtns">
+        <button id="qaAuto">⚡ 一鍵連上（家用）</button>
         <button id="qaTest">測試連線</button>
         <button id="qaSave">儲存並啟用</button>
         <button id="qaOff">停用</button>
@@ -1056,18 +1058,44 @@
       });
       mask.addEventListener('click', function (e) { if (e.target === mask) mask.classList.remove('show'); });
 
+      /* 家用一鍵連線：把已知的 Web App 網址與預設 token 填好並直接啟用 */
+      var QA_HOME = {
+        url: 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec',
+        token: 'CHANGE_ME_TO_A_RANDOM_LONG_STRING',
+        uid: 'kid01',
+        pin: ''
+      };
+      document.getElementById('qaAuto').addEventListener('click', function () {
+        elUrl.value = QA_HOME.url;
+        if (!elTok.value) elTok.value = QA_HOME.token;
+        if (!elUid.value) elUid.value = QA_HOME.uid;
+        readInputs();
+        qaCfg.on = true; qaBad = 0; qaPool = []; qaLog = [];
+        qaSave();
+        say('連線中…', true);
+        qaPost({ action: 'get_questions', user_id: qaCfg.uid, level: unitById(curUnit).g }, function (err, d) {
+          if (err) {
+            qaCfg.on = false; qaSave();
+            say('連不上：' + err.message + '\n（若你改過 GAS 的 TOKEN，請把新的貼到 Token 欄）', false);
+            return;
+          }
+          var n = (d.questions || []).length;
+          qaFill();
+          say('✅ 連上了，取回 ' + n + ' 題' + (n ? '\n第一題：' + d.questions[0].q_trad : ''), true);
+          setTimeout(function () { mask.classList.remove('show'); nextQ(); }, 1200);
+        });
+      });
+
       document.getElementById('qaTest').addEventListener('click', function () {
         readInputs();
         if (!qaCfg.url || !qaCfg.token || !qaCfg.uid) { say('三個欄位都要填：網址、Token、孩子 ID', false); return; }
         say('連線中…', true);
-        var old = { url: qaCfg.url, token: qaCfg.token, uid: qaCfg.uid };
         qaPost({ action: 'get_questions', user_id: qaCfg.uid, level: unitById(curUnit).g }, function (err, d) {
           if (err) { say('連不上：' + err.message + '\n（檢查網址是否 /exec 結尾、Web App 權限是否「任何人」）', false); return; }
           var n = (d.questions || []).length;
           say('✅ 連線成功，取回 ' + n + ' 題' + (n ? '\n第一題：' + d.questions[0].q_trad : ''), true);
         });
       });
-
       document.getElementById('qaSave').addEventListener('click', function () {
         readInputs();
         if (!qaCfg.url || !qaCfg.token || !qaCfg.uid) { say('三個欄位都要填', false); return; }
