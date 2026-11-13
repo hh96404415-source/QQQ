@@ -163,6 +163,7 @@
   var buf = '';
   var busy = false;
   var failCount = 0;
+  var netFail = false;
 
   /* ── GAS 連線設定：優先用挑戰頁那組 ─────────────────────── */
   function gasCfg() {
@@ -295,6 +296,7 @@
       errEl.innerHTML = msg + '<br>' + demoLink();
     }).catch(function () {
       busy = false;
+      netFail = true;
       failCount++;
       shake();
       buf = ''; paint();
@@ -302,8 +304,9 @@
     });
   }
 
-  /* 錯誤時都給一條「先用示範帳號」的後路 */
+  /* 連續打錯 3 次或連不上，才給「先用示範帳號」的後路（避免小孩亂按就進去） */
   function demoLink() {
+    if (!netFail && failCount < 3) return '';
     return '<a href="#" id="demoGo" style="color:#fbbf24">先用示範帳號玩 →</a>';
   }
 
