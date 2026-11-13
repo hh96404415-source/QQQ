@@ -173,7 +173,7 @@
     url: 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec',
     token: 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC'
   };
-  var SYNC_KEYS = ['dsh_stars', 'dsh_pet', 'dsh_pick', 'dsh_hw_done', 'dsh_time', 'dsh_time_cap', 'dsh_ans_log'];
+  var SYNC_KEYS = ['dsh_stars', 'dsh_pet', 'dsh_pick', 'dsh_hw_done', 'dsh_time', 'dsh_time_cap', 'dsh_ans_log', 'dsh_fac'];
   var pushTimer = null, pushing = false;
 
   function gasCfg() {
