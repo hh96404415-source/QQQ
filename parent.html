@@ -99,6 +99,21 @@
   #timeNote{margin-top:12px;font-size:13px;color:#94a3b8;line-height:1.7;
             padding-top:12px;border-top:1px dashed rgba(255,255,255,.12)}
 
+  /* 資料來源標籤 */
+  .srcTag{font-size:12px;font-weight:900;padding:4px 12px;border-radius:999px;cursor:pointer;
+          border:1px solid rgba(255,255,255,.18);white-space:nowrap}
+  .srcTag.real{background:rgba(34,197,94,.2);color:#86efac;border-color:rgba(34,197,94,.5)}
+  .srcTag.demo{background:rgba(168,85,247,.22);color:#e9d5ff;border-color:rgba(168,85,247,.55)}
+
+  /* 最近七天長條 */
+  #week7{display:flex;gap:8px;align-items:flex-end;margin-top:14px;padding-top:14px;
+         border-top:1px dashed rgba(255,255,255,.1)}
+  #week7 .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+  #week7 .bd{width:100%;max-width:46px;border-radius:7px 7px 3px 3px;background:rgba(148,163,184,.25)}
+  #week7 .bd.on{background:linear-gradient(180deg,#38bdf8,#0284c7)}
+  #week7 .bn{font-size:12px;font-weight:900;color:#cbd5e1;line-height:1}
+  #week7 .bl{font-size:11px;font-weight:800;color:#64748b;line-height:1}
+
   #foot{position:fixed;left:0;right:0;bottom:0;z-index:10;text-align:center;
         background:linear-gradient(90deg,#4c1d95,#6d28d9);color:#ede9fe;
         font-size:11.5px;font-weight:800;padding:6px 8px;letter-spacing:.04em}
@@ -113,6 +128,7 @@
   <a id="homeBtn" href="index.html" title="回登入頁">🏠</a>
   <h1>📖 家長頁</h1>
   <span class="sub">本週學習報告</span>
+  <span id="srcTag" class="srcTag demo">示範數據</span>
   <div id="who">
     <button class="whoBtn on" data-uid="demo_a">陳小明</button>
     <button class="whoBtn" data-uid="demo_b">李美欣</button>
@@ -126,6 +142,7 @@
     <div id="big"></div>
     <div id="verdict"></div>
     <div id="stats"></div>
+    <div id="week7"></div>
   </section>
 
   <section class="card" id="work">
@@ -171,7 +188,8 @@ var SKILL_NAME = {
   'M.ADD': '加法', 'M.SUB': '減法', 'M.COMP': '比較大小', 'M.WORD': '應用題',
   'M.MUL': '乘法', 'M.DIV': '除法',
   'C.MW': '量詞', 'C.SENT': '句子', 'C.FORM': '部首字形', 'C.VOCAB': '詞彙',
-  'E.VOCAB': '英文詞彙', 'E.SENT': '英文短句', 'E.LETTER': '英文字母', 'E.SPELL': '英文串字'
+  'E.VOCAB': '英文詞彙', 'E.SENT': '英文短句', 'E.LETTER': '英文字母', 'E.SPELL': '英文串字',
+  'C.WRITE': '寫字（筆順）'
 };
 
 var ACT = {
@@ -217,7 +235,10 @@ var ACT = {
     ok: '10 張認到 8 張。' },
   'E.SPELL': { why: '串字係英文寫作同默書嘅第一步。',
     do: '揀 5 個三字母字（cat / dog / bus），用字母磚砌，砌完讀一次。',
-    ok: '5 個砌到 4 個。' }
+    ok: '5 個砌到 4 個。' },
+  'C.WRITE': { why: '筆順錯，寫字慢又容易寫錯，之後抄寫同默書都會蝕底。',
+    do: '揀 3 個今個星期寫過嘅字，叫佢用手指喺半空寫一次出聲數筆畫，再寫落紙。',
+    ok: '3 個字都寫得順、筆畫數得出。' }
 };
 
 var ACT_SUBJ = {
@@ -394,9 +415,20 @@ var LIVE_SKILL = {
   p2_add2d: 'M.ADD', p2_sub2d: 'M.SUB', p2_mul: 'M.MUL', p2_div: 'M.DIV',
   p2_word: 'M.WORD', p2_money: 'M.WORD',
   p3_add3d: 'M.ADD', p3_sub3d: 'M.SUB', p3_mul2x1: 'M.MUL', p3_div2x1: 'M.DIV',
-  p3_word: 'M.WORD', p3_clock: 'M.WORD', p3_frac: 'M.WORD'
+  p3_word: 'M.WORD', p3_clock: 'M.WORD', p3_frac: 'M.WORD',
+  p2_wordcmp: 'M.WORD', p3_wordavg: 'M.WORD',
+  hw: 'C.WRITE'
 };
 var LIVE_SUBJ = { M: 'Math' };
+
+/* ── 資料來源：real＝只用小孩真的答過的紀錄；demo＝示範數據 ── */
+var MODE = (function () {
+  var q = (location.search.match(/mode=(real|demo)/) || [])[1];
+  if (q) return q;
+  return liveRows().length ? 'real' : 'demo';
+})();
+function realCount() { return liveRows().length; }
+var SESSION_NAME = (window.Player && window.Player.name) ? window.Player.name() : '';
 
 function liveRows() {
   var raw = [];
@@ -404,7 +436,7 @@ function liveRows() {
   return raw.map(function (a) {
     var skill = LIVE_SKILL[a.u] || 'M.ADD';
     return {
-      ts: a.t, skill: skill, subj: 'Math',
+      ts: a.t, skill: skill, subj: (skill.charAt(0) === 'C' ? 'Chinese' : 'Math'),
       first: a.c === 1, tries: a.c === 1 ? 1 : 2,
       correct: a.c === 1 ? 'Y' : 'N',
       elapsed: a.ms, voice: false, away: 0, spam: false, live: true
@@ -413,7 +445,9 @@ function liveRows() {
 }
 
 function buildReport(uid) {
-  var rows = demoRows_(uid, Date.now()).concat(liveRows());
+  var rows = (MODE === 'real')
+    ? liveRows().slice()
+    : demoRows_(uid, Date.now()).concat(liveRows());
   var days = 7;
   var win = rows.filter(function (r) { return r.ts >= Date.now() - days * 86400000; });
   if (win.length < 6) {
@@ -423,13 +457,14 @@ function buildReport(uid) {
 
   var bySkill = {}, daySet = {}, times = [], first = 0;
   var careless = 0, wrong = 0, voiceN = 0, awayN = 0;
+  var fastWrong = 0;
 
   win.forEach(function (r) {
     times.push(r.elapsed);
     if (r.first) first++;
     if (!r.first) {
       if (r.correct === 'Y' && r.tries <= 2) careless++;
-      if (r.correct !== 'Y') wrong++;
+      if (r.correct !== 'Y') { wrong++; if (r.elapsed < 3000) fastWrong++; }
     }
     if (r.voice) voiceN++;
     if (r.away > 0) awayN++;
@@ -460,10 +495,21 @@ function buildReport(uid) {
 
   return {
     days: days, n: n, rate: rate, medSec: medSec,
+    mode: MODE, realTotal: realCount(),
     daysActive: Math.min(Object.keys(daySet).length, days),
+    perDay: (function () {
+      var out = [];
+      for (var i = 6; i >= 0; i--) {
+        var t0 = new Date(); t0.setHours(0, 0, 0, 0);
+        var d0 = t0.getTime() - i * 86400000;
+        var d1 = d0 + 86400000;
+        out.push({ ts: d0, n: win.filter(function (r) { return r.ts >= d0 && r.ts < d1; }).length });
+      }
+      return out;
+    })(),
     skills: list,
     summary: {
-      careless: careless, wrong: wrong, away: awayN,
+      careless: careless, wrong: wrong, away: awayN, fastWrong: fastWrong,
       voicePct: n ? Math.round(voiceN / n * 100) : 0,
       verdict: verdictOf_(rate, medSec, n)
     }
@@ -483,21 +529,56 @@ function render(uid) {
   var r = buildReport(uid);
   var pf = DEMO_PROFILE[uid];
 
+  /* 資料來源標籤 */
+  var tag = document.getElementById('srcTag');
+  if (tag) {
+    tag.textContent = (r.mode === 'real')
+      ? '實際紀錄 · ' + r.n + ' 題'
+      : '示範數據（切去真實紀錄）';
+    tag.className = 'srcTag ' + (r.mode === 'real' ? 'real' : 'demo');
+  }
+
   /* A */
   document.getElementById('big').innerHTML =
     '<span class="n">' + r.n + '</span><span class="t">題 · 本週（' + r.days + ' 日）</span>' +
     '<span class="n" style="margin-left:14px">' + r.rate + '%</span><span class="t">首答正確</span>';
   document.getElementById('verdict').textContent = r.summary.verdict;
 
-  document.getElementById('stats').innerHTML = [
-    ['做題日數', r.daysActive, '日'],
-    ['中位用時', r.medSec, '秒'],
-    ['語音依賴', r.summary.voicePct, '%'],
-    ['粗心（快答對）', r.summary.careless, '題']
-  ].map(function (x) {
+  var statRows = (r.mode === 'real')
+    ? [
+        ['做題日數', r.daysActive, '日'],
+        ['中位用時', r.medSec, '秒'],
+        ['本週題數', r.n, '題'],
+        ['已寫字', (function () { try { return JSON.parse(localStorage.getItem('dsh_hw_done') || '[]').length; } catch (e) { return 0; } })(), '字']
+      ]
+    : [
+        ['做題日數', r.daysActive, '日'],
+        ['中位用時', r.medSec, '秒'],
+        ['語音依賴', r.summary.voicePct, '%'],
+        ['粗心（快答對）', r.summary.careless, '題']
+      ];
+  document.getElementById('stats').innerHTML = statRows.map(function (x) {
     return '<div class="stat"><div class="k">' + x[0] + '</div><div class="v">' + x[1] +
       '<small>' + x[2] + '</small></div></div>';
   }).join('');
+
+  /* 最近七天長條圖（真實模式才顯示） */
+  var wk = document.getElementById('week7');
+  if (wk) {
+    if (r.mode !== 'real') { wk.style.display = 'none'; }
+    else {
+      wk.style.display = '';
+      var mx = Math.max.apply(null, r.perDay.map(function (d) { return d.n; }).concat([1]));
+      var dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+      wk.innerHTML = r.perDay.map(function (d) {
+        var h = Math.round(d.n / mx * 46);
+        var dow = dayNames[new Date(d.ts).getDay()];
+        return '<div class="bar"><div class="bd' + (d.n ? ' on' : '') + '" style="height:' +
+          (d.n ? Math.max(6, h) : 3) + 'px"></div><div class="bn">' + d.n + '</div>' +
+          '<div class="bl">' + dow + '</div></div>';
+      }).join('');
+    }
+  }
 
   /* B：只給一件 —— 取「排最前的弱項」，沒有就給最慢的一項 */
   var pick = r.skills.filter(function (s) { return s.tag !== '穩'; })[0] || r.skills[0];
@@ -531,18 +612,37 @@ function render(uid) {
 
   /* D */
   var notes = [];
-  if (r.n < 6) notes.push('今週只有 ' + r.n + ' 題 —— 樣本太少，下面嘅結論只能當「方向」，唔好當「判決」。');
-  if (r.summary.voicePct >= 70) notes.push('語音依賴 ' + r.summary.voicePct + '%：佢好多時係「聽」而唔係「讀」題目，要留意識字量。');
-  if (r.summary.careless >= 3) notes.push('粗心（答第二次就對）' + r.summary.careless + ' 題：多數係心急，唔係唔識。');
-  if (r.summary.away >= 3) notes.push('離座 ' + r.summary.away + ' 次：可能係題目太長或者環境太嘈。');
+  if (r.mode === 'real') {
+    if (r.n === 0) notes.push('呢位小朋友今個星期仲未開始做題 —— 先由「10 以內加法」開始，做 5 題就夠。');
+    else if (r.n < 6) notes.push('今週只有 ' + r.n + ' 題 —— 樣本太少，下面嘅結論只能當「方向」，唔好當「判決」。');
+    if (r.summary.wrong >= 2) notes.push('答錯 ' + r.summary.wrong + ' 題' + (r.summary.fastWrong ? '（其中 ' + r.summary.fastWrong + ' 題 3 秒內就答，多數係猜）' : '') + '：今晚陪佢慢慢讀一次題目。');
+    var weak = r.skills.filter(function (s) { return s.n >= 3 && s.rate < 60; })[0];
+    if (weak) notes.push('「' + (SKILL_NAME[weak.skill] || weak.subject) + '」' + weak.rate + '%（' + weak.n + ' 題）—— 呢個係最值得花時間嘅一項。');
+    if (r.daysActive >= 5) notes.push('一星期有 ' + r.daysActive + ' 日都有做，習慣已經成形，保持落去就夠。');
+    if (r.n >= 8 && r.medSec > 0 && r.medSec < 3) notes.push('中位用時只有 ' + r.medSec + ' 秒 —— 可能係亂按，亦可能係好熟；可以抽一題叫佢講出點計。');
+  } else {
+    if (r.n < 6) notes.push('今週只有 ' + r.n + ' 題 —— 樣本太少，下面嘅結論只能當「方向」，唔好當「判決」。');
+    if (r.summary.voicePct >= 70) notes.push('語音依賴 ' + r.summary.voicePct + '%：佢好多時係「聽」而唔係「讀」題目，要留意識字量。');
+    if (r.summary.careless >= 3) notes.push('粗心（答第二次就對）' + r.summary.careless + ' 題：多數係心急，唔係唔識。');
+    if (r.summary.away >= 3) notes.push('離座 ' + r.summary.away + ' 次：可能係題目太長或者環境太嘈。');
+  }
   document.getElementById('confList').innerHTML = notes.length
     ? notes.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('')
     : '<div class="none">✅ 今週樣本足夠，冇特別要提醒嘅偏差。</div>';
 
-  document.getElementById('honest').textContent =
-    '呢個報告只用「答題紀錄」計：' + r.n + ' 題、' + r.days + ' 日。' +
-    '佢唔會評分、唔會排名、唔會同其他小朋友比較 —— 只係同佢自己上星期比。' +
-    '數據有偏差就照講，唔會為咗好睇而修飾。';
+  var foot = document.getElementById('foot');
+  if (foot) {
+    foot.textContent = (r.mode === 'real')
+      ? '實際紀錄 · 只計 ' + (SESSION_NAME || '這位小朋友') + ' 自己的答題（共 ' + r.realTotal + ' 題）；數據不夠就照講'
+      : '示範模式 · 歷史數據為模擬生成；你在小孩那邊做的題會即時計入';
+  }
+
+  document.getElementById('honest').textContent = (r.mode === 'real')
+    ? '呢個報告只用「' + (SESSION_NAME || '小朋友') + '」真實答題紀錄計：' + r.n + ' 題、' + r.days + ' 日、共 ' + r.realTotal + ' 題紀錄。' +
+      '佢唔會評分、唔會排名、唔會同其他小朋友比較 —— 只係同佢自己上星期比。'
+    : '呢個報告只用「答題紀錄」計：' + r.n + ' 題、' + r.days + ' 日。' +
+      '佢唔會評分、唔會排名、唔會同其他小朋友比較 —— 只係同佢自己上星期比。' +
+      '數據有偏差就照講，唔會為咗好睇而修飾。';
 }
 
 document.querySelectorAll('.whoBtn').forEach(function (b) {
@@ -561,6 +661,18 @@ document.querySelectorAll('.whoBtn').forEach(function (b) {
   b.classList.toggle('on', b.getAttribute('data-uid') === startUid);
 });
 render(startUid);
+
+/* 點標籤切換「真實紀錄 / 示範數據」 */
+var srcTagEl = document.getElementById('srcTag');
+if (srcTagEl) srcTagEl.addEventListener('click', function () {
+  if (MODE === 'real') {
+    MODE = 'demo';
+  } else {
+    if (!realCount()) { alert('呢位小朋友仲未有真實答題紀錄，去挑戰頁玩幾題先。'); return; }
+    MODE = 'real';
+  }
+  render(startUid);
+});
 
 /* E 娛樂時間（時間代幣） */
 function renderTime(){

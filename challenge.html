@@ -777,18 +777,58 @@
       { id: 'p3_word', g: 3, name: '應用題（兩步）', gen: function () {
           var m = Math.random();
           if (m < 0.42) {
-            var a = rnd(30, 90), b = rnd(2, 5), c = rnd(3, 8);
+            var b = rnd(2, 5), c = rnd(3, 8), left = rnd(5, 40);
+            var a = b * c + left;
             return { text: '你有 $' + a + '，買了 ' + b + ' 本筆記簿，每本 $' + c + '，還剩多少錢？ 📒',
-                     answer: '$' + (a - b * c), options: moneyOpts(a - b * c) };
+                     answer: '$' + left, options: moneyOpts(left) };
           }
           if (m < 0.72) {
-            var pg = rnd(40, 120), per = rnd(5, 15), days = rnd(2, 5);
+            var per = rnd(5, 15), days = rnd(2, 5), left = rnd(4, 30);
+            var pg = per * days + left;
             return { text: '一本書有 ' + pg + ' 頁，每天看 ' + per + ' 頁，看了 ' + days + ' 天，還有幾頁沒看？ 📖',
-                     answer: pg - per * days, spread: 8 };
+                     answer: left, spread: 8 };
           }
           var rows = rnd(12, 40), seats = rnd(3, 9);
           return { text: '禮堂每排有 ' + rows + ' 個座位，共有 ' + seats + ' 排，一共有幾個座位？ 🎪',
                    answer: rows * seats, spread: 10 };
+        } },
+
+      /* ── 應用題：比較型（相差多少／誰多多少少多少） ── */
+      { id: 'p2_wordcmp', g: 2, name: '應用題（相差）', gen: function () {
+          var t = pickOne(WP_THINGS), a = pickOne(WP_NAMES), b = a;
+          while (b === a) b = pickOne(WP_NAMES);
+          var m = Math.random();
+          if (m < 0.45) {
+            var x = rnd(6, 40), y = rnd(2, x - 1);
+            return { text: a + ' 有 ' + x + ' ' + t.u + t.n + ' ' + t.e + '，' + b + ' 有 ' + y + ' ' + t.u +
+                     '，' + a + ' 比 ' + b + ' 多幾' + t.u + '？', answer: x - y, spread: 3 };
+          }
+          if (m < 0.75) {
+            var x2 = rnd(5, 30), d = rnd(2, 20);
+            return { text: a + ' 有 ' + x2 + ' 張貼紙，' + b + ' 比 ' + a + ' 多 ' + d + ' 張，' + b +
+                     ' 有幾張貼紙？ ✨', answer: x2 + d, spread: 4 };
+          }
+          var x3 = rnd(20, 60), d3 = rnd(3, 15);
+          return { text: '一班有 ' + x3 + ' 人，二班比一班少 ' + d3 + ' 人，二班有幾人？ 🏫',
+                   answer: x3 - d3, spread: 4 };
+        } },
+
+      /* ── 應用題：平均型（平均分／平均成績） ── */
+      { id: 'p3_wordavg', g: 3, name: '應用題（平均）', gen: function () {
+          var m = Math.random();
+          if (m < 0.4) {
+            var g = rnd(3, 9), q = rnd(3, 12);
+            return { text: g * q + ' 個 🍪 平均分給 ' + g + ' 個小朋友，每人分到幾個？',
+                     answer: q, spread: 2 };
+          }
+          if (m < 0.7) {
+            var base = rnd(60, 92), d = rnd(1, 6);
+            return { text: '三科成績是 ' + (base - d) + '、' + base + '、' + (base + d) + ' 分，平均是幾分？ 📘',
+                     answer: base, spread: 3 };
+          }
+          var teams = rnd(4, 8), per = rnd(6, 15);
+          return { text: '一班有 ' + (teams * per) + ' 人，平均分成 ' + teams + ' 組，每組幾人？ 👥',
+                   answer: per, spread: 2 };
         } },
 
       /* ── 錢幣（二年級） ── */
@@ -1629,7 +1669,7 @@
         var a = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
         a.push({
           t: Date.now(),
-          u: curUnit,
+          u: (q && q.type === 'hanzi') ? 'hw' : curUnit,
           c: correct ? 1 : 0,
           ms: Math.min(120000, Date.now() - (qLogT0 || Date.now()))
         });
