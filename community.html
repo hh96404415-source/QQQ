@@ -1250,7 +1250,7 @@
     savePet(p);
     if (id === 0) pets[0].el.classList.remove('guide');
     panel.classList.add('show');
-    pName.textContent = 'No.' + ('00'+(p.species+1)).slice(-3) + ' · ' + SPECIES[p.species].names[p.stage];
+    pName.textContent = SPECIES[p.species].names[p.stage];
     pForm.textContent = p.name + ' · ' + formOf(p).name + (p.inFarm?' · 🏡':'');
     var block = upgradeBlockText(p);
     pMood.textContent = moodText(p) + (block ? '　' + block : '');
