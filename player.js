@@ -101,7 +101,42 @@
       grade: st.grade || '',
       t: Date.now()
     }));
+    devTopUp();
     return true;
+  }
+
+  /* ── 開發者帳號：給滿滿的星星與時間，方便亂按測試 ──────────────
+     判定：id = 3（名冊裡的「開發者」）或姓名含 開發／admin／test
+     只會「補到 1000 顆 / 900 分鐘」，不會把已經更多的數字調低。
+     ──────────────────────────────────────────────────────────── */
+  var DEV_STARS = 1000;
+  var DEV_MINUTES = 900;
+
+  function isDev() {
+    var b = bound();
+    if (!b) return false;
+    if (String(b.id) === '3') return true;
+    return /開發|admin|test/i.test(b.name || '');
+  }
+
+  function devTopUp() {
+    if (!isDev()) return false;
+    try {
+      var s = parseInt(localStorage.getItem('dsh_stars') || '0', 10) || 0;
+      if (s < DEV_STARS) localStorage.setItem('dsh_stars', String(DEV_STARS));
+      var t = null;
+      try { t = JSON.parse(localStorage.getItem('dsh_time') || 'null'); } catch (e) {}
+      if (!t || typeof t !== 'object') t = {};
+      if ((t.earned || 0) < DEV_MINUTES) {
+        var d = new Date();
+        t.day = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+        t.earned = DEV_MINUTES;
+        t.used = t.used || 0;
+        t.star = t.star || 0;
+        localStorage.setItem('dsh_time', JSON.stringify(t));
+      }
+      return true;
+    } catch (e) { return false; }
   }
 
   /* 解除綁定（家長長按首頁標題） */
@@ -221,6 +256,7 @@
       if (upd <= prev) return cb && cb(null, false);
       apply(st);
       try { localStorage.setItem('dsh__sync', String(upd)); } catch (e) {}
+      devTopUp();
       cb && cb(null, true);
     });
   }
@@ -270,7 +306,12 @@
     push: push,
     pushSoon: pushSoon,
     hydrate: hydrate,
+    isDev: isDev,
+    devTopUp: devTopUp,
     syncInfo: function () { return { last: Number(localStorage.getItem('dsh__sync') || 0) }; },
     mount: function (host) { installStyles(); mount(host); }
   };
+
+  /* 開頁就補（player.js 比頁面的主程式先載入，所以頁面讀 localStorage 時已經補好） */
+  devTopUp();
 })();
