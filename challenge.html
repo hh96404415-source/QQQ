@@ -300,6 +300,20 @@
   @keyframes starPop{0%{transform:scale(1)}35%{transform:scale(1.3)}100%{transform:scale(1)}}
   #vs{animation:vsPulse 2.6s ease-in-out infinite}
   @keyframes vsPulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.12);opacity:1}}
+  /* 進化挑戰：入場 / 完成 兩張全屏卡 */
+  #evoIntro,#evoDone{position:fixed;inset:0;z-index:9995;display:flex;align-items:center;justify-content:center;
+    opacity:0;visibility:hidden;pointer-events:none;transition:opacity .3s}
+  #evoIntro.on,#evoDone.on{opacity:1;visibility:visible}
+  #evoIntro .evVeil,#evoDone .evVeil{position:absolute;inset:0;
+    background:radial-gradient(circle at 50% 46%,rgba(88,28,135,.55),rgba(3,6,15,.94))}
+  #evoIntro .evBox,#evoDone .evBox{position:relative;text-align:center;padding:28px 52px;border-radius:26px;
+    background:linear-gradient(180deg,rgba(49,20,73,.96),rgba(15,23,42,.97));
+    border:2px solid rgba(250,204,21,.75);box-shadow:0 0 60px rgba(168,85,247,.55)}
+  #evoIntro .evKicker,#evoDone .evKicker{font-size:13px;letter-spacing:6px;font-weight:900;color:#c4b5fd}
+  #evoIntro .evTitle,#evoDone .evTitle{margin-top:8px;font-size:clamp(30px,5vmin,46px);font-weight:900;
+    color:#fde047;-webkit-text-stroke:2px #7c2d12;paint-order:stroke fill;
+    animation:scPop 1.1s ease-in-out infinite}
+  #evoIntro .evSub,#evoDone .evSub{margin-top:10px;font-size:15px;font-weight:800;color:#e9d5ff}
 </style>
 <link rel="stylesheet" href="fonts/theme.css">
 </head>
@@ -381,6 +395,8 @@
     </div>
   </div>
 
+
+
   <div id="dexMask">
     <div id="dexPanel">
       <button id="dexClose">關閉</button>
@@ -396,6 +412,24 @@
       <div class="scTitle">第 <span id="scNum">1</span> 關 通過！</div>
       <div class="scStars">⭐ ⭐ ⭐</div>
       <div class="scSub">怪物會越來越強 · 繼續加油</div>
+    </div>
+  </div>
+
+  <div id="evoIntro">
+    <div class="evVeil"></div>
+    <div class="evBox">
+      <div class="evKicker">EVOLUTION</div>
+      <div class="evTitle">⚡ 進化挑戰</div>
+      <div class="evSub">打贏這一隻 BOSS，牠就會變強</div>
+    </div>
+  </div>
+
+  <div id="evoDone">
+    <div class="evVeil"></div>
+    <div class="evBox">
+      <div class="evKicker">LEVEL UP</div>
+      <div class="evTitle">🎉 進化成功！</div>
+      <div class="evSub">回去吧，牠要變身了</div>
     </div>
   </div>
 
@@ -1913,7 +1947,8 @@
           ring(pt.x, pt.y, '#fbbf24');
           killMonster(pt);
           sfxWinS();
-          if (cur.s === 2) stageClear();
+          if (evoMode) evolveWin();
+          else if (cur.s === 2) stageClear();
         }, 500);
         setTimeout(function () {
           pick();
@@ -2015,9 +2050,37 @@
       type: function () { return q ? q.type : null; }
     };
 
+    /* ===== 進化挑戰：?evolve=1 ===== */
+    var evoMode = false;
+    try { evoMode = new URLSearchParams(location.search).get('evolve') === '1'; } catch (e) {}
+
+    function evolveWin() {
+      try { localStorage.setItem('dsh_evolve_done', '1'); } catch (e) {}
+      var box = document.getElementById('evoDone');
+      if (box) box.classList.add('on');
+      if (window.Juice) {
+        window.Juice.confetti(28, { x: innerWidth / 2, y: innerHeight * 0.42 });
+        window.Juice.fx('level');
+      }
+      sfxLevel();
+      setTimeout(function () { location.href = 'community.html?evo=1'; }, 2800);
+    }
+
+    if (evoMode) {
+      /* 進化只用最難的那一種題型：應用題（讀懂才算得出） */
+      var g0 = unitById(curUnit).g;
+      curUnit = g0 >= 3 ? 'p3_word' : (g0 === 2 ? 'p2_word' : 'p1_word');
+      battles = 2;               /* 下一隻就是 BOSS */
+      var evIntro = document.getElementById('evoIntro');
+      if (evIntro) {
+        evIntro.classList.add('on');
+        setTimeout(function () { evIntro.classList.remove('on'); }, 2000);
+      }
+    }
     paintUnitBtn();
     paintStage();
     pick();
+    if (evoMode) { qNum = 0; streak = 0; nextQ(); }
 
     try {
       if (new URLSearchParams(location.search).get('dex') === '1') {

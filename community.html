@@ -141,6 +141,15 @@
   #btnGame{background:linear-gradient(#a78bfa,#7c3aed);color:#fff}
   #btnGame:disabled{background:#334155;color:#64748b;cursor:not-allowed}
   #btnFeed:disabled{background:#334155;color:#64748b;cursor:not-allowed}
+  /* 星星夠了 → 餵食鍵變成進化鍵（金色脈動） */
+  #btnFeed.evolve{background:linear-gradient(180deg,#fde047,#f59e0b 55%,#dc2626);color:#3b0764;
+    box-shadow:0 0 0 2px rgba(253,224,71,.85),0 8px 24px rgba(245,158,11,.6);
+    animation:evolvePulse 1.25s ease-in-out infinite}
+  #btnFeed.evolve:disabled{background:#334155;animation:none;box-shadow:none;color:#64748b}
+  @keyframes evolvePulse{
+    0%,100%{transform:scale(1);box-shadow:0 0 0 2px rgba(253,224,71,.85),0 8px 24px rgba(245,158,11,.55)}
+    50%{transform:scale(1.045);box-shadow:0 0 0 4px rgba(253,224,71,.55),0 10px 30px rgba(220,38,38,.55)}
+  }
   #btnPlay{background:linear-gradient(#38bdf8,#0284c7);color:#052e16}
   #btnComfort{background:linear-gradient(#f472b6,#db2777);color:#fff}
   #btnToggle{background:linear-gradient(#22c55e,#16a34a);color:#052e16}
@@ -586,6 +595,7 @@
   try { stars = Math.max(0, parseInt(localStorage.getItem(STARS_KEY) || '0', 10) || 0); } catch(e){ stars = 0; }
   function saveStars(){ try { localStorage.setItem(STARS_KEY, String(stars)); } catch(e){} if (window.Player) window.Player.pushSoon(1500); }
   var active = null;       // 面板中的寵物
+  var evolveMode = false;  // 星星夠餵滿 → 餵食鍵變進化鍵
   var sel = 0;             // 右半遊戲選中的寵物
   var pets = [];
   var fw = 0, fh = 0;
@@ -1262,10 +1272,20 @@
     paintProgress(p);
     pAvatar.src = formOf(p).img;
     pAvatar.style.filter = p.state==='sad'?'grayscale(.8) brightness(.75)':'';
-    btnFeed.disabled = stars < 1;
-    btnFeed.textContent = (p.stage===0)
-      ? '🥚 '+p.growth+'/'+HATCH_AT
-      : '🍖 1⭐';
+    /* 星星夠把進度餵滿 → 餵食鍵變成「進化鍵」，直接去挑戰高難度 */
+    var canEvolve = (p.stage < 4) && (stars >= Math.max(0, FORMS[p.stage].next - p.growth));
+    evolveMode = canEvolve;
+    btnFeed.classList.toggle('evolve', canEvolve);
+    if (canEvolve){
+      btnFeed.disabled = false;
+      btnFeed.textContent = p.stage === 0 ? '⚡ 孵化挑戰！'
+        : (p.won[p.stage] ? '⚡ 進化！' : '⚡ 進化挑戰！');
+    } else {
+      btnFeed.disabled = stars < 1;
+      btnFeed.textContent = (p.stage===0)
+        ? '🥚 '+p.growth+'/'+HATCH_AT
+        : '🍖 1⭐';
+    }
     if (p.stage === 0){
       btnGame.textContent = '🥚 先餵食孵化';
       btnGame.disabled = true;
@@ -1377,8 +1397,30 @@
   });
 
   btnFeed.addEventListener('click', function(){
-    if (active===null || stars<1) return;
+    if (active===null) return;
     var p = pets[active];
+    /* 進化鍵：星星直接餵滿 → 帶牠去打高難度那一場 */
+    if (evolveMode){
+      var need = Math.max(0, FORMS[p.stage].next - p.growth);
+      if (stars < need) return;
+      stars -= need; starEl.textContent = stars; saveStars();
+      p.growth += need;
+      savePet(p);
+      updateVisual(p);
+      refreshPanel();
+      renderPetBar();
+      cheer(p, '我要變強！', 2400);
+      sfxLevel();
+      if (window.Juice) window.Juice.fx('unlock');
+      try {
+        localStorage.setItem('dsh_evolve', JSON.stringify({
+          k: SPECIES[p.species].id, s: p.stage, no: p.species + 1, n: NAMES[p.species][p.stage]
+        }));
+      } catch (e) {}
+      setTimeout(function(){ location.href = 'challenge.html?evolve=1'; }, 850);
+      return;
+    }
+    if (stars<1) return;
     stars--; starEl.textContent=stars; saveStars();
     p.growth++;
     feedFx(p);
@@ -1793,6 +1835,32 @@
 
   /* 從挑戰頁回來 → 演「帶回家」那一段 */
   if (harvest && !picking) setTimeout(harvestShow, 700);
+
+  /* 剛打完進化挑戰（?evolve=1 那場）→ 讓牠真的變身 */
+  (function () {
+    var pending = null, done = false;
+    try { pending = JSON.parse(localStorage.getItem('dsh_evolve') || 'null'); } catch (e) {}
+    try { done = localStorage.getItem('dsh_evolve_done') === '1'; } catch (e) {}
+    if (!pending || !done) return;
+    try {
+      localStorage.removeItem('dsh_evolve');
+      localStorage.removeItem('dsh_evolve_done');
+    } catch (e) {}
+    setTimeout(function () {
+      for (var i = 0; i < pets.length; i++) {
+        var p = pets[i];
+        if (SPECIES[p.species].id !== pending.k || p.stage !== pending.s) continue;
+        p.growth = Math.max(p.growth, FORMS[p.stage].next);
+        p.won[p.stage] = true;
+        savePet(p);
+        checkUpgrade(p);
+        updateVisual(p);
+        refreshPanel();
+        renderPetBar();
+        break;
+      }
+    }, 1100);
+  })();
 
   /* 開頁先問雲端有沒有更新的存檔（換機／清快取後靠這個救回來）
      注意：選蛋階段也要問 —— 換機時還沒有 dsh_pick，正是最需要救回來的時候 */
