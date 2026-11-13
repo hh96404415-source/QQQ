@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🎪 遊樂場</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden}
+  body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+    color:#e2e8f0;background:#0b1220}
+  #bg{position:fixed;inset:0;background:url('images/bg_playground.webp') center/cover no-repeat;
+    filter:brightness(.68) saturate(.95)}
+  #bg::after{content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(9,14,26,.82),rgba(9,14,26,.5) 42%,rgba(9,14,26,.8))}
+
+  #app{position:relative;height:100%;display:flex;flex-direction:column}
+
+  /* ---------- 頂部 ---------- */
+  #topbar{display:flex;align-items:center;gap:12px;padding:10px 18px;flex:0 0 auto;
+    background:rgba(8,13,24,.72);border-bottom:1px solid rgba(255,255,255,.08)}
+  #backBtn{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:#cbd5e1;
+    font-size:13px;font-weight:800;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+    padding:7px 13px;border-radius:999px;transition:.18s}
+  #backBtn:hover{background:rgba(255,255,255,.12);color:#fff}
+  #homeBtn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
+    border-radius:11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+    text-decoration:none;font-size:16px;line-height:1;transition:.18s}
+  #homeBtn:hover{background:rgba(255,255,255,.14);transform:translateY(-1px)}
+  #homeBtn:active{transform:scale(.94)}
+  #title{font-size:16px;font-weight:900;letter-spacing:.06em;color:#fff}
+  #title small{font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0;margin-left:8px}
+  #stars{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:15px;font-weight:900;
+    color:#fbbf24;background:rgba(15,23,42,.75);border:1px solid rgba(251,191,36,.35);
+    padding:5px 14px;border-radius:999px}
+  #stars b{font-size:17px}
+
+  /* ---------- 選單 ---------- */
+  #stage{position:relative;flex:1 1 auto;min-height:0;display:flex}
+  #picker{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:22px;padding:18px;overflow:auto}
+  #picker h2{margin:0;font-size:20px;font-weight:900;color:#f8fafc}
+  #picker p{margin:0;font-size:13px;color:#94a3b8;font-weight:700}
+  #cards{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+  .gcard{width:240px;padding:20px 18px 16px;border-radius:20px;cursor:pointer;
+    background:linear-gradient(170deg,rgba(30,41,59,.95),rgba(15,23,42,.98));
+    border:1px solid rgba(255,255,255,.12);text-align:center;transition:.18s;
+    box-shadow:0 14px 30px rgba(0,0,0,.35)}
+  .gcard:hover{transform:translateY(-4px);border-color:rgba(251,191,36,.55);
+    box-shadow:0 18px 40px rgba(251,191,36,.18)}
+  .gcard .ico{font-size:44px;line-height:1;margin-bottom:10px}
+  .gcard .nm{font-size:18px;font-weight:900;color:#fff;margin-bottom:6px}
+  .gcard .ds{font-size:12px;font-weight:700;color:#94a3b8;line-height:1.55;min-height:38px}
+  .gcard .tg{margin-top:12px;display:inline-block;font-size:11px;font-weight:800;color:#fbbf24;
+    background:rgba(251,191,36,.13);border:1px solid rgba(251,191,36,.3);padding:4px 12px;border-radius:999px}
+
+  /* ---------- 棋桌 ---------- */
+  #table{flex:1;display:none;gap:16px;padding:14px 18px 18px;min-height:0}
+  #table.on{display:flex}
+  #boardWrap{flex:1 1 auto;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center}
+  #board{--cell:64px;--gap:6px;display:grid;gap:var(--gap);position:relative;
+    padding:var(--gap);border-radius:18px}
+
+  /* 棋盤外觀 */
+  #board.ttt{grid-template-columns:repeat(4,var(--cell));grid-template-rows:repeat(4,var(--cell));
+    background:rgba(10,16,28,.9);box-shadow:0 0 0 2px rgba(255,255,255,.14) inset,0 18px 40px rgba(0,0,0,.45)}
+  #board.ttt .cell{background:linear-gradient(180deg,#26344a,#1a2434);border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s;
+    font-size:calc(var(--cell)*.62);font-weight:900;line-height:1}
+  #board.ttt .cell:hover{background:linear-gradient(180deg,#33445e,#212e42)}
+
+  #board.c4{grid-template-columns:repeat(7,var(--cell));grid-template-rows:repeat(6,var(--cell));
+    background:linear-gradient(180deg,#1d4ed8,#1e3a8a);border-radius:16px;
+    box-shadow:0 12px 30px rgba(30,58,138,.5),0 0 0 3px rgba(255,255,255,.1) inset}
+  #board.c4 .cell{background:transparent;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;position:relative}
+  #board.c4 .cell::before{content:'';position:absolute;width:calc(var(--cell)*.84);height:calc(var(--cell)*.84);
+    border-radius:50%;background:#0b1220;box-shadow:0 3px 8px rgba(0,0,0,.5) inset}
+  #board.c4 .disc{position:relative;width:calc(var(--cell)*.84);height:calc(var(--cell)*.84);
+    border-radius:50%;z-index:2;animation:drop .34s cubic-bezier(.2,.9,.3,1.2)}
+  #board.c4 .disc.p1{background:radial-gradient(circle at 35% 30%,#fca5a5,#dc2626 70%);
+    box-shadow:0 0 0 3px rgba(0,0,0,.25) inset,0 4px 10px rgba(0,0,0,.45)}
+  #board.c4 .disc.p2{background:radial-gradient(circle at 35% 30%,#fde68a,#f59e0b 70%);
+    box-shadow:0 0 0 3px rgba(0,0,0,.25) inset,0 4px 10px rgba(0,0,0,.45)}
+  @keyframes drop{from{transform:translateY(-420%);opacity:.4}to{transform:translateY(0);opacity:1}}
+  #board.c4 .disc.win{animation:pulse .5s infinite alternate}
+  @keyframes pulse{from{box-shadow:0 0 0 4px rgba(255,255,255,.15)}to{box-shadow:0 0 0 7px rgba(255,255,255,.55)}}
+
+  #board.rv{grid-template-columns:repeat(6,var(--cell));grid-template-rows:repeat(6,var(--cell));
+    gap:2px;background:#14532d;border-radius:14px;box-shadow:0 0 0 3px rgba(255,255,255,.12) inset,
+    0 12px 30px rgba(0,0,0,.45)}
+  #board.rv .cell{background:#166534;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;position:relative}
+  #board.rv .cell.hint::after{content:'';width:34%;height:34%;border-radius:50%;
+    background:rgba(255,255,255,.55);box-shadow:0 0 8px rgba(255,255,255,.35);position:absolute}
+  #board.rv .disc{width:calc(var(--cell)*.82);height:calc(var(--cell)*.82);border-radius:50%;
+    animation:flipIn .3s ease}
+  #board.rv .disc.p1{background:radial-gradient(circle at 35% 30%,#fff,#cbd5e1 70%);
+    box-shadow:0 2px 6px rgba(0,0,0,.45)}
+  #board.rv .disc.p2{background:radial-gradient(circle at 35% 30%,#475569,#0f172a 70%);
+    box-shadow:0 2px 6px rgba(0,0,0,.45)}
+  @keyframes flipIn{from{transform:rotateY(90deg) scale(.8)}to{transform:rotateY(0) scale(1)}}
+
+  .cell.p1 .sym{color:#60a5fa}
+  .cell.p2 .sym{color:#fbbf24}
+  #board.ttt .cell.win{background:rgba(250,204,21,.22);box-shadow:0 0 0 2px rgba(250,204,21,.7) inset}
+
+  /* ---------- 右側 ---------- */
+  #side{flex:0 0 clamp(190px,21vw,250px);display:flex;flex-direction:column;gap:10px;min-height:0}
+  .pane{background:rgba(15,23,42,.82);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:12px 14px}
+  #gameTitle{font-size:17px;font-weight:900;color:#fff}
+  #gameSub{font-size:11.5px;font-weight:700;color:#94a3b8;margin-top:3px;line-height:1.5}
+  #status{font-size:14px;font-weight:900;color:#fbbf24;min-height:20px;text-align:center}
+  .lbl{font-size:11px;font-weight:800;color:#64748b;letter-spacing:.08em;margin-bottom:7px}
+  #diffRow{display:flex;gap:6px}
+  .dbtn{flex:1;font:inherit;font-size:12px;font-weight:800;padding:7px 0;border-radius:10px;cursor:pointer;
+    background:rgba(255,255,255,.06);color:#cbd5e1;border:1px solid rgba(255,255,255,.12);transition:.15s}
+  .dbtn:hover{background:rgba(255,255,255,.12)}
+  .dbtn.on{background:rgba(251,191,36,.18);color:#fde68a;border-color:rgba(251,191,36,.55)}
+  .row2{display:flex;gap:8px}
+  .btn{flex:1;font:inherit;font-size:13px;font-weight:900;padding:10px 0;border-radius:12px;cursor:pointer;
+    border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:#e2e8f0;transition:.15s}
+  .btn:hover{background:rgba(255,255,255,.14)}
+  .btn.pri{background:linear-gradient(180deg,#a78bfa,#7c3aed);border-color:transparent;color:#fff}
+  .btn.pri:hover{filter:brightness(1.1)}
+  #winsBox{font-size:12px;font-weight:800;color:#94a3b8;text-align:center}
+  #winsBox b{color:#fbbf24;font-size:16px}
+  #petSide{display:flex;align-items:center;gap:10px}
+  #petSide img{width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
+  #petSide .say{font-size:12px;font-weight:800;color:#cbd5e1;line-height:1.45}
+
+  /* ---------- 結果 ---------- */
+  #overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(6,10,20,.72);backdrop-filter:blur(3px);z-index:20}
+  #overlay.on{display:flex}
+  #ovBox{min-width:330px;background:linear-gradient(170deg,#1e293b,#0f172a);border:1px solid rgba(251,191,36,.45);
+    border-radius:22px;padding:28px 34px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.6);
+    animation:pop .3s cubic-bezier(.2,.9,.3,1.3)}
+  @keyframes pop{from{transform:scale(.86);opacity:0}to{transform:scale(1);opacity:1}}
+  #ovIcon{font-size:44px;margin-bottom:6px}
+  #ovMsg{font-size:19px;font-weight:900;color:#fff;margin-bottom:6px}
+  #ovSub{font-size:13px;font-weight:700;color:#94a3b8;margin-bottom:18px}
+  #ovBtns{display:flex;gap:10px;justify-content:center}
+  #ovBtns .btn{flex:none;min-width:118px;white-space:nowrap;padding:11px 20px}
+
+  #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);opacity:0;
+    background:rgba(15,23,42,.95);border:1px solid rgba(251,191,36,.4);color:#fde68a;
+    font-size:13px;font-weight:900;padding:9px 18px;border-radius:999px;pointer-events:none;
+    transition:.25s;z-index:40}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  /* ── 按鍵反應：每一顆按下去都要有「咔」的回饋 ── */
+  .gcard{transition:transform .16s cubic-bezier(.2,.8,.3,1), box-shadow .16s}
+  .gcard:hover{transform:translateY(-7px) scale(1.02);
+    box-shadow:0 22px 48px rgba(0,0,0,.55),0 0 0 2px rgba(251,191,36,.45)}
+  .gcard:active{transform:translateY(-2px) scale(.97)}
+  .btn{transition:transform .1s, filter .1s, box-shadow .1s}
+  .btn:hover:not(:disabled){filter:brightness(1.12)}
+  .btn:active:not(:disabled){transform:translateY(2px) scale(.97)}
+  .diff button{transition:transform .1s, background .1s}
+  .diff button:active{transform:scale(.94)}
+
+  @media (max-width:900px){
+    #table{flex-direction:column;padding:10px}
+    #side{flex:0 0 auto;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    #petSide{display:none}
+  }
+</style>
+<link rel="stylesheet" href="fonts/theme.css">
+</head>
+<body>
+<div id="bg"></div>
+
+<div id="app">
+  <header id="topbar">
+    <a id="homeBtn" href="index.html" title="回登入頁">🏠</a>
+    <a id="backBtn" href="community.html">‹ 回社區</a>
+    <div id="title">🎪 遊樂場 <small>動動腦，贏一局</small></div>
+    <div id="stars">⭐ <b id="starN">0</b></div>
+  </header>
+
+  <main id="stage">
+    <!-- 選遊戲 -->
+    <section id="picker">
+      <h2>今天玩哪一個？</h2>
+      <p>三個都是要想一下的遊戲 · 贏一局就會有星星</p>
+      <div id="cards">
+        <div class="gcard" data-g="ttt">
+          <div class="ico">⭕</div>
+          <div class="nm">過三關</div>
+          <div class="ds">4×4 的格子，<br>把自己的符號連成 3 個一直線。</div>
+          <div class="tg">最簡單 · 6 歲</div>
+        </div>
+        <div class="gcard" data-g="c4">
+          <div class="ico">🔴</div>
+          <div class="nm">四連環</div>
+          <div class="ds">把棋子丟進直條，<br>同一色連成 4 個就贏。</div>
+          <div class="tg">想一想 · 7–8 歲</div>
+        </div>
+        <div class="gcard" data-g="rv">
+          <div class="ico">⚫</div>
+          <div class="nm">黑白棋</div>
+          <div class="ds">用你的顏色夾住對手的棋子，<br>把它們通通翻過來。</div>
+          <div class="tg">最燒腦 · 8–9 歲</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 棋桌 -->
+    <section id="table">
+      <div id="boardWrap"><div id="board"></div></div>
+      <aside id="side">
+        <div class="pane">
+          <div id="gameTitle">—</div>
+          <div id="gameSub"></div>
+        </div>
+        <div class="pane">
+          <div id="status">—</div>
+        </div>
+        <div class="pane">
+          <div class="lbl">電腦有多厲害</div>
+          <div id="diffRow">
+            <button class="dbtn" data-d="1">簡單</button>
+            <button class="dbtn" data-d="2">普通</button>
+            <button class="dbtn" data-d="3">困難</button>
+          </div>
+        </div>
+        <div class="pane row2">
+          <button class="btn pri" id="againBtn">再來一局</button>
+          <button class="btn" id="switchBtn">換遊戲</button>
+        </div>
+        <div class="pane">
+          <div id="petSide">
+            <img id="petImg" alt="">
+            <div class="say" id="petSay">加油！</div>
+          </div>
+        </div>
+        <div class="pane">
+          <div id="winsBox">今天贏了 <b id="winN">0</b> 局</div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- 結果 -->
+    <div id="overlay">
+      <div id="ovBox">
+        <div id="ovIcon">🎉</div>
+        <div id="ovMsg"></div>
+        <div id="ovSub"></div>
+        <div id="ovBtns">
+          <button class="btn pri" id="ovAgain">再玩一次</button>
+          <button class="btn" id="ovSwitch">換一個</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script src="petlang.js"></script>
+<script src="snd.js"></script>
+<script src="player.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  /* ================= 共用 ================= */
+  var STARS_KEY = 'dsh_stars', PET_KEY = 'dsh_pet', WON_KEY = 'dsh_won', DIFF_KEY = 'dsh_play_diff';
+  var WIN_STARS = 2;
+  var $ = function (id) { return document.getElementById(id); };
+
+  var stars = parseInt(localStorage.getItem(STARS_KEY) || '0', 10) || 0;
+  var winToday = 0;
+  (function () {
+    var today = new Date().toISOString().slice(0, 10);
+    var raw = null;
+    try { raw = JSON.parse(localStorage.getItem('dsh_play_wins') || 'null'); } catch (e) {}
+    if (raw && raw.d === today) winToday = raw.n | 0;
+    else localStorage.setItem('dsh_play_wins', JSON.stringify({ d: today, n: 0 }));
+  })();
+  var cur = null, busy = false, difficulty = parseInt(localStorage.getItem(DIFF_KEY) || '2', 10) || 2;
+
+  function paintStars() { $('starN').textContent = stars; }
+  function paintWins() { $('winN').textContent = winToday; }
+  var BACK_KEY = 'dsh_back';
+  var SESSION = { s: 0, m: 0, w: 0 };
+  function addStar(n) {
+    stars += n; SESSION.s += n; localStorage.setItem(STARS_KEY, stars); paintStars();
+  }
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.classList.add('on');
+    clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('on'); }, 1600);
+  }
+
+  /* 音效 */
+  var AC = null;
+  function ac() {
+    if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
+    if (AC && AC.state === 'suspended') { try { AC.resume(); } catch (e) {} }
+    return AC;
+  }
+  function beep(freq, dur, type, gain) {
+    if (window.SND && !window.SND.on()) return;
+    var c = ac(); if (!c) return;
+    var o = c.createOscillator(), g = c.createGain();
+    o.type = type || 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, c.currentTime);
+    g.gain.linearRampToValueAtTime(gain || 0.08, c.currentTime + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + (dur || 0.12));
+    o.connect(g); g.connect(c.destination);
+    o.start(); o.stop(c.currentTime + (dur || 0.12) + 0.03);
+  }
+  var sfx = {
+    tap:   function () { beep(520, 0.07, 'sine', 0.06); },
+    put:   function () { beep(330, 0.1, 'triangle', 0.09); },
+    ai:    function () { beep(240, 0.12, 'triangle', 0.07); },
+    flip:  function () { beep(660, 0.08, 'sine', 0.06); setTimeout(function(){ beep(880, .07, 'sine', .05); }, 70); },
+    win:   function () { [523, 659, 784, 1046].forEach(function (f, i) { setTimeout(function () { beep(f, 0.16, 'sine', 0.1); }, i * 110); }); },
+    soft:  function () { beep(300, 0.16, 'sine', 0.06); setTimeout(function(){ beep(260, .22, 'sine', .05); }, 130); }
+  };
+
+  /* 彩帶 */
+  function confetti() {
+    var colors = ['#fbbf24', '#f472b6', '#60a5fa', '#34d399', '#f87171', '#c084fc'];
+    for (var i = 0; i < 60; i++) {
+      var d = document.createElement('i');
+      var s = 6 + Math.random() * 7;
+      d.style.cssText = 'position:fixed;z-index:60;pointer-events:none;width:' + s + 'px;height:' + s +
+        'px;background:' + colors[i % colors.length] + ';border-radius:' + (Math.random() < .5 ? '50%' : '2px') +
+        ';left:' + (window.innerWidth / 2 + (Math.random() - .5) * 260) + 'px;top:' +
+        (window.innerHeight * 0.36) + 'px;';
+      document.body.appendChild(d);
+      (function (el) {
+        var dx = (Math.random() - .5) * 620, dy = 320 + Math.random() * 420, rot = (Math.random() - .5) * 900;
+        el.animate([
+          { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+          { transform: 'translate(' + dx + 'px,' + dy + 'px) rotate(' + rot + 'deg)', opacity: 0 }
+        ], { duration: 900 + Math.random() * 700, easing: 'cubic-bezier(.15,.7,.3,1)' })
+          .onfinish = function () { el.remove(); };
+      })(d);
+    }
+  }
+
+  /* 寵物 */
+  var STAGE_NAMES = ['蛋', '幼獸', '成獸', '龍', '金龍'];
+  var petInfo = null;
+  try { petInfo = JSON.parse(localStorage.getItem(PET_KEY) || 'null'); } catch (e) { petInfo = null; }
+  function paintPet() {
+    var img = $('petImg');
+    if (petInfo && petInfo.k) {
+      var s = Math.max(0, Math.min(4, petInfo.s | 0));
+      img.src = 'pets/' + petInfo.k + '/0' + (s + 1) + '_' + STAGE_NAMES[s] + '.webp';
+      img.alt = petInfo.n || '';
+    } else {
+      img.src = 'pets/fire_dragon/02_幼獸.webp';
+      img.alt = '火苗龍';
+    }
+  }
+  function petSay(t) { $('petSay').textContent = t; }
+  /* 台詞交給 petlang.js：依成長階段給不同說法 */
+  function petStageNow() { return petInfo && petInfo.k ? Math.max(0, Math.min(4, petInfo.s | 0)) : 1; }
+  function petLine(key, opts) {
+    if (!window.PetSay) return '';
+    return window.PetSay.speak(key, petStageNow(), opts) || '';
+  }
+  function petSpeak(key, opts, fallback) {
+    var t = petLine(key, opts);
+    if (t) petSay(t);
+    else if (fallback) petSay(fallback);
+  }
+
+  /* 贏一局：星星 + 記錄，讓社區頁可以進化 */
+  function recordWin() {
+    if (!petInfo || !petInfo.k) return;
+    try {
+      localStorage.setItem(WON_KEY, JSON.stringify({ k: petInfo.k, s: petInfo.s, n: petInfo.n, no: petInfo.no }));
+    } catch (e) {}
+  }
+  function rewardWin() {
+    addStar(WIN_STARS);
+    SESSION.w += 1;
+    winToday += 1;
+    localStorage.setItem('dsh_play_wins', JSON.stringify({ d: new Date().toISOString().slice(0, 10), n: winToday }));
+    paintWins();
+    recordWin();
+    sfx.win();
+    confetti();
+  }
+
+  /* ================= 棋盤工具 ================= */
+  var boardEl = $('board');
+  function buildBoard(cols, rows, cls, onCell) {
+    boardEl.className = cls;
+    boardEl.innerHTML = '';
+    var frag = document.createDocumentFragment();
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        var d = document.createElement('div');
+        d.className = 'cell';
+        d.dataset.r = r; d.dataset.c = c;
+        d.addEventListener('click', (function (rr, cc) {
+          return function () { if (!busy) onCell(rr, cc); };
+        })(r, c));
+        frag.appendChild(d);
+      }
+    }
+    boardEl.appendChild(frag);
+    fitBoard(cols, rows);
+  }
+  function cellAt(r, c) { return boardEl.children[r * boardEl._cols + c]; }
+  function fitBoard(cols, rows) {
+    boardEl._cols = cols;
+    var wrap = $('boardWrap');
+    var w = wrap.clientWidth - 16, h = wrap.clientHeight - 16;
+    var gap = rows > 6 ? 3 : 6;
+    var cell = Math.floor(Math.min((w - gap * (cols + 1)) / cols, (h - gap * (rows + 1)) / rows));
+    var cap = cols <= 4 ? 132 : 104;
+    cell = Math.max(26, Math.min(cell, cap));
+    boardEl.style.setProperty('--cell', cell + 'px');
+    boardEl.style.setProperty('--gap', gap + 'px');
+  }
+  window.addEventListener('resize', function () {
+    if (cur && cur.cols) fitBoard(cur.cols, cur.rows);
+  });
+
+  function showOverlay(icon, msg, sub) {
+    $('ovIcon').textContent = icon;
+    $('ovMsg').textContent = msg;
+    $('ovSub').textContent = sub || '';
+    $('overlay').classList.add('on');
+  }
+  function hideOverlay() { $('overlay').classList.remove('on'); }
+
+  /* ================= 遊戲一：過三關 4×4（連 3） ================= */
+  var TTT = {
+    id: 'ttt', name: '過三關', cols: 4, rows: 4,
+    sub: '4×4 · 連成 3 個一直線就贏',
+    b: null, turn: 1, over: false, lines: null,
+    init: function () {
+      if (!this.lines) {
+        var L = [], dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+        for (var r = 0; r < 4; r++) for (var c = 0; c < 4; c++) {
+          for (var d = 0; d < 4; d++) {
+            var tr = r + dirs[d][0] * 2, tc = c + dirs[d][1] * 2;
+            if (tr < 0 || tr > 3 || tc < 0 || tc > 3) continue;
+            L.push([r * 4 + c, (r + dirs[d][0]) * 4 + (c + dirs[d][1]), tr * 4 + tc]);
+          }
+        }
+        this.lines = L;
+      }
+      this.b = new Array(16).fill(0);
+      this.turn = 1; this.over = false;
+    },
+    render: function () {
+      var self = this;
+      buildBoard(4, 4, 'ttt', function (r, c) { self.play(r * 4 + c); });
+      this.paint();
+    },
+    paint: function () {
+      for (var i = 0; i < 16; i++) {
+        var el = boardEl.children[i];
+        el.className = 'cell' + (this.b[i] ? ' p' + this.b[i] : '');
+        el.innerHTML = this.b[i] ? '<span class="sym">' + (this.b[i] === 1 ? '✕' : '◯') + '</span>' : '';
+      }
+    },
+    win: function (b) {
+      for (var i = 0; i < this.lines.length; i++) {
+        var L = this.lines[i];
+        if (b[L[0]] && b[L[0]] === b[L[1]] && b[L[1]] === b[L[2]]) return { who: b[L[0]], line: L };
+      }
+      return b.indexOf(0) < 0 ? { who: 0, line: null } : null;
+    },
+    play: function (i) {
+      if (this.over || this.b[i]) return;
+      this.b[i] = 1; sfx.put(); this.paint();
+      var w = this.win(this.b);
+      if (w) return this.end(w);
+      this.turn = 2;
+      var self = this;
+      busy = true;
+      $('status').textContent = '電腦在想…';
+      setTimeout(function () { self.ai(); }, 380);
+    },
+    ai: function () {
+      if (this.over) { busy = false; return; }
+      var mv = this.pick();
+      if (mv < 0) { busy = false; return; }
+      this.b[mv] = 2; sfx.ai(); this.paint();
+      $('status').textContent = '換你了';
+      var w = this.win(this.b);
+      busy = false;
+      if (w) return this.end(w);
+      this.turn = 1;
+    },
+    pick: function () {
+      var empty = [];
+      for (var i = 0; i < 16; i++) if (!this.b[i]) empty.push(i);
+      if (!empty.length) return -1;
+      /* 必勝 → 必擋 */
+      for (var k = 0; k < empty.length; k++) {
+        var t = this.b.slice(); t[empty[k]] = 2;
+        var w1 = this.win(t);
+        if (w1 && w1.who === 2) return empty[k];
+      }
+      for (var k2 = 0; k2 < empty.length; k2++) {
+        var t2 = this.b.slice(); t2[empty[k2]] = 1;
+        var w2 = this.win(t2);
+        if (w2 && w2.who === 1) return empty[k2];
+      }
+      if (difficulty === 1) return empty[Math.floor(Math.random() * empty.length)];
+      if (difficulty === 2) {
+        var score = function (i) { return 6 - (Math.abs(i % 4 - 1.5) + Math.abs(Math.floor(i / 4) - 1.5)); };
+        var best = empty.slice().sort(function (a, b) { return score(b) - score(a); });
+        return best[Math.floor(Math.random() * Math.min(2, best.length))];
+      }
+      var res = this.mm(this.b.slice(), 2, 4, -1e9, 1e9);
+      return res.move >= 0 ? res.move : empty[0];
+    },
+    mm: function (b, who, depth, alpha, beta) {
+      var w = this.win(b);
+      if (w) return { sc: w.who === 2 ? 100 + depth : w.who === 1 ? -100 - depth : 0, move: -1 };
+      if (depth <= 0) return { sc: this.evalB(b), move: -1 };
+      var best = { sc: who === 2 ? -1e9 : 1e9, move: -1 };
+      for (var i = 0; i < 16; i++) {
+        if (b[i]) continue;
+        b[i] = who;
+        var r = this.mm(b, 3 - who, depth - 1, alpha, beta);
+        b[i] = 0;
+        if (who === 2) {
+          if (r.sc > best.sc) best = { sc: r.sc, move: i };
+          alpha = Math.max(alpha, r.sc);
+        } else {
+          if (r.sc < best.sc) best = { sc: r.sc, move: i };
+          beta = Math.min(beta, r.sc);
+        }
+        if (beta <= alpha) break;
+      }
+      return best;
+    },
+    evalB: function (b) {
+      var s = 0;
+      for (var i = 0; i < this.lines.length; i++) {
+        var L = this.lines[i], a = b[L[0]], c = b[L[1]], d = b[L[2]];
+        if (a === 2 && c === 2 && d === 2) s += 100;
+        else if (a === 1 && c === 1 && d === 1) s -= 100;
+        else {
+          var mine = (a === 2) + (c === 2) + (d === 2), opp = (a === 1) + (c === 1) + (d === 1);
+          if (mine && !opp) s += mine * 4;
+          if (opp && !mine) s -= opp * 4;
+        }
+      }
+      return s;
+    },
+    end: function (w) {
+      this.over = true;
+      if (w.who === 1) {
+        for (var i = 0; i < (w.line || []).length; i++) boardEl.children[w.line[i]].classList.add('win');
+        this.finish('win');
+      } else if (w.who === 2) {
+        this.finish('lose');
+      } else {
+        this.finish('draw');
+      }
+    },
+    finish: function (kind) { finishGame(kind); }
+  };
+
+  /* ================= 遊戲二：四連環（7×6） ================= */
+  var C4 = {
+    id: 'c4', name: '四連環', cols: 7, rows: 6,
+    sub: '7×6 · 同一色連成 4 個就贏',
+    b: null, over: false,
+    init: function () {
+      this.b = []; for (var r = 0; r < 6; r++) this.b.push(new Array(7).fill(0));
+      this.over = false;
+    },
+    render: function () {
+      var self = this;
+      buildBoard(7, 6, 'c4', function (r, c) { self.play(c); });
+    },
+    dropRow: function (b, c) {
+      for (var r = 5; r >= 0; r--) if (!b[r][c]) return r;
+      return -1;
+    },
+    win: function (b) {
+      var dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+      for (var r = 0; r < 6; r++) for (var c = 0; c < 7; c++) {
+        var v = b[r][c]; if (!v) continue;
+        for (var d = 0; d < 4; d++) {
+          var cells = [];
+          for (var k = 0; k < 4; k++) {
+            var rr = r + dirs[d][0] * k, cc = c + dirs[d][1] * k;
+            if (rr < 0 || rr > 5 || cc < 0 || cc > 6 || b[rr][cc] !== v) { cells = null; break; }
+            cells.push(rr * 7 + cc);
+          }
+          if (cells) return { who: v, cells: cells };
+        }
+      }
+      for (var r2 = 0; r2 < 6; r2++) if (b[r2].indexOf(0) >= 0) return null;
+      return { who: 0, cells: null };
+    },
+    play: function (c) {
+      if (this.over) return;
+      var r = this.dropRow(this.b, c);
+      if (r < 0) { toast('這一條滿了'); return; }
+      this.b[r][c] = 1;
+      this.draw(r, c, 1); sfx.put();
+      var w = this.win(this.b);
+      if (w) return this.end(w);
+      var self = this;
+      busy = true;
+      $('status').textContent = '電腦在想…';
+      setTimeout(function () { self.ai(); }, 420);
+    },
+    draw: function (r, c, who) {
+      var el = boardEl.children[r * 7 + c];
+      var d = document.createElement('div');
+      d.className = 'disc p' + who;
+      el.appendChild(d);
+    },
+    ai: function () {
+      if (this.over) { busy = false; return; }
+      var c = this.pick();
+      if (c < 0) { busy = false; return; }
+      var r = this.dropRow(this.b, c);
+      this.b[r][c] = 2; this.draw(r, c, 2); sfx.ai();
+      $('status').textContent = '換你了';
+      var w = this.win(this.b);
+      busy = false;
+      if (w) return this.end(w);
+    },
+    pick: function () {
+      var order = [3, 2, 4, 1, 5, 0, 6];
+      var legal = order.filter(function (c) { return this.dropRow(this.b, c) >= 0; }, this);
+      if (!legal.length) return -1;
+      var self = this;
+      /* 先看自己能不能贏 */
+      for (var i = 0; i < legal.length; i++) {
+        var t = this.copy(); t[this.dropRow(t, legal[i])][legal[i]] = 2;
+        var w1 = this.win(t);
+        if (w1 && w1.who === 2) return legal[i];
+      }
+      /* 再看要不要擋 */
+      for (var j = 0; j < legal.length; j++) {
+        var t2 = this.copy(); t2[this.dropRow(t2, legal[j])][legal[j]] = 1;
+        var w2 = this.win(t2);
+        if (w2 && w2.who === 1) return legal[j];
+      }
+      if (difficulty === 1) return legal[Math.floor(Math.random() * legal.length)];
+      var depth = difficulty === 2 ? 2 : 4;
+      var best = this.mm(this.copy(), 2, depth, -1e9, 1e9);
+      return best.move >= 0 ? best.move : legal[0];
+    },
+    copy: function () { return this.b.map(function (r) { return r.slice(); }); },
+    mm: function (b, who, depth, alpha, beta) {
+      var w = this.win(b);
+      if (w) return { sc: w.who === 2 ? 1000 + depth * 10 : w.who === 1 ? -1000 - depth * 10 : 0, move: -1 };
+      if (depth <= 0) return { sc: this.evalB(b), move: -1 };
+      var order = [3, 2, 4, 1, 5, 0, 6], best = { sc: who === 2 ? -1e9 : 1e9, move: -1 };
+      for (var i = 0; i < 7; i++) {
+        var c = order[i], r = this.dropRow(b, c);
+        if (r < 0) continue;
+        b[r][c] = who;
+        var res = this.mm(b, 3 - who, depth - 1, alpha, beta);
+        b[r][c] = 0;
+        if (who === 2) {
+          if (res.sc > best.sc) best = { sc: res.sc, move: c };
+          alpha = Math.max(alpha, res.sc);
+        } else {
+          if (res.sc < best.sc) best = { sc: res.sc, move: c };
+          beta = Math.min(beta, res.sc);
+        }
+        if (beta <= alpha) break;
+      }
+      return best;
+    },
+    evalB: function (b) {
+      var s = 0, dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+      for (var r = 0; r < 6; r++) for (var c = 0; c < 7; c++) {
+        for (var d = 0; d < 4; d++) {
+          var mine = 0, opp = 0, ok = true;
+          for (var k = 0; k < 4; k++) {
+            var rr = r + dirs[d][0] * k, cc = c + dirs[d][1] * k;
+            if (rr < 0 || rr > 5 || cc < 0 || cc > 6) { ok = false; break; }
+            if (b[rr][cc] === 2) mine++; else if (b[rr][cc] === 1) opp++;
+          }
+          if (!ok) continue;
+          if (mine && !opp) s += [0, 1, 6, 40][mine];
+          if (opp && !mine) s -= [0, 1, 6, 40][opp];
+        }
+      }
+      for (var r2 = 0; r2 < 6; r2++) for (var c2 = 0; c2 < 7; c2++) {
+        if (b[r2][c2] === 2) s += (3 - Math.abs(c2 - 3));
+        if (b[r2][c2] === 1) s -= (3 - Math.abs(c2 - 3));
+      }
+      return s;
+    },
+    end: function (w) {
+      this.over = true;
+      if (w.cells) w.cells.forEach(function (i) { boardEl.children[i].querySelector('.disc').classList.add('win'); });
+      if (w.who === 1) this.finish('win'); else if (w.who === 2) this.finish('lose'); else this.finish('draw');
+    },
+    finish: function (k) { finishGame(k); }
+  };
+
+  /* ================= 遊戲三：黑白棋 6×6 ================= */
+  var RV = {
+    id: 'rv', name: '黑白棋', cols: 6, rows: 6,
+    sub: '6×6 · 夾住對手的棋子就把它翻面',
+    b: null, over: false, myTurn: true,
+    init: function () {
+      this.b = []; for (var r = 0; r < 6; r++) this.b.push(new Array(6).fill(0));
+      this.b[2][2] = 1; this.b[3][3] = 1;   /* 你＝白（1） */
+      this.b[2][3] = 2; this.b[3][2] = 2;   /* 電腦＝黑（2） */
+      this.over = false; this.myTurn = true;
+    },
+    render: function () {
+      var self = this;
+      buildBoard(6, 6, 'rv', function (r, c) { self.play(r, c); });
+      this.paint();
+      this.markHints();
+    },
+    paint: function () {
+      for (var r = 0; r < 6; r++) for (var c = 0; c < 6; c++) {
+        var el = boardEl.children[r * 6 + c], v = this.b[r][c];
+        var want = v ? '<div class="disc p' + v + '"></div>' : '';
+        if (el.innerHTML !== want) el.innerHTML = want;
+      }
+    },
+    markHints: function () {
+      for (var r = 0; r < 6; r++) for (var c = 0; c < 6; c++) {
+        var el = boardEl.children[r * 6 + c];
+        var ok = this.myTurn && !this.over && !this.b[r][c] && this.flips(r, c, 1).length > 0;
+        el.classList.toggle('hint', ok);
+      }
+    },
+    flips: function (r, c, who) {
+      if (this.b[r][c]) return [];
+      var out = [], dirs = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+      for (var d = 0; d < 8; d++) {
+        var rr = r + dirs[d][0], cc = c + dirs[d][1], line = [];
+        while (rr >= 0 && rr < 6 && cc >= 0 && cc < 6 && this.b[rr][cc] === 3 - who) {
+          line.push(rr * 6 + cc); rr += dirs[d][0]; cc += dirs[d][1];
+        }
+        if (line.length && rr >= 0 && rr < 6 && cc >= 0 && cc < 6 && this.b[rr][cc] === who) {
+          out = out.concat(line);
+        }
+      }
+      return out;
+    },
+    any: function (who) {
+      for (var r = 0; r < 6; r++) for (var c = 0; c < 6; c++) {
+        if (!this.b[r][c] && this.flips(r, c, who).length) return true;
+      }
+      return false;
+    },
+    play: function (r, c) {
+      if (this.over || !this.myTurn) return;
+      var f = this.flips(r, c, 1);
+      if (!f.length) { toast('這裡不行，要夾住對手的棋子'); return; }
+      this.b[r][c] = 1;
+      for (var i = 0; i < f.length; i++) this.b[Math.floor(f[i] / 6)][f[i] % 6] = 1;
+      sfx.flip(); this.paint();
+      this.myTurn = false; this.markHints();
+      var self = this;
+      busy = true;
+      $('status').textContent = '電腦在想…';
+      setTimeout(function () { self.aiTurn(); }, 420);
+    },
+    aiTurn: function () {
+      if (this.over) { busy = false; return; }
+      if (!this.any(2)) {
+        if (!this.any(1)) { busy = false; return this.end(); }
+        toast('電腦沒地方下，換你');
+        this.myTurn = true; this.markHints();
+        $('status').textContent = '換你了';
+        busy = false;
+        return;
+      }
+      var mv = this.pick();
+      if (!mv) { busy = false; this.end(); return; }
+      var f = this.flips(mv[0], mv[1], 2);
+      this.b[mv[0]][mv[1]] = 2;
+      for (var i = 0; i < f.length; i++) this.b[Math.floor(f[i] / 6)][f[i] % 6] = 2;
+      sfx.ai(); this.paint();
+      if (!this.any(1)) {
+        if (!this.any(2)) { busy = false; return this.end(); }
+        toast('你沒地方下，電腦再下一次');
+        var self2 = this;
+        setTimeout(function () { self2.aiTurn(); }, 700);
+        return;
+      }
+      this.myTurn = true; this.markHints();
+      $('status').textContent = '換你了';
+      busy = false;
+    },
+    pick: function () {
+      var moves = [];
+      for (var r = 0; r < 6; r++) for (var c = 0; c < 6; c++) {
+        if (!this.b[r][c] && this.flips(r, c, 2).length) moves.push([r, c]);
+      }
+      if (!moves.length) return null;
+      if (difficulty === 1) return moves[Math.floor(Math.random() * moves.length)];
+      var depth = difficulty === 2 ? 1 : 3;
+      var best = this.mm(this.copy(), 2, depth, -1e9, 1e9);
+      if (best.move && this.flips(best.move[0], best.move[1], 2).length) return best.move;
+      return moves[0];
+    },
+    copy: function () { return this.b.map(function (r) { return r.slice(); }); },
+    W: [[ 60, -12,  4,  4, -12,  60],
+        [-12, -20,  1,  1, -20, -12],
+        [  4,   1,  2,  2,   1,   4],
+        [  4,   1,  2,  2,   1,   4],
+        [-12, -20,  1,  1, -20, -12],
+        [ 60, -12,  4,  4, -12,  60]],
+    mm: function (b, who, depth, alpha, beta) {
+      var self = this;
+      var moves = [];
+      for (var r = 0; r < 6; r++) for (var c = 0; c < 6; c++) {
+        if (!b[r][c] && this.flipsOn(b, r, c, who).length) moves.push([r, c]);
+      }
+      if (!moves.length) {
+        if (!this.anyOn(b, 3 - who)) return { sc: this.evalB(b), move: null };
+        return this.mm(b, 3 - who, depth, alpha, beta);
+      }
+      if (depth <= 0) return { sc: this.evalB(b), move: moves[0] };
+      var best = { sc: who === 2 ? -1e9 : 1e9, move: moves[0] };
+      for (var i = 0; i < moves.length; i++) {
+        var nb = b.map(function (x) { return x.slice(); });
+        var mv = moves[i], f = this.flipsOn(b, mv[0], mv[1], who);
+        nb[mv[0]][mv[1]] = who;
+        for (var k = 0; k < f.length; k++) nb[Math.floor(f[k] / 6)][f[k] % 6] = who;
+        var res = this.mm(nb, 3 - who, depth - 1, alpha, beta);
+        if (who === 2) {
+          if (res.sc > best.sc) best = { sc: res.sc, move: mv };
+          alpha = Math.max(alpha, res.sc);
+        } else {
+          if (res.sc < best.sc) best = { sc: res.sc, move: mv };
+          beta = Math.min(beta, res.sc);
+        }
+      }
+      return best;
+    },
+    flipsOn: function (b, r, c, who) {
+      if (b[r][c]) return [];
+      var out = [], dirs = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+      for (var d = 0; d < 8; d++) {
+        var rr = r + dirs[d][0], cc = c + dirs[d][1], line = [];
+        while (rr >= 0 && rr < 6 && cc >= 0 && cc < 6 && b[rr][cc] === 3 - who) {
+          line.push(rr * 6 + cc); rr += dirs[d][0]; cc += dirs[d][1];
+        }
+        if (line.length && rr >= 0 && rr < 6 && cc >= 0 && cc < 6 && b[rr][cc] === who) out = out.concat(line);
+      }
+      return out;
+    },
+    anyOn: function (b, who) {
+      for (var r = 0; r < 6; r++) for (var c = 0; c < 6; c++) {
+        if (!b[r][c] && this.flipsOn(b, r, c, who).length) return true;
+      }
+      return false;
+    },
+    evalB: function (b) {
+      var s = 0;
+      for (var r = 0; r < 6; r++) for (var c = 0; c < 6; c++) {
+        if (b[r][c] === 2) s += this.W[r][c];
+        else if (b[r][c] === 1) s -= this.W[r][c];
+      }
+      return s;
+    },
+    end: function () {
+      this.over = true;
+      var mine = 0, theirs = 0;
+      for (var r = 0; r < 6; r++) for (var c = 0; c < 6; c++) {
+        if (this.b[r][c] === 1) mine++; else if (this.b[r][c] === 2) theirs++;
+      }
+      if (mine > theirs) { $('status').textContent = mine + ' : ' + theirs; this.finish('win'); }
+      else if (theirs > mine) { $('status').textContent = mine + ' : ' + theirs; this.finish('lose'); }
+      else { $('status').textContent = mine + ' : ' + theirs; this.finish('draw'); }
+    },
+    finish: function (k) { finishGame(k); }
+  };
+
+  /* ================= 結束 ================= */
+  function finishGame(kind) {
+    busy = false;
+    if (kind === 'win') {
+      rewardWin();
+      petSpeak('win', { force: true }, '好厲害！');
+      showOverlay('🎉', '你贏了！', '⭐ +' + WIN_STARS + ' 顆星星');
+    } else if (kind === 'lose') {
+      sfx.soft();
+      petSpeak('lose', { force: true }, '再試一次，你可以的');
+      showOverlay('💪', '電腦贏了', '沒關係，再挑戰一次');
+    } else {
+      sfx.soft();
+      petSpeak('draw', { force: true }, '平手也很厲害');
+      showOverlay('🤝', '平手', '再玩一局分高下');
+    }
+  }
+
+  /* ================= 進出棋桌 ================= */
+  var GAMES = { ttt: TTT, c4: C4, rv: RV };
+
+  function startGame(id) {
+    cur = GAMES[id];
+    if (!cur) return;
+    hideOverlay();
+    $('picker').style.display = 'none';
+    $('table').classList.add('on');
+    $('gameTitle').textContent = cur.name;
+    $('gameSub').textContent = cur.sub;
+    $('status').textContent = '換你了';
+    petSpeak('greet', { force: true }, '加油！');
+    busy = false;
+    cur.init();
+    cur.render();
+    paintDiff();
+    try { localStorage.setItem('dsh_play_last', id); } catch (e) {}
+  }
+
+  function toPicker() {
+    cur = null;
+    $('table').classList.remove('on');
+    $('picker').style.display = '';
+    hideOverlay();
+    boardEl.innerHTML = '';
+  }
+
+  function paintDiff() {
+    var btns = document.querySelectorAll('.dbtn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('on', parseInt(btns[i].dataset.d, 10) === difficulty);
+    }
+  }
+
+  /* 事件 */
+  document.getElementById('cards').addEventListener('click', function (e) {
+    var card = e.target.closest('.gcard');
+    if (card) { sfx.tap(); startGame(card.dataset.g); }
+  });
+  $('againBtn').addEventListener('click', function () {
+    sfx.tap(); hideOverlay(); busy = false;
+    $('status').textContent = '換你了';
+    cur.init(); cur.render(); cur.paint && cur.paint();
+    if (cur.id === 'rv') { cur.paint(); cur.markHints(); }
+  });
+  $('switchBtn').addEventListener('click', function () { sfx.tap(); toPicker(); });
+  $('ovAgain').addEventListener('click', function () { $('againBtn').click(); });
+  $('ovSwitch').addEventListener('click', function () { sfx.tap(); toPicker(); });
+  $('diffRow').addEventListener('click', function (e) {
+    var b = e.target.closest('.dbtn'); if (!b) return;
+    difficulty = parseInt(b.dataset.d, 10);
+    localStorage.setItem(DIFF_KEY, difficulty);
+    paintDiff(); sfx.tap();
+    toast(['', '電腦會讓步', '正常發揮', '電腦很認真'][difficulty]);
+  });
+
+  /* 啟動 */
+  paintStars(); paintWins(); paintPet(); paintDiff();
+  /* 回社區前把這一趟的收成記下來，讓社區頁演「帶回家」那一段 */
+  (function () {
+    var back = document.getElementById('backBtn');
+    if (!back) return;
+    back.addEventListener('click', function () {
+      if (!SESSION.s && !SESSION.w) return;
+      try {
+        localStorage.setItem(BACK_KEY, JSON.stringify({
+          s: SESSION.s, m: 0, w: SESSION.w,
+          k: petInfo && petInfo.k, no: petInfo && petInfo.no, t: Date.now()
+        }));
+      } catch (e) {}
+    });
+  })();
+  if (window.SND) window.SND.mount(document.getElementById('topbar'));
+  if (window.Player) window.Player.mount(document.getElementById('topbar'));
+
+  var m = location.search.match(/[?&]game=(ttt|c4|rv)/);
+  if (m) startGame(m[1]);
+
+  /* 測試鉤子 */
+  window.__pg = {
+    GAMES: GAMES,
+    get state() { return cur ? { id: cur.id, over: cur.over, b: cur.b } : null; },
+    start: startGame, picker: toPicker,
+    setDiff: function (d) { difficulty = d; paintDiff(); },
+    stars: function () { return stars; }
+  };
+})();
+</script>
+</body>
+</html>

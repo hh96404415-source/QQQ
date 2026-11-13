@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>家長頁 · 本週學習報告（示範）</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:#0b1220;color:#e2e8f0;-webkit-font-smoothing:antialiased}
+  #bg{position:fixed;inset:0;background:url("images/bg_farm.webp") center bottom/cover no-repeat;
+      filter:saturate(.7) brightness(.22) blur(2px);z-index:0}
+  #veil{position:fixed;inset:0;background:linear-gradient(180deg,rgba(8,13,24,.92),rgba(8,13,24,.97));z-index:0}
+
+  #top{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;
+       padding:14px 22px;background:rgba(10,16,28,.92);border-bottom:1px solid rgba(255,255,255,.08);
+       backdrop-filter:blur(8px)}
+  #top h1{margin:0;font-size:19px;font-weight:900;color:#fbbf24}
+  #homeBtn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;
+           border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+           text-decoration:none;font-size:18px;line-height:1;transition:transform .12s,background .12s}
+  #homeBtn:hover{background:rgba(255,255,255,.12);transform:translateY(-1px)}
+  #homeBtn:active{transform:scale(.94)}
+  #top .sub{font-size:12.5px;color:#94a3b8;font-weight:700}
+  #who{margin-left:auto;display:flex;gap:8px}
+  .whoBtn{font:inherit;font-size:13px;font-weight:900;padding:7px 14px;border-radius:999px;cursor:pointer;
+          background:rgba(255,255,255,.06);color:#cbd5e1;border:1px solid rgba(255,255,255,.14)}
+  .whoBtn.on{background:rgba(251,191,36,.16);color:#fbbf24;border-color:rgba(251,191,36,.55)}
+  .whoBtn:active{transform:translateY(1px)}
+  #toKid{margin-left:6px;font-size:13px;font-weight:900;color:#7dd3fc;text-decoration:none;
+         padding:7px 14px;border-radius:999px;border:1px solid rgba(125,211,252,.35);
+         background:rgba(125,211,252,.10);white-space:nowrap}
+  #toKid:hover{background:rgba(125,211,252,.18)}
+  #toKid:active{transform:translateY(1px)}
+
+  #wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:26px 22px 90px}
+
+  .card{background:rgba(17,26,43,.88);border:1px solid rgba(255,255,255,.09);border-radius:18px;
+        padding:20px 22px;margin-bottom:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .kicker{font-size:11.5px;font-weight:900;letter-spacing:.16em;color:#64748b}
+  h2{margin:6px 0 14px;font-size:21px;font-weight:900;color:#f8fafc}
+
+  /* A 一句總結 */
+  #big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  #big .n{font-size:44px;font-weight:900;color:#fbbf24;line-height:1}
+  #big .t{font-size:15px;font-weight:800;color:#94a3b8}
+  #verdict{padding:13px 16px;border-radius:12px;background:rgba(251,191,36,.10);
+           border-left:5px solid #fbbf24;font-size:16.5px;font-weight:800;color:#fde68a;line-height:1.6}
+  #stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+  .stat{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:11px 13px}
+  .stat .k{font-size:11.5px;font-weight:800;color:#64748b}
+  .stat .v{font-size:23px;font-weight:900;color:#e2e8f0;margin-top:3px}
+  .stat .v small{font-size:12px;font-weight:800;color:#94a3b8;margin-left:2px}
+
+  /* B 今晚一件事 */
+  #work{border-left:5px solid #22c55e;background:rgba(34,197,94,.08)}
+  #work .do{font-size:18px;font-weight:900;color:#bbf7d0;line-height:1.65;margin:4px 0 10px}
+  #work .why{font-size:14px;color:#94a3b8;line-height:1.7}
+  #work .ok{margin-top:10px;font-size:13.5px;font-weight:800;color:#86efac}
+  .only{font-size:12.5px;font-weight:800;color:#64748b;margin-top:2px}
+
+  /* C 三個重點 */
+  .sk{display:flex;gap:14px;padding:14px 0;border-top:1px solid rgba(255,255,255,.07)}
+  .sk:first-of-type{border-top:none}
+  .sk .idx{flex:0 0 26px;height:26px;border-radius:8px;background:rgba(255,255,255,.07);
+           color:#94a3b8;font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .sk .body{flex:1;min-width:0}
+  .sk .hd{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .sk .nm{font-size:17px;font-weight:900;color:#f8fafc}
+  .sk .rt{font-size:13px;font-weight:800;color:#94a3b8}
+  .pill{font-size:11.5px;font-weight:900;padding:3px 10px;border-radius:999px}
+  .tag-0{background:rgba(239,68,68,.18);color:#fca5a5}
+  .tag-1{background:rgba(249,115,22,.18);color:#fdba74}
+  .tag-2{background:rgba(234,179,8,.18);color:#fde047}
+  .tag-3{background:rgba(56,189,248,.18);color:#7dd3fc}
+  .tag-4{background:rgba(34,197,94,.18);color:#86efac}
+  .sk .why{font-size:13.5px;color:#94a3b8;line-height:1.65;margin-top:7px}
+  .sk .do{font-size:14.5px;font-weight:800;color:#cbd5e1;line-height:1.65;margin-top:5px}
+  .sk .ok{font-size:12.5px;font-weight:800;color:#86efac;margin-top:6px}
+
+  /* D 樣本信心 */
+  #conf{border-left:5px solid #64748b;background:rgba(255,255,255,.03)}
+  #conf li{font-size:14px;line-height:1.8;color:#cbd5e1;margin-left:-12px}
+  #conf .honest{margin-top:12px;font-size:13px;color:#94a3b8;line-height:1.75;
+                padding-top:12px;border-top:1px dashed rgba(255,255,255,.12)}
+  #conf .none{font-size:14px;color:#86efac;font-weight:800}
+
+  /* E 娛樂時間 */
+  #timeCard{border-left:5px solid #34d399;background:rgba(52,211,153,.07)}
+  #timeStats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+  #timeCfg{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  #timeCfg label{font-size:14px;font-weight:800;color:#cbd5e1}
+  #capInput{width:110px;padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+            background:rgba(15,23,42,.8);color:#e2e8f0;font-size:16px;font-weight:900;font-family:inherit}
+  #capSave{appearance:none;border:none;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:900;
+           background:linear-gradient(#34d399,#059669);color:#022c22;cursor:pointer;font-family:inherit}
+  #capSave:active{transform:scale(.96)}
+  #timeNote{margin-top:12px;font-size:13px;color:#94a3b8;line-height:1.7;
+            padding-top:12px;border-top:1px dashed rgba(255,255,255,.12)}
+
+  #foot{position:fixed;left:0;right:0;bottom:0;z-index:10;text-align:center;
+        background:linear-gradient(90deg,#4c1d95,#6d28d9);color:#ede9fe;
+        font-size:11.5px;font-weight:800;padding:6px 8px;letter-spacing:.04em}
+  @media(max-width:760px){#wrap{padding:18px 14px 80px}#big .n{font-size:36px}#stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+<link rel="stylesheet" href="fonts/theme.css">
+</head>
+<body>
+<div id="bg"></div><div id="veil"></div>
+
+<div id="top">
+  <a id="homeBtn" href="index.html" title="回登入頁">🏠</a>
+  <h1>📖 家長頁</h1>
+  <span class="sub">本週學習報告</span>
+  <div id="who">
+    <button class="whoBtn on" data-uid="demo_a">陳小明</button>
+    <button class="whoBtn" data-uid="demo_b">李美欣</button>
+  </div>
+  <a id="toKid" href="community.html">去小孩那一邊 →</a>
+</div>
+
+<div id="wrap">
+  <section class="card">
+    <div class="kicker">A · 一句總結</div>
+    <div id="big"></div>
+    <div id="verdict"></div>
+    <div id="stats"></div>
+  </section>
+
+  <section class="card" id="work">
+    <div class="kicker">B · 今晚可以做的一件事</div>
+    <div id="workBody"></div>
+  </section>
+
+  <section class="card">
+    <div class="kicker">C · 三個重點</div>
+    <h2>呢三個位最值得練</h2>
+    <div id="skills"></div>
+  </section>
+
+  <section class="card" id="conf">
+    <div class="kicker">D · 樣本信心</div>
+    <h2>呢個報告有幾可信</h2>
+    <ul id="confList"></ul>
+    <div class="honest" id="honest"></div>
+  </section>
+
+  <section class="card" id="timeCard">
+    <div class="kicker">E · 娛樂時間</div>
+    <h2>今日娛樂時間</h2>
+    <div id="timeStats"></div>
+    <div id="timeCfg">
+      <label for="capInput">每日上限（分鐘）</label>
+      <input id="capInput" type="number" min="0" step="5" inputmode="numeric">
+      <button id="capSave">儲存</button>
+    </div>
+    <div class="honest" id="timeNote"></div>
+  </section>
+</div>
+
+<div id="foot">示範模式 · 歷史數據為模擬生成；你在小孩那邊做的題會即時計入</div>
+
+<script src="player.js"></script>
+<script src="time.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   1. 文案（直接沿用 GAS-Code.gs 的 SKILL_NAME / ACT / tagOf_ / verdictOf_）
+   ══════════════════════════════════════════════════════════════ */
+var SKILL_NAME = {
+  'M.ADD': '加法', 'M.SUB': '減法', 'M.COMP': '比較大小', 'M.WORD': '應用題',
+  'M.MUL': '乘法', 'M.DIV': '除法',
+  'C.MW': '量詞', 'C.SENT': '句子', 'C.FORM': '部首字形', 'C.VOCAB': '詞彙',
+  'E.VOCAB': '英文詞彙', 'E.SENT': '英文短句', 'E.LETTER': '英文字母', 'E.SPELL': '英文串字'
+};
+
+var ACT = {
+  'M.ADD': { why: '加數係之後所有數學嘅地基，唔熟就會一路卡。',
+    do: '用 10 粒豆做 5 題「8 加 5」：先講「8 加 2 夠 10」，再數剩低 3 粒。',
+    ok: '做到 3 題唔使數手指。' },
+  'M.SUB': { why: '減數要借位，係小二最容易斷嘅一環。',
+    do: '用 10 粒豆做 5 題「15 減 7」：先拿走 5 粒到 10，再拿走 2 粒。',
+    ok: '佢講得出「我拿走咗幾多」。' },
+  'M.COMP': { why: '比較大小係應用題嘅前置。',
+    do: '寫 5 對數字（例如 47 同 74），叫佢圈大嗰個，再講「點解」。',
+    ok: '5 對圈中 4 對。' },
+  'M.WORD': { why: '應用題要「讀得明」先「算得到」。',
+    do: '讀 3 題應用題，每題叫佢畫圖畫出「有幾多、發生咩事」，唔使計答案。',
+    ok: '畫到圖，講得出件事。' },
+  /* 乘除係本頁額外補嘅（GAS 原本 12 個技能冇），只會喺真係玩過先出現 */
+  'M.MUL': { why: '乘數要由「幾個幾」開始，硬背乘數表會唔明。',
+    do: '用 3 排 x 4 粒豆，問「總共幾多」，先數一排再一齊數。',
+    ok: '講得出「4 個 3 係 12」。' },
+  'M.DIV': { why: '除數係乘數嘅倒轉，唔熟乘數就會卡。',
+    do: '12 粒豆平均分 3 碟，問「每碟幾多」，再問「點知」。',
+    ok: '分完講得出每碟 4 粒。' },
+  'C.MW': { why: '量詞錯，句子聽落就唔自然，影響寫作同自信。',
+    do: '喺屋企搵 10 樣嘢，一人講「一 ___ 」，講錯就交換。',
+    ok: '10 樣中 8 樣啱。' },
+  'C.SENT': { why: '句子結構係理解同作文嘅骨架。',
+    do: '揀 3 句課文句子，讀 3 次，遮住再講返出嚟。',
+    ok: '3 句講返到 2 句。' },
+  'C.FORM': { why: '部首同字形係認字嘅鎖匙，識咗就唔使死記。',
+    do: '寫 5 個字，逐個圈部首，講「呢個字同咩有關」。',
+    ok: '5 個圈中 4 個。' },
+  'C.VOCAB': { why: '詞彙量直接決定佢聽唔聽得明題目。',
+    do: '做 5 張字卡：正面字、背面圖或動作，每日 3 分鐘。',
+    ok: '5 張認到 4 張。' },
+  'E.VOCAB': { why: '英文詞彙係 listening 同 reading 嘅底。',
+    do: '指住屋企 10 樣嘢（門、窗、雪櫃）講英文，一日 2 次。',
+    ok: '10 樣講到 7 樣。' },
+  'E.SENT': { why: '短句係由「識字」去「講到」嘅橋。',
+    do: '揀 3 句短句，你讀一次、佢讀一次，每人 3 次。',
+    ok: '3 句讀到 2 句順。' },
+  'E.LETTER': { why: '字母唔熟，串字同拼讀都會慢。',
+    do: '字母卡 A 至 Z，抽 10 張認名兼認音，錯嘅放埋一邊再抽。',
+    ok: '10 張認到 8 張。' },
+  'E.SPELL': { why: '串字係英文寫作同默書嘅第一步。',
+    do: '揀 5 個三字母字（cat / dog / bus），用字母磚砌，砌完讀一次。',
+    ok: '5 個砌到 4 個。' }
+};
+
+var ACT_SUBJ = {
+  Math: { why: '數學基礎要逐格補。', do: '用實物做 5 題，邊做邊講出聲。', ok: '5 題做到 4 題。' },
+  Chinese: { why: '中文要由認字同句子入手。', do: '讀 3 句、寫 5 個字，逐個講意思。', ok: '讀到同寫到大部分。' },
+  English: { why: '英文要由聽同講入手。', do: '每日 5 分鐘：指物講英文、跟讀 3 句。', ok: '講到七成。' }
+};
+
+function tagOf_(rate, sec, n) {
+  if (!n) return '未有數據';
+  if (rate < 40) return '未掌握';
+  if (rate < 60) return '未穩';
+  if (rate < 80) return '差少少';
+  if (sec > 20) return '識，但慢';
+  return '穩';
+}
+function tagIdx(t) {
+  return ({ '未掌握': 0, '未穩': 1, '差少少': 2, '識，但慢': 3, '穩': 4 })[t];
+}
+function verdictOf_(rate, sec, n) {
+  if (n < 6) return '今週數據太少（少過 6 題），做多兩三組先有結論。';
+  if (rate >= 85 && sec > 20) return '佢識，但未熟。唔使再教，要練快。';
+  if (rate >= 85) return '穩定。可以開始加少少難度。';
+  if (rate >= 70) return '大致得，仲有兩三個位要補。';
+  if (rate >= 50 && sec <= 10) return '做得快但錯得多，多數係估。要停一停，逐題講。';
+  if (rate >= 50) return '一半半。呢個星期揀一兩個重點攻，唔好貪多。';
+  if (sec <= 10) return '多數係猜，唔係唔識。要慢返落嚟，一題一題講。';
+  return '未掌握。要由最基礎重教，唔好趕進度。';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   2. 示範數據（跟 GAS 的 demoRows_ 一樣：確定性偽隨機，不寫入任何地方）
+   ══════════════════════════════════════════════════════════════ */
+var DEMO_PROFILE = {
+  demo_a: {
+    label: '穩定進步型', grade: 'P2', name: '陳小明',
+    perDay: [14, 19], rateFrom: 58, rateTo: 80,
+    weak: ['M.SUB', 'C.FORM', 'E.SPELL'], weakW: 3,
+    audioRate: 0.40, spamRate: 0.02, awayRate: 0.05,
+    active: ['M.ADD', 'M.SUB', 'C.MW', 'C.SENT', 'C.FORM', 'E.VOCAB', 'E.SPELL'],
+    base: { 'M.ADD': .86, 'M.SUB': .58, 'M.COMP': .82, 'M.WORD': .76,
+            'C.MW': .88, 'C.SENT': .78, 'C.FORM': .55, 'C.VOCAB': .82,
+            'E.VOCAB': .80, 'E.SENT': .74, 'E.LETTER': .90, 'E.SPELL': .56 }
+  },
+  demo_b: {
+    label: '卡關型', grade: 'P2', name: '李美欣',
+    perDay: [9, 13], rateFrom: 68, rateTo: 60,
+    weak: ['M.WORD', 'C.SENT', 'M.ADD'], weakW: 1,
+    audioRate: 0.85, spamRate: 0.12, awayRate: 0.18,
+    active: ['M.ADD', 'M.WORD', 'C.MW', 'C.SENT', 'C.FORM', 'E.SENT', 'E.SPELL'],
+    base: { 'M.ADD': .22, 'M.SUB': .86, 'M.COMP': .80, 'M.WORD': .17,
+            'C.MW': .92, 'C.SENT': .30, 'C.FORM': .90, 'C.VOCAB': .80,
+            'E.VOCAB': .80, 'E.SENT': .88, 'E.LETTER': .88, 'E.SPELL': .89 }
+  }
+};
+var DEMO_SKILLS = [
+  ['M.ADD', 'Math', 1], ['M.SUB', 'Math', 1], ['M.COMP', 'Math', 1], ['M.WORD', 'Math', 2],
+  ['C.MW', 'Chinese', 1], ['C.SENT', 'Chinese', 1], ['C.FORM', 'Chinese', 1], ['C.VOCAB', 'Chinese', 1],
+  ['E.VOCAB', 'English', 1], ['E.SENT', 'English', 1], ['E.LETTER', 'English', 1], ['E.SPELL', 'English', 1]
+];
+
+function lcg_(seed) {
+  var st = (seed >>> 0) || 1;
+  return function () {
+    st = (st * 1664525 + 1013904223) >>> 0;
+    return st / 4294967296;
+  };
+}
+
+function demoRows_(uid, now) {
+  var pf = DEMO_PROFILE[uid] || DEMO_PROFILE.demo_a;
+  var seed = 7;
+  for (var i = 0; i < uid.length; i++) seed = (seed * 31 + uid.charCodeAt(i)) >>> 0;
+  var rnd = lcg_(seed);
+
+  /* 加權抽技能：弱項會出現得密啲（跟真實使用一樣，錯開嘅題會再出） */
+  var pool = [];
+  DEMO_SKILLS.forEach(function (s) {
+    if (pf.active && pf.active.indexOf(s[0]) < 0) return;
+    var w = pf.weak.indexOf(s[0]) >= 0 ? pf.weakW : 1;
+    for (var i = 0; i < Math.round(w * 10); i++) pool.push(s);
+  });
+  var wMean = pool.reduce(function (a, s) { return a + pf.base[s[0]]; }, 0) / pool.length;
+
+  var rows = [];
+  var days = 14;
+  for (var d = days - 1; d >= 0; d--) {
+    var dayStart = now - d * 86400000;
+    var dow = new Date(dayStart).getDay();
+    var lo = pf.perDay[0], hi = pf.perDay[1];
+    var cnt = Math.round(lo + rnd() * (hi - lo));
+    if (dow === 0 || dow === 6) cnt = Math.max(3, Math.round(cnt * 0.7));
+
+    /* 每天有一個整體目標正確率，逐日由 rateFrom 走到 rateTo；
+       每個技能再按自己的底子縮放 —— 咁樣弱項就唔會因為抽樣而亂跳 */
+    var prog = (days - 1 - d) / (days - 1);
+    var dayRate = (pf.rateFrom + (pf.rateTo - pf.rateFrom) * prog) / 100;
+
+    for (var k = 0; k < cnt; k++) {
+      var pick = pool[Math.floor(rnd() * pool.length)];
+      var p = pf.base[pick[0]] * (dayRate / wMean);
+      if (p > 0.95) p = 0.95;
+      if (p < 0.05) p = 0.05;
+
+      var isWeak = pf.weak.indexOf(pick[0]) >= 0;
+      var baseSec = isWeak ? 22 : 14;
+      var el = Math.round((baseSec * (0.6 + rnd() * 0.9)) * 1000);
+
+      rows.push({
+        ts: dayStart + (16 * 3600 + k * 90) * 1000,
+        day: d,
+        skill: pick[0], subj: pick[1], p: p, el: el, key: rnd()
+      });
+    }
+  }
+
+  /* 逐個技能 × 逐日「按期望值」決定答對幾多題，而唔係逐題擲骰 ——
+     每技能一星期得幾題樣本，逐題擲骰會出現 0/6 或者 100% 呢種假極端。
+     用 carry 累加餘數，令 7 日窗口入面嘅比例跟得上當日目標。 */
+  var acc = {};
+  rows.sort(function (a, b) { return a.ts - b.ts; });
+  var byDay = {};
+  rows.forEach(function (r) {
+    var key = r.skill + '|' + r.day;
+    (byDay[key] = byDay[key] || []).push(r);
+  });
+  Object.keys(byDay).forEach(function (key) {
+    var list = byDay[key];
+    var sk = list[0].skill;
+    var expect = list.reduce(function (a, r) { return a + r.p; }, 0);
+    var carry = acc[sk] || 0;
+    var hit = Math.round(carry + expect);
+    acc[sk] = carry + expect - hit;
+    if (hit > list.length) hit = list.length;
+    list.slice().sort(function (a, b) { return a.key - b.key; })
+      .forEach(function (r, i) { r._first = i < hit; });
+  });
+
+  rows.forEach(function (r) {
+    var first = !!r._first;
+    var spam = rnd() < pf.spamRate;
+    var tries = first ? 1 : (1 + Math.floor(rnd() * 3));
+    r.first = first;
+    r.tries = tries;
+    r.correct = first ? 'Y' : (spam ? 'N' : (rnd() < 0.75 ? 'Y' : 'N'));
+    r.spam = spam;
+    if (spam) r.elapsed = 1500 + Math.round(rnd() * 2500);
+    else r.elapsed = r.el;
+    r.voice = rnd() < pf.audioRate;
+    r.away = rnd() < pf.awayRate ? (1 + Math.floor(rnd() * 2)) : 0;
+    delete r.p; delete r.key; delete r._first; delete r.el;
+  });
+  return rows;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   3. 統計（跟 buildReport_ 同一套規則）
+   ══════════════════════════════════════════════════════════════ */
+function median(a) {
+  if (!a.length) return 0;
+  var b = a.slice().sort(function (x, y) { return x - y; });
+  var m = Math.floor(b.length / 2);
+  return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2;
+}
+function dayKey(ts) {
+  var d = new Date(ts);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+/* 把「剛剛真的玩過」的作答紀錄，換成同一個格式混入本週資料 */
+var LIVE_SKILL = {
+  p1_add10: 'M.ADD', p1_sub10: 'M.SUB', p1_add20: 'M.ADD', p1_sub20: 'M.SUB',
+  p1_cmp: 'M.COMP', p1_count: 'M.COMP', p1_word: 'M.WORD',
+  p2_add2d: 'M.ADD', p2_sub2d: 'M.SUB', p2_mul: 'M.MUL', p2_div: 'M.DIV',
+  p2_word: 'M.WORD', p2_money: 'M.WORD',
+  p3_add3d: 'M.ADD', p3_sub3d: 'M.SUB', p3_mul2x1: 'M.MUL', p3_div2x1: 'M.DIV',
+  p3_word: 'M.WORD', p3_clock: 'M.WORD', p3_frac: 'M.WORD'
+};
+var LIVE_SUBJ = { M: 'Math' };
+
+function liveRows() {
+  var raw = [];
+  try { raw = JSON.parse(localStorage.getItem('dsh_ans_log') || '[]'); } catch (e) {}
+  return raw.map(function (a) {
+    var skill = LIVE_SKILL[a.u] || 'M.ADD';
+    return {
+      ts: a.t, skill: skill, subj: 'Math',
+      first: a.c === 1, tries: a.c === 1 ? 1 : 2,
+      correct: a.c === 1 ? 'Y' : 'N',
+      elapsed: a.ms, voice: false, away: 0, spam: false, live: true
+    };
+  });
+}
+
+function buildReport(uid) {
+  var rows = demoRows_(uid, Date.now()).concat(liveRows());
+  var days = 7;
+  var win = rows.filter(function (r) { return r.ts >= Date.now() - days * 86400000; });
+  if (win.length < 6) {
+    days = 14;
+    win = rows.filter(function (r) { return r.ts >= Date.now() - days * 86400000; });
+  }
+
+  var bySkill = {}, daySet = {}, times = [], first = 0;
+  var careless = 0, wrong = 0, voiceN = 0, awayN = 0;
+
+  win.forEach(function (r) {
+    times.push(r.elapsed);
+    if (r.first) first++;
+    if (!r.first) {
+      if (r.correct === 'Y' && r.tries <= 2) careless++;
+      if (r.correct !== 'Y') wrong++;
+    }
+    if (r.voice) voiceN++;
+    if (r.away > 0) awayN++;
+    daySet[dayKey(r.ts)] = 1;
+    var s = bySkill[r.skill] || (bySkill[r.skill] = { skill: r.skill, subject: r.subj, n: 0, first: 0, times: [] });
+    s.n++; if (r.first) s.first++; s.times.push(r.elapsed);
+  });
+
+  var n = win.length;
+  var rate = n ? Math.round(first / n * 100) : 0;
+  var medSec = n ? Math.round(median(times) / 100) / 10 : 0;
+
+  var list = Object.keys(bySkill).map(function (k) {
+    var s = bySkill[k];
+    var sr = Math.round(s.first / s.n * 100);
+    var sec = Math.round(median(s.times) / 100) / 10;
+    var rank = (sr >= 80 && sec > 20) ? 55 : sr;
+    return { skill: k, subject: s.subject, n: s.n, rate: sr, sec: sec, rank: rank,
+             tag: tagOf_(sr, sec, s.n),
+             act: ACT[k] || ACT_SUBJ[s.subject] || ACT_SUBJ.Math };
+  }).sort(function (a, b) {
+    var na = a.n >= 3 ? 2 : (a.n >= 2 ? 1 : 0);
+    var nb = b.n >= 3 ? 2 : (b.n >= 2 ? 1 : 0);
+    if (na !== nb) return nb - na;
+    if (a.rank !== b.rank) return a.rank - b.rank;
+    return b.n - a.n;
+  });
+
+  return {
+    days: days, n: n, rate: rate, medSec: medSec,
+    daysActive: Math.min(Object.keys(daySet).length, days),
+    skills: list,
+    summary: {
+      careless: careless, wrong: wrong, away: awayN,
+      voicePct: n ? Math.round(voiceN / n * 100) : 0,
+      verdict: verdictOf_(rate, medSec, n)
+    }
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   4. 畫面
+   ══════════════════════════════════════════════════════════════ */
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, function (c) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c];
+  });
+}
+
+function render(uid) {
+  var r = buildReport(uid);
+  var pf = DEMO_PROFILE[uid];
+
+  /* A */
+  document.getElementById('big').innerHTML =
+    '<span class="n">' + r.n + '</span><span class="t">題 · 本週（' + r.days + ' 日）</span>' +
+    '<span class="n" style="margin-left:14px">' + r.rate + '%</span><span class="t">首答正確</span>';
+  document.getElementById('verdict').textContent = r.summary.verdict;
+
+  document.getElementById('stats').innerHTML = [
+    ['做題日數', r.daysActive, '日'],
+    ['中位用時', r.medSec, '秒'],
+    ['語音依賴', r.summary.voicePct, '%'],
+    ['粗心（快答對）', r.summary.careless, '題']
+  ].map(function (x) {
+    return '<div class="stat"><div class="k">' + x[0] + '</div><div class="v">' + x[1] +
+      '<small>' + x[2] + '</small></div></div>';
+  }).join('');
+
+  /* B：只給一件 —— 取「排最前的弱項」，沒有就給最慢的一項 */
+  var pick = r.skills.filter(function (s) { return s.tag !== '穩'; })[0] || r.skills[0];
+  var wb = document.getElementById('workBody');
+  if (!pick) {
+    wb.innerHTML = '<div class="do">今週未有足夠數據，今晚照常練一組就好。</div>';
+  } else {
+    wb.innerHTML =
+      '<div class="do">' + esc(pick.act.do) + '</div>' +
+      '<div class="why">' + esc(SKILL_NAME[pick.skill] || pick.subject) + '：' + esc(pick.act.why) + '</div>' +
+      '<div class="ok">✅ 點樣算過關：' + esc(pick.act.ok) + '</div>' +
+      '<div class="only">只做呢一件就夠。做完成件事收工，唔使加碼。</div>';
+  }
+
+  /* C */
+  var top = r.skills.slice(0, 3);
+  document.getElementById('skills').innerHTML = top.map(function (s, i) {
+    return '<div class="sk">' +
+      '<div class="idx">' + (i + 1) + '</div>' +
+      '<div class="body">' +
+        '<div class="hd">' +
+          '<span class="nm">' + esc(SKILL_NAME[s.skill] || s.subject) + '</span>' +
+          '<span class="pill tag-' + tagIdx(s.tag) + '">' + esc(s.tag) + '</span>' +
+          '<span class="rt">' + s.rate + '% · ' + s.n + ' 題 · ' + s.sec + ' 秒</span>' +
+        '</div>' +
+        '<div class="why">' + esc(s.act.why) + '</div>' +
+        '<div class="do">今晚：' + esc(s.act.do) + '</div>' +
+        '<div class="ok">✅ ' + esc(s.act.ok) + '</div>' +
+      '</div></div>';
+  }).join('') || '<div class="why">未有足夠數據。</div>';
+
+  /* D */
+  var notes = [];
+  if (r.n < 6) notes.push('今週只有 ' + r.n + ' 題 —— 樣本太少，下面嘅結論只能當「方向」，唔好當「判決」。');
+  if (r.summary.voicePct >= 70) notes.push('語音依賴 ' + r.summary.voicePct + '%：佢好多時係「聽」而唔係「讀」題目，要留意識字量。');
+  if (r.summary.careless >= 3) notes.push('粗心（答第二次就對）' + r.summary.careless + ' 題：多數係心急，唔係唔識。');
+  if (r.summary.away >= 3) notes.push('離座 ' + r.summary.away + ' 次：可能係題目太長或者環境太嘈。');
+  document.getElementById('confList').innerHTML = notes.length
+    ? notes.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('')
+    : '<div class="none">✅ 今週樣本足夠，冇特別要提醒嘅偏差。</div>';
+
+  document.getElementById('honest').textContent =
+    '呢個報告只用「答題紀錄」計：' + r.n + ' 題、' + r.days + ' 日。' +
+    '佢唔會評分、唔會排名、唔會同其他小朋友比較 —— 只係同佢自己上星期比。' +
+    '數據有偏差就照講，唔會為咗好睇而修飾。';
+}
+
+document.querySelectorAll('.whoBtn').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var uid = b.getAttribute('data-uid');
+    if (window.Player && uid !== window.Player.cur()) { window.Player.switchTo(uid); return; }
+    document.querySelectorAll('.whoBtn').forEach(function (x) { x.classList.remove('on'); });
+    b.classList.add('on');
+    render(uid);
+  });
+});
+
+/* 預設顯示「現在是哪一位小朋友」——跟另外三頁同一位 */
+var startUid = (window.Player && window.Player.cur()) || 'demo_a';
+document.querySelectorAll('.whoBtn').forEach(function (b) {
+  b.classList.toggle('on', b.getAttribute('data-uid') === startUid);
+});
+render(startUid);
+
+/* E 娛樂時間（時間代幣） */
+function renderTime(){
+  var s = window.Time ? window.Time.stats() : null;
+  if (!s) { document.getElementById('timeStats').innerHTML = '<div class="why">時間代幣未載入。</div>'; return; }
+  document.getElementById('timeStats').innerHTML =
+    '<div class="stat"><div class="k">今日已賺</div><div class="v">' + s.earned + ' <small>分鐘</small></div></div>' +
+    '<div class="stat"><div class="k">今日已用</div><div class="v">' + s.used + ' <small>分鐘</small></div></div>' +
+    '<div class="stat"><div class="k">剩餘可用</div><div class="v">' + s.balance + ' <small>/ ' + s.cap + '</small></div></div>';
+  document.getElementById('capInput').value = s.cap;
+  document.getElementById('timeNote').textContent =
+    '規則：答對一題賺 ' + s.minPerAnswer + ' 分鐘娛樂；每日最多 ' + s.cap + ' 分鐘。' +
+    '娛樂時間可以換星星（' + s.starCost + ' 分鐘 = 1 顆），但星星換不回時間。' +
+    '改上限只影響今日之後的結算。';
+}
+renderTime();
+document.getElementById('capSave').addEventListener('click', function(){
+  if (!window.Time) return;
+  var v = parseInt(document.getElementById('capInput').value, 10);
+  if (!(v >= 0)) { alert('請輸入 0 或更大的整數分鐘'); return; }
+  window.Time.setCap(v);
+  renderTime();
+});
+
+window.__report = { build: buildReport, rows: demoRows_, profile: DEMO_PROFILE };
+</script>
+</body>
+</html>

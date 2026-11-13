@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>三問 · 登入</title>
+<link rel="stylesheet" href="fonts/theme.css">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{margin:0;background:#0b1220;color:#e2e8f0;overflow:hidden;
+       font-family:"Huninn","Microsoft JhengHei",system-ui,sans-serif}
+  #bg{position:fixed;inset:0;background:url('images/bg_farm.webp') center bottom/auto 143% no-repeat;
+      filter:brightness(.55) saturate(.95)}
+  #bg::after{content:"";position:absolute;inset:0;
+      background:radial-gradient(ellipse at 50% 38%,rgba(11,18,32,.05),rgba(11,18,32,.82) 74%)}
+
+  .wrap{position:relative;height:100%;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;padding:24px;gap:18px;text-align:center}
+
+  .brand{font-size:15px;letter-spacing:6px;color:#93a4bd;font-weight:800}
+  h1{margin:0;font-size:clamp(26px,3.6vmin,36px);font-weight:900;letter-spacing:1px}
+  .sub{margin:0;color:#93a4bd;font-size:15px}
+
+  /* ── 選人 ── */
+  .kids{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+  .kid{width:clamp(200px,26vmin,260px);padding:22px 18px 18px;border-radius:24px;cursor:pointer;
+       border:3px solid rgba(255,255,255,.12);background:rgba(15,23,42,.82);
+       display:flex;flex-direction:column;align-items:center;gap:8px;
+       transition:transform .16s cubic-bezier(.34,1.56,.64,1),border-color .16s,box-shadow .16s}
+  .kid:hover{transform:translateY(-6px);border-color:#fbbf24;box-shadow:0 18px 40px rgba(251,191,36,.18)}
+  .kid:active{transform:scale(.97)}
+  .kid .ava{font-size:56px;line-height:1}
+  .kid .nm{font-size:24px;font-weight:900}
+  .kid .tg{font-size:13px;color:#93a4bd;font-weight:800}
+  .kid .pt{font-size:13px;color:#fbbf24;font-weight:800;margin-top:2px}
+
+  /* ── 裝置 ── */
+  .dev{margin-top:6px;font-size:13px;color:#7f8ea8;line-height:1.9;max-width:620px}
+  .dev b{color:#cbd5e1;font-family:ui-monospace,Consolas,monospace;letter-spacing:1px}
+  .dev .warn{color:#fbbf24}
+
+  /* ── PIN ── */
+  .dots{display:flex;gap:16px;margin:10px 0 4px}
+  .dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.35);transition:.14s}
+  .dot.on{background:#fbbf24;border-color:#fbbf24;transform:scale(1.15)}
+  .pad{display:grid;grid-template-columns:repeat(3,minmax(0,86px));gap:12px;margin-top:6px}
+  .key{height:64px;border-radius:18px;border:2px solid rgba(255,255,255,.12);
+       background:rgba(30,41,59,.85);color:#e2e8f0;font-size:26px;font-weight:900;cursor:pointer;
+       font-family:inherit;transition:transform .1s,background .12s}
+  .key:hover{background:rgba(51,65,85,.95)}
+  .key:active{transform:scale(.93)}
+  .key.fn{font-size:20px;color:#94a3b8}
+  .shake{animation:shk .32s}
+  @keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+  .back{border:0;background:transparent;color:#64748b;font-family:inherit;font-size:14px;
+        font-weight:800;cursor:pointer;padding:8px;text-decoration:underline}
+  .back:hover{color:#cbd5e1}
+
+  footer{position:fixed;left:0;right:0;bottom:14px;text-align:center;font-size:13px;color:#64748b}
+  footer a,footer button{color:#93a4bd;font-weight:800;text-decoration:none;
+        border:0;border-bottom:1px dashed rgba(147,164,189,.5);background:none;
+        font-family:inherit;font-size:13px;cursor:pointer;padding:0}
+  footer a:hover,footer button:hover{color:#fbbf24;border-color:#fbbf24}
+
+  /* ── 登入紀錄 ── */
+  #logMask{position:fixed;inset:0;z-index:60;background:rgba(5,9,16,.72);
+           display:flex;align-items:center;justify-content:center;padding:24px}
+  #logBox{width:min(560px,100%);max-height:70vh;overflow:auto;background:#0f172a;
+          border:2px solid rgba(255,255,255,.14);border-radius:20px;padding:18px 20px;text-align:left}
+  #logBox h3{margin:0 0 4px;font-size:18px}
+  #logBox p{margin:0 0 12px;font-size:12.5px;color:#7f8ea8;line-height:1.6}
+  #logBox .row{display:flex;gap:10px;align-items:baseline;padding:9px 0;
+               border-top:1px solid rgba(255,255,255,.07);font-size:13.5px}
+  #logBox .row b{color:#e2e8f0}
+  #logBox .row i{font-style:normal;color:#7f8ea8;font-size:12px}
+  #logBox .row code{font-family:ui-monospace,Consolas,monospace;color:#fbbf24;font-size:12px}
+  #logBox .empty{color:#64748b;font-size:13px;padding:14px 0}
+  #logBox .x{float:right;border:0;background:rgba(255,255,255,.08);color:#cbd5e1;
+             border-radius:10px;padding:6px 12px;font-family:inherit;font-weight:800;cursor:pointer}
+
+  .err{color:#fca5a5;font-size:14px;font-weight:800;min-height:20px}
+
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+
+<div class="wrap">
+  <div class="brand">三 問</div>
+
+  <!-- ① 選人 -->
+  <section id="step1" style="display:flex;flex-direction:column;align-items:center;gap:12px">
+    <h1>今天是你嗎？</h1>
+    <p class="sub">選一個名字，再輸入 4 位密碼</p>
+    <div class="kids" id="kids"></div>
+    <div class="dev" id="devLine"></div>
+  </section>
+
+  <!-- ② PIN -->
+  <section id="step2" class="hidden" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+    <h1 id="pinWho">輸入密碼</h1>
+    <p class="sub">4 位數字</p>
+    <div class="dots" id="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+    <div class="pad" id="pad"></div>
+    <div class="err" id="err"></div>
+    <button class="back" id="back">← 不是我</button>
+  </section>
+</div>
+
+<footer>示範模式 · PIN 隨便 4 位都可以　|　<button id="logOpen" type="button">登入紀錄</button>　|　<a href="parent.html">家長看報告 →</a></footer>
+
+<div id="logMask" class="hidden">
+  <div id="logBox">
+    <button class="x" id="logClose" type="button">關閉</button>
+    <h3>登入紀錄</h3>
+    <p>誰在什麼時候、用哪台裝置登入。正式部署時「裝置」是路由器給的 MAC，可以對回家長的名單。</p>
+    <div id="logRows"></div>
+  </div>
+</div>
+
+<script src="player.js"></script>
+<script>
+(function () {
+  var DEV_KEY = 'dsh__device';
+  var LOG_KEY = 'dsh__login_log';
+
+  /* ── 裝置識別 ────────────────────────────────────────────────
+     真的部署時 MAC 由路由器提供（OpenWrt 的 DHCP 綁定），
+     瀏覽器**讀不到 MAC**，所以：
+       ?mac=AA:BB:CC:DD:EE:01  → 有就照用（路由器／入口頁帶進來）
+       沒有                      → 用瀏覽器特徵算一個穩定 ID 代替，並標明是示範用
+     ─────────────────────────────────────────────────────────── */
+  function hash(s) {
+    var h = 5381;
+    for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+    return h;
+  }
+
+  function device() {
+    var q = new URLSearchParams(location.search).get('mac');
+    if (q) {
+      var mac = q.toUpperCase();
+      localStorage.setItem(DEV_KEY, JSON.stringify({ mac: mac, from: 'router' }));
+      return { mac: mac, from: 'router' };
+    }
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem(DEV_KEY) || '{}'); } catch (e) {}
+    if (saved && saved.mac) return saved;
+
+    var raw = [navigator.userAgent, screen.width, screen.height, screen.colorDepth,
+               navigator.language, Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+               navigator.hardwareConcurrency || 0].join('|');
+    var h1 = hash(raw), h2 = hash(raw.split('').reverse().join(''));
+    var id = ('0000000' + (h1 & 0xFFFFFFF).toString(16)).slice(-7).toUpperCase() + '-' +
+             ('0000000' + (h2 & 0xFFFFFFF).toString(16)).slice(-7).toUpperCase();
+    var o = { mac: 'DEMO-' + id, from: 'demo', fp: h1 };
+    localStorage.setItem(DEV_KEY, JSON.stringify(o));
+    return o;
+  }
+
+  function lastLogin(pid) {
+    var rows = [];
+    try { rows = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch (e) {}
+    for (var i = rows.length - 1; i >= 0; i--) if (rows[i].id === pid) return rows[i];
+    return null;
+  }
+
+  function pushLogin(pid, dev) {
+    var rows = [];
+    try { rows = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch (e) {}
+    rows.push({ t: Date.now(), id: pid, mac: dev.mac, from: dev.from, ua: navigator.userAgent.slice(0, 120) });
+    if (rows.length > 60) rows = rows.slice(-60);
+    localStorage.setItem(LOG_KEY, JSON.stringify(rows));
+  }
+
+  function ago(ts) {
+    var d = Date.now() - ts;
+    if (d < 60000) return '剛剛';
+    if (d < 3600000) return Math.floor(d / 60000) + ' 分鐘前';
+    if (d < 86400000) return Math.floor(d / 3600000) + ' 小時前';
+    return Math.floor(d / 86400000) + ' 天前';
+  }
+
+  var dev = device();
+  var picked = null;
+
+  /* ── 選人 ─────────────────────────────────────────────────── */
+  var kids = document.getElementById('kids');
+  Player.players.forEach(function (p) {
+    var b = document.createElement('button');
+    b.className = 'kid';
+    b.type = 'button';
+    var last = lastLogin(p.id);
+    b.innerHTML =
+      '<span class="ava">' + p.emoji + '</span>' +
+      '<span class="nm">' + p.name + '</span>' +
+      '<span class="tg">' + p.tag + '</span>' +
+      '<span class="pt">🐾 ' + p.pet + '</span>' +
+      '<span class="tg" style="color:#64748b;font-size:12px">' +
+        (last ? '上次：' + ago(last.t) : '第一次來') + '</span>';
+    b.addEventListener('click', function () { pick(p); });
+    kids.appendChild(b);
+  });
+
+  var dl = document.getElementById('devLine');
+  dl.innerHTML = dev.from === 'router'
+    ? '這台裝置：<b>' + dev.mac + '</b><br><span style="font-size:12px">（由路由器提供，會記在家長的名單上）</span>'
+    : '這台裝置：<b>' + dev.mac + '</b><br>' +
+      '<span style="font-size:12px" class="warn">示範模式：瀏覽器讀不到真正的 MAC，' +
+      '這裡用裝置特徵代替；正式部署由路由器（OpenWrt DHCP 綁定）提供。</span>';
+
+  /* ── PIN ──────────────────────────────────────────────────── */
+  var step1 = document.getElementById('step1');
+  var step2 = document.getElementById('step2');
+  var dots = document.getElementById('dots').children;
+  var errEl = document.getElementById('err');
+  var buf = '';
+
+  function paint() {
+    for (var i = 0; i < 4; i++) dots[i].classList.toggle('on', i < buf.length);
+  }
+
+  function pick(p) {
+    picked = p;
+    buf = '';
+    paint();
+    errEl.textContent = '';
+    document.getElementById('pinWho').textContent = p.name + '，輸入密碼';
+    step1.classList.add('hidden');
+    step2.classList.remove('hidden');
+  }
+
+  document.getElementById('back').addEventListener('click', function () {
+    step2.classList.add('hidden');
+    step1.classList.remove('hidden');
+    picked = null; buf = '';
+  });
+
+  var pad = document.getElementById('pad');
+  ['1', '2', '3', '4', '5', '6', '7', '8', '9', '←', '0', '✓'].forEach(function (k) {
+    var b = document.createElement('button');
+    b.className = 'key' + (k === '←' || k === '✓' ? ' fn' : '');
+    b.type = 'button';
+    b.textContent = k;
+    b.addEventListener('click', function () {
+      if (k === '←') { buf = buf.slice(0, -1); paint(); return; }
+      if (k === '✓') { submit(); return; }
+      if (buf.length >= 4) return;
+      buf += k; paint();
+      if (buf.length === 4) setTimeout(submit, 130);
+    });
+    pad.appendChild(b);
+  });
+
+  function submit() {
+    if (buf.length < 4) { errEl.textContent = '要 4 位數字'; return; }
+    if (!picked) { return; }
+    /* 示範模式：任何 4 位都接受（正式版由 GAS 驗 PIN） */
+    pushLogin(picked.id, dev);
+    Player.login(picked.id);
+    location.href = 'community.html';
+  }
+
+  /* ── 登入紀錄 ─────────────────────────────────────────────── */
+  var logMask = document.getElementById('logMask');
+  document.getElementById('logOpen').addEventListener('click', function () {
+    var rows = [];
+    try { rows = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch (e) {}
+    var box = document.getElementById('logRows');
+    if (!rows.length) {
+      box.innerHTML = '<div class="empty">還沒有紀錄。任何人登入一次就會出現在這裡。</div>';
+    } else {
+      box.innerHTML = rows.slice(-20).reverse().map(function (r) {
+        var p = Player.meta(r.id);
+        var d = new Date(r.t);
+        var hh = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+        return '<div class="row"><b>' + p.emoji + ' ' + p.name + '</b>' +
+          '<i>' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hh + '</i>' +
+          '<code>' + r.mac + '</code>' +
+          '<i>' + (r.from === 'router' ? '路由器' : '示範') + '</i></div>';
+      }).join('');
+    }
+    logMask.classList.remove('hidden');
+  });
+  document.getElementById('logClose').addEventListener('click', function () {
+    logMask.classList.add('hidden');
+  });
+  logMask.addEventListener('click', function (e) {
+    if (e.target === logMask) logMask.classList.add('hidden');
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (step2.classList.contains('hidden')) return;
+    if (/^[0-9]$/.test(e.key)) { if (buf.length < 4) { buf += e.key; paint(); if (buf.length === 4) setTimeout(submit, 130); } }
+    else if (e.key === 'Backspace') { buf = buf.slice(0, -1); paint(); }
+    else if (e.key === 'Enter') submit();
+  });
+})();
+</script>
+</body>
+</html>

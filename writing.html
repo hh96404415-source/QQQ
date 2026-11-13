@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>寫字練習 demo</title>
+<style>
+  :root{
+    --ink:#0f172a; --ink2:#16213c; --gold:#fbbf24; --blue:#3b82f6;
+    --paper:#fdfcf8;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{
+    font-family:"Microsoft JhengHei","Noto Sans TC",system-ui,sans-serif;
+    background:radial-gradient(circle at 20% 0%,#1e293b,#0b1120 70%);
+    color:#e2e8f0;display:flex;flex-direction:column;overflow:hidden;
+  }
+
+  header{
+    flex:none;display:flex;align-items:center;gap:14px;padding:12px 18px;
+    border-bottom:1px solid rgba(255,255,255,.08);background:rgba(15,23,42,.6);
+  }
+  header h1{margin:0;font-size:19px;letter-spacing:.04em}
+  header .sub{font-size:12px;color:#94a3b8;font-weight:700}
+  .stars{margin-left:auto;display:flex;align-items:center;gap:8px;
+    background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);
+    border-radius:999px;padding:6px 16px;font-weight:900;color:var(--gold);font-size:17px}
+
+  main{flex:1;display:flex;min-height:0}
+
+  /* ── 左：田字格 ── */
+  #left{flex:1;display:flex;align-items:center;justify-content:center;padding:22px;min-width:0}
+  #gridBox{
+    position:relative;width:min(52vh,440px);aspect-ratio:1/1;
+    background:var(--paper);border-radius:16px;
+    box-shadow:0 18px 50px rgba(0,0,0,.45), 0 0 0 3px rgba(255,255,255,.06);
+    transition:box-shadow .25s, transform .25s;
+  }
+  /* 田字格：外框 + 十字虛線 */
+  #gridBox::before,#gridBox::after{
+    content:"";position:absolute;pointer-events:none;
+  }
+  #gridBox::before{
+    inset:6%;border:1px dashed rgba(239,68,68,.45);border-radius:8px;
+  }
+  #gridBox::after{
+    inset:6%;
+    background:
+      linear-gradient(to right, transparent calc(50% - .8px), rgba(239,68,68,.35) calc(50% - .8px), rgba(239,68,68,.35) calc(50% + .8px), transparent calc(50% + .8px)),
+      linear-gradient(to bottom, transparent calc(50% - .8px), rgba(239,68,68,.35) calc(50% - .8px), rgba(239,68,68,.35) calc(50% + .8px), transparent calc(50% + .8px));
+  }
+  #hz{position:absolute;inset:0;z-index:2}
+  #hz svg{display:block;width:100%;height:100%;touch-action:none}
+  #gridBox.ok{box-shadow:0 0 0 4px rgba(34,197,94,.55), 0 18px 50px rgba(0,0,0,.45)}
+  #gridBox.bad{transform:translateX(-3px);box-shadow:0 0 0 4px rgba(239,68,68,.45), 0 18px 50px rgba(0,0,0,.45)}
+
+  /* 完成印章：貼在格子下緣，不遮住剛寫好的字 */
+  #stamp{position:absolute;left:0;right:0;bottom:14px;margin:0 auto;width:max-content;
+    font-size:19px;font-weight:900;color:#fff;background:rgba(34,197,94,.95);
+    padding:8px 22px;border-radius:999px;box-shadow:0 8px 24px rgba(34,197,94,.4);
+    pointer-events:none;opacity:0;z-index:3}
+  #stamp.show{animation:stampIn .7s cubic-bezier(.2,1.4,.4,1) forwards}
+  @keyframes stampIn{
+    0%{opacity:0;transform:scale(.3) rotate(-14deg)}
+    55%{opacity:1;transform:scale(1.12) rotate(-6deg)}
+    100%{opacity:1;transform:scale(1) rotate(-6deg)}
+  }
+
+  /* ── 右：資訊 ── */
+  #right{
+    flex:none;width:min(38vw,380px);display:flex;flex-direction:column;gap:12px;
+    padding:18px 18px 18px 0;min-height:0;
+  }
+  .card{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);
+    border-radius:16px;padding:14px 16px}
+  .card h2{margin:0 0 10px;font-size:13px;letter-spacing:.08em;color:#94a3b8;font-weight:800}
+  #bigChar{font-size:54px;font-weight:900;line-height:1;color:#fff;text-align:center;letter-spacing:.05em}
+
+  #prog{height:10px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden;margin:10px 0 6px}
+  #progFill{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#38bdf8,#22c55e);transition:width .25s}
+  #progTxt{font-size:13px;color:#cbd5e1;font-weight:800;text-align:center}
+
+  #say{min-height:44px;display:flex;align-items:center;justify-content:center;
+    font-size:15px;font-weight:900;color:#fde68a;text-align:center;line-height:1.4}
+
+  .btns{display:flex;gap:10px}
+  button{font-family:inherit;font-weight:900;border:0;border-radius:12px;cursor:pointer;
+    padding:13px 10px;font-size:15px;transition:transform .1s,filter .15s}
+  button:active{transform:translateY(1px)}
+  .bGhost{flex:1;background:rgba(255,255,255,.1);color:#e2e8f0}
+  .bGhost:hover{background:rgba(255,255,255,.18)}
+  .bMain{flex:1;background:linear-gradient(180deg,#60a5fa,#3b82f6);color:#fff;
+    box-shadow:0 6px 18px rgba(59,130,246,.35)}
+  .bMain:hover{filter:brightness(1.08)}
+
+  /* 字卡 */
+  #chars{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .ch{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;
+    font-size:22px;font-weight:900;color:#e2e8f0;background:rgba(255,255,255,.07);
+    border:2px solid transparent;border-radius:12px;cursor:pointer;transition:all .15s}
+  .ch:hover{background:rgba(255,255,255,.14)}
+  .ch.sel{border-color:var(--gold);background:rgba(251,191,36,.16);color:#fff}
+  .ch.done::after{content:"✓";position:absolute;font-size:11px;color:#22c55e;transform:translate(14px,-14px)}
+  .ch{position:relative}
+
+  @media (max-width:820px){
+    main{flex-direction:column}
+    #right{width:100%;padding:0 18px 18px}
+    #left{padding:14px}
+  }
+</style>
+<link rel="stylesheet" href="fonts/theme.css">
+</head>
+<body>
+
+<header>
+  <h1>✍️ 寫字練習</h1>
+  <span class="sub">照著灰線寫 · 一筆一筆來</span>
+  <span class="stars">⭐ <span id="starCount">0</span></span>
+</header>
+
+<main>
+  <section id="left">
+    <div id="gridBox">
+      <div id="hz"></div>
+      <div id="stamp">✓ 寫對了</div>
+    </div>
+  </section>
+
+  <aside id="right">
+    <div class="card">
+      <h2>這一題</h2>
+      <div id="bigChar">水</div>
+      <div id="prog"><div id="progFill"></div></div>
+      <div id="progTxt">第 0 / 4 筆</div>
+    </div>
+
+    <div class="card" style="padding:8px 12px">
+      <div id="say">照著灰線，把這一筆寫出來</div>
+    </div>
+
+    <div class="btns">
+      <button class="bGhost" id="btnShow">👀 看筆順</button>
+      <button class="bMain" id="btnRedo">🔄 重寫</button>
+    </div>
+
+    <div class="card">
+      <h2>選一個字</h2>
+      <div id="chars"></div>
+    </div>
+  </aside>
+</main>
+
+<script src="hw/hanzi-writer.min.js"></script>
+<script src="hw/hwdata.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  var CHARS = ['人','大','小','山','水','火','日','月','天','中'];
+  var STARS_KEY = 'dsh_stars';
+  var REWARD = 2;
+
+  var starEl  = document.getElementById('starCount');
+  var bigChar = document.getElementById('bigChar');
+  var progFill= document.getElementById('progFill');
+  var progTxt = document.getElementById('progTxt');
+  var sayEl   = document.getElementById('say');
+  var boxEl   = document.getElementById('gridBox');
+  var stampEl = document.getElementById('stamp');
+  var charsEl = document.getElementById('chars');
+
+  var stars = 0;
+  try { stars = Math.max(0, parseInt(localStorage.getItem(STARS_KEY) || '0', 10) || 0); } catch(e){ stars = 0; }
+  function paintStars(){ starEl.textContent = stars; }
+  function addStars(n){
+    stars += n; paintStars();
+    try { localStorage.setItem(STARS_KEY, String(stars)); } catch(e){}
+  }
+  paintStars();
+
+  var writer = null;
+  var char = '水';
+  var total = 0;
+  var doneCount = 0;
+  var mistakes = 0;
+  var finished = false;
+  var doneSet = {};
+
+  function dataLoader(ch, onComplete){
+    var d = window.HWD && window.HWD[ch];
+    if (!d){ sayEl.textContent = '這個字還沒有筆畫資料'; return; }
+    onComplete(d);
+  }
+
+  function makeWriter(){
+    document.getElementById('hz').innerHTML = '';
+    writer = HanziWriter.create('hz', char, {
+      width: 400, height: 400, padding: 14,
+      showOutline: true,
+      showCharacter: false,
+      strokeColor: '#1e293b',
+      outlineColor: '#c9cfda',
+      drawingColor: '#2563eb',
+      drawingWidth: 12,
+      highlightColor: '#f59e0b',
+      radicalColor: null,
+      strokeAnimationSpeed: 1,
+      delayBetweenStrokes: 260,
+      strokeFadeDuration: 260,
+      charDataLoader: dataLoader
+    });
+  }
+
+  function startQuiz(){
+    finished = false;
+    doneCount = 0;
+    mistakes = 0;
+    stampEl.classList.remove('show');
+    boxEl.classList.remove('ok','bad');
+    total = (window.HWD[char] && window.HWD[char].strokes.length) || 0;
+    paintProgress();
+    sayEl.textContent = '照著灰線，把這一筆寫出來';
+    writer.quiz({
+      showHintAfterMisses: 2,
+      highlightOnComplete: true,
+      onCorrectStroke: function(s){
+        doneCount = s.strokeNum + 1;
+        paintProgress();
+        if (doneCount < total) sayEl.textContent = '很好！下一筆 👍';
+      },
+      onMistake: function(){
+        mistakes++;
+        boxEl.classList.remove('bad'); void boxEl.offsetWidth; boxEl.classList.add('bad');
+        setTimeout(function(){ boxEl.classList.remove('bad'); }, 420);
+        sayEl.textContent = mistakes >= 2 ? '沒關係，看灰色的線慢慢寫 🙂' : '再試一次，慢慢來 🙂';
+      },
+      onComplete: function(sum){
+        finished = true;
+        doneCount = total;
+        paintProgress();
+        boxEl.classList.add('ok');
+        stampEl.classList.remove('show'); void stampEl.offsetWidth; stampEl.classList.add('show');
+        addStars(REWARD);
+        doneSet[char] = true;
+        renderChars();
+        sayEl.textContent = '🎉 寫對了！+' + REWARD + '⭐';
+        confetti();
+      }
+    });
+  }
+
+  function paintProgress(){
+    var pct = total ? Math.round(doneCount / total * 100) : 0;
+    progFill.style.width = pct + '%';
+    progTxt.textContent = '第 ' + doneCount + ' / ' + total + ' 筆';
+  }
+
+  function loadChar(ch){
+    char = ch;
+    bigChar.textContent = ch;
+    renderChars();
+    makeWriter();
+    startQuiz();
+  }
+
+  function renderChars(){
+    charsEl.innerHTML = '';
+    CHARS.forEach(function(c){
+      var b = document.createElement('div');
+      b.className = 'ch' + (c === char ? ' sel' : '') + (doneSet[c] ? ' done' : '');
+      b.textContent = c;
+      b.addEventListener('click', function(){ if (c !== char) loadChar(c); });
+      charsEl.appendChild(b);
+    });
+  }
+
+  document.getElementById('btnShow').addEventListener('click', function(){
+    if (!writer) return;
+    sayEl.textContent = '看清楚筆順，等一下換你寫';
+    writer.cancelQuiz();
+    writer.animateCharacter({
+      onComplete: function(){ setTimeout(startQuiz, 260); }
+    });
+  });
+
+  document.getElementById('btnRedo').addEventListener('click', function(){
+    if (!writer) return;
+    writer.cancelQuiz();
+    startQuiz();
+  });
+
+  /* 小彩帶 */
+  function confetti(){
+    var colors = ['#fbbf24','#22c55e','#3b82f6','#f472b6','#a78bfa'];
+    for (var i = 0; i < 26; i++){
+      var d = document.createElement('div');
+      d.style.cssText = 'position:fixed;left:50%;top:45%;width:8px;height:12px;border-radius:2px;'
+        + 'margin:-6px 0 0 -4px;background:' + colors[i % colors.length]
+        + ';z-index:50;pointer-events:none;will-change:transform,opacity';
+      document.body.appendChild(d);
+      var ang = (Math.random() * Math.PI * 2), dist = 120 + Math.random() * 260;
+      var dur = 900 + Math.random() * 500;
+      if (d.animate){
+        d.animate([
+          { transform:'translate(0,0) rotate(0deg)', opacity:1 },
+          { transform:'translate(' + Math.round(Math.cos(ang)*dist) + 'px,' + Math.round(Math.sin(ang)*dist + 200) + 'px) rotate(' + Math.round(Math.random()*720-360) + 'deg)', opacity:0 }
+        ], { duration: dur, easing:'cubic-bezier(.2,.7,.4,1)', fill:'forwards' });
+      }
+      (function(el, ms){ setTimeout(function(){ if (el.parentNode) el.remove(); }, ms + 60); })(d, dur);
+    }
+  }
+
+  /* 測試鉤子：?char=火 直接載入某個字 */
+  var m = location.search.match(/[?&]char=([^&]+)/);
+  var start = '水';
+  if (m){
+    try { start = decodeURIComponent(m[1]); } catch(e){}
+    if (CHARS.indexOf(start) < 0) start = '水';
+  }
+  loadChar(start);
+
+  /* 給自動化測試用 */
+  window.__hw = {
+    char: function(){ return char; },
+    stats: function(){ return { char: char, total: total, done: doneCount, mistakes: mistakes, finished: finished, stars: stars }; }
+  };
+})();
+</script>
+</body>
+</html>

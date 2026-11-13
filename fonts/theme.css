@@ -1,0 +1,120 @@
+/* ─────────────────────────────────────────────────────────────
+   共用主題：粉圓體（jf open 粉圓，OFL）＋ 放大、加粗的介面字
+   這個檔案一定要放在各頁原本的 <style> 之後，才會覆蓋原本的字級。
+   字型已裁成「只含介面用到的字」，117 KB；出現沒裁到的字會自動退回系統字型。
+   ───────────────────────────────────────────────────────────── */
+
+/* 數字／英文字用 Fredoka（圓胖、有份量），中文字仍然用粉圓體。
+   unicode-range 只圈 ASCII，所以中文字不會被它搶走。 */
+@font-face {
+  font-family: "Digits";
+  src: url("fredoka.woff2") format("woff2");
+  font-weight: 300 700;
+  font-display: swap;
+  unicode-range: U+0020-007E;
+}
+
+@font-face {
+  font-family: "Huninn";
+  src: url("huninn-sub.woff2") format("woff2");
+  /* 只宣告一個字重，讓 font-weight:800/900 由瀏覽器合成粗體（粉圓體本身偏圓，合成後更「肥」） */
+  font-weight: 400;
+  font-display: swap;
+}
+
+body, button, input, select, textarea {
+  font-family: "Digits", "Huninn", "Microsoft JhengHei", "Noto Sans TC", "PingFang TC", system-ui, sans-serif;
+}
+
+/* ── 大字再加粗一層（粉圓體只有一個字重，用描邊把它撐「肥」） ── */
+#qText,
+.opt,
+.gtitle,
+#panel .name,
+#picker h2,
+.gcard .nm,
+#gameTitle,
+#title,
+.cgTitle,
+#unitPanel h2,
+#dexPanel h2,
+#qaPanel h2,
+#stdTitle {
+  -webkit-text-stroke: 0.55px currentColor;
+  paint-order: stroke fill;
+}
+
+/* ── 寵物社區 ───────────────────────────────────────────── */
+.gtitle            { font-size: 24px !important; letter-spacing: .01em; }
+.gsub              { font-size: 15px !important; }
+#panel .name       { font-size: 26px !important; }
+#panel .form       { font-size: 16px !important; }
+#panel .mood       { font-size: 19px !important; }
+#panel button      { font-size: 20px !important; padding: 12px 16px !important; }
+#panel .ptxt       { font-size: 15px !important; }
+.chip .nm          { font-size: 14px !important; }
+#farmHint          { font-size: clamp(17px, 2.6vmin, 21px) !important; }
+#petBar .chip      { min-width: 72px; }
+.pet .bubble       { font-size: 17px !important; }
+#hbEmpty           { font-size: 15px !important; }
+.hbNote            { font-size: 13px !important; }
+#hbCount           { font-size: 15px !important; }
+#kidPanel h3       { font-size: 19px !important; }
+#kidPanel p        { font-size: 14px !important; }
+#kidName           { font-size: 17px !important; }
+#kidBtns button    { font-size: 15px !important; }
+.cgTitle           { font-size: clamp(26px, 4vmin, 38px) !important; }
+.cgSub             { font-size: 17px !important; }
+.cgHint            { font-size: 15px !important; }
+
+/* ── 挑戰頁 ────────────────────────────────────────────── */
+#topbar h1         { font-size: 20px !important; }
+#stars             { font-size: 17px !important; }
+#qText             { font-size: 30px !important; }
+#qText.long        { font-size: 22px !important; }
+#qText.xlong       { font-size: 19px !important; line-height: 1.7 !important; }
+.opt               { font-size: 27px !important; padding: 16px 8px !important; }
+#feedback          { font-size: 16px !important; }
+#qMeta             { font-size: 13.5px !important; }
+.fighter .tag      { font-size: 13px !important; }
+#padHead b         { font-size: 16px !important; }
+#padHead span      { font-size: 12.5px !important; }
+#padHead button    { font-size: 13px !important; padding: 6px 13px !important; }
+#unitBtn           { font-size: 14px !important; padding: 7px 15px !important; }
+#unitPanel h2,
+#qaPanel h2,
+#dexPanel h2       { font-size: 19px !important; }
+.unitGrade         { font-size: 14px !important; }
+.unitItem          { font-size: 15px !important; }
+.unitItem small    { font-size: 12px !important; }
+.qaBtns button     { font-size: 14px !important; }
+.dexCell .nm       { font-size: 12.5px !important; }
+.dexCell .st       { font-size: 11px !important; }
+#combo             { font-size: 15px !important; }
+.dmg               { font-size: 38px !important; }
+
+/* ── 遊樂場 ────────────────────────────────────────────── */
+#title             { font-size: 20px !important; }
+#title small       { font-size: 12px !important; }
+#picker h2         { font-size: 24px !important; }
+#picker p          { font-size: 14.5px !important; }
+.gcard .nm         { font-size: 21px !important; }
+.gcard .ds         { font-size: 13.5px !important; }
+.gcard .tg         { font-size: 12.5px !important; }
+#gameTitle         { font-size: 20px !important; }
+#gameSub           { font-size: 13px !important; }
+#status            { font-size: 17px !important; }
+.lbl               { font-size: 12.5px !important; }
+.dbtn              { font-size: 14px !important; padding: 9px 0 !important; }
+.btn               { font-size: 15px !important; padding: 12px 0 !important; }
+#winsBox           { font-size: 13.5px !important; }
+#petSide .say      { font-size: 13.5px !important; }
+#ovMsg             { font-size: 22px !important; }
+#ovSub             { font-size: 15px !important; }
+#ovBtns .btn       { font-size: 15px !important; }
+
+/* ── 寫字練習 ──────────────────────────────────────────── */
+#say               { font-size: 15px !important; }
+#progTxt           { font-size: 14px !important; }
+.chipBtn           { font-size: 22px !important; }
+#btnShow, #btnRedo { font-size: 15px !important; }
