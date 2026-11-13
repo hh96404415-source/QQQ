@@ -168,7 +168,20 @@
   function gasCfg() {
     var o = {};
     try { o = JSON.parse(localStorage.getItem(QA_KEY) || '{}'); } catch (e) {}
+    /* 網址可以臨時用 ?gas=<新網址>&token=<新token> 覆寫（會被記住） */
+    var qs = new URLSearchParams(location.search);
+    if (qs.get('gas')) {
+      o.url = qs.get('gas');
+      if (qs.get('token')) o.token = qs.get('token');
+      try { localStorage.setItem(QA_KEY, JSON.stringify({ url: o.url, token: o.token || DEFAULT_TOKEN, uid: o.uid || 'kid01', pin: o.pin || '', on: true })); } catch (e) {}
+    }
     return { url: o.url || DEFAULT_GAS, token: o.token || DEFAULT_TOKEN };
+  }
+
+  function gasHost() {
+    var u = gasCfg().url || '';
+    var m = u.match(/\/macros\/s\/([A-Za-z0-9_-]{8,})/);
+    return m ? ('…' + m[1].slice(-6)) : u.slice(0, 32);
   }
 
   function post(body) {
@@ -272,7 +285,8 @@
       if (r && r.error === 'token 錯誤') {
         msg = '連上了，但 token 不對。請家長在 GAS 把 CONFIG.TOKEN 改成跟網頁一樣。';
       } else if (r && /未知 action/.test(r.error)) {
-        msg = '名冊還沒開通：家長要把「登入」那段加進 GAS 再部署一次。';
+        msg = '名冊還沒開通：GAS 那個部署還是舊版（' + gasHost() + '）。' +
+              '要「管理部署 → 編輯 → 版本選新版本 → 部署」，網址才不會變。';
       } else if (r && r.error) {
         msg = r.error;
       } else {
