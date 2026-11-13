@@ -594,6 +594,7 @@
       SESSION.s += got;
       paintStars();
       try { localStorage.setItem(SKEY, String(stars)); } catch (e) {}
+      if (window.Player) window.Player.pushSoon(1500);
     }
     /* 打贏一隻怪另外送幾顆（星星不值錢，重點是「贏了」那一下） */
     var WIN_STARS = 2;
@@ -1445,6 +1446,7 @@
             k: petInfo.k, no: petInfo.no, t: Date.now()
           }));
         } catch (e) {}
+        if (window.Player) window.Player.push();   /* 回社區前先存一次 */
       });
     })();
     if (window.SND) { window.SND.mount(document.getElementById('topbar')); window.SND.bgm('fear.mp3', 0.30); }

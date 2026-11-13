@@ -576,7 +576,7 @@
   var stars = 0;
   var STARS_KEY = 'dsh_stars';
   try { stars = Math.max(0, parseInt(localStorage.getItem(STARS_KEY) || '0', 10) || 0); } catch(e){ stars = 0; }
-  function saveStars(){ try { localStorage.setItem(STARS_KEY, String(stars)); } catch(e){} }
+  function saveStars(){ try { localStorage.setItem(STARS_KEY, String(stars)); } catch(e){} if (window.Player) window.Player.pushSoon(1500); }
   var active = null;       // 面板中的寵物
   var sel = 0;             // 右半遊戲選中的寵物
   var pets = [];
@@ -1775,6 +1775,13 @@
 
   /* 從挑戰頁回來 → 演「帶回家」那一段 */
   if (harvest && !picking) setTimeout(harvestShow, 700);
+
+  /* 開頁先問雲端有沒有更新的存檔（換機／清快取後靠這個救回來） */
+  if (window.Player && !picking) {
+    window.Player.hydrate(function (err, changed) {
+      if (changed) setTimeout(function () { location.reload(); }, 260);
+    });
+  }
 
   /* 音效開關：貼在農場右上角 */
   if (window.SND) {

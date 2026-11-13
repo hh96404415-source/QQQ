@@ -128,6 +128,103 @@
     localStorage.setItem(CUR, pid);
   }
 
+  /* ── 雲端存檔（GAS 的 State 表）──────────────────────────────
+     這台機的 localStorage 是「快取」，Sheet 才是「正本」。
+     · 登入／第一次開頁：拉下來（雲端較新才覆蓋）
+     · 加星星／餵食：1.2 秒後推上去（節流，避免連續答題一直打 GAS）
+     · 回社區前：立刻推一次
+     ───────────────────────────────────────────────────────────── */
+  var GAS_DEFAULT = {
+    url: 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec',
+    token: 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC'
+  };
+  var SYNC_KEYS = ['dsh_stars', 'dsh_pet', 'dsh_pick', 'dsh_hw_done', 'dsh_time', 'dsh_time_cap', 'dsh_ans_log'];
+  var pushTimer = null, pushing = false;
+
+  function gasCfg() {
+    var c = {};
+    try { c = JSON.parse(localStorage.getItem('dsh_qa') || '{}') || {}; } catch (e) { c = {}; }
+    var token = c.token && c.token !== 'CHANGE_ME_TO_A_RANDOM_LONG_STRING' ? c.token : GAS_DEFAULT.token;
+    return { url: c.url || GAS_DEFAULT.url, token: token };
+  }
+
+  function post(body, cb) {
+    var g = gasCfg();
+    var payload = JSON.stringify({ token: g.token, action: body.action, user_id: body.user_id, state: body.state });
+    fetch(g.url, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: payload
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d && d.ok) cb(null, d); else cb((d && d.error) || '存檔失敗', d);
+    }).catch(function () { cb('連不上'); });
+  }
+
+  function pack() {
+    var st = { v: 1 };
+    SYNC_KEYS.forEach(function (k) {
+      var v = localStorage.getItem(k);
+      if (v !== null) st[k] = v;
+    });
+    try {   /* ans_log 只帶最近 80 筆，免得超過 Sheet 儲存格上限 */
+      var a = JSON.parse(st.dsh_ans_log || '[]');
+      if (a.length > 80) st.dsh_ans_log = JSON.stringify(a.slice(-80));
+    } catch (e) {}
+    return st;
+  }
+
+  function apply(st) {
+    if (!st) return false;
+    SYNC_KEYS.forEach(function (k) {
+      if (typeof st[k] === 'string') { try { localStorage.setItem(k, st[k]); } catch (e) {} }
+    });
+    return true;
+  }
+
+  function pull(cb) {
+    var b = bound();
+    if (!b) return cb && cb('未綁定');
+    post({ action: 'state_get', user_id: b.id }, function (err, d) {
+      if (err) return cb && cb(err);
+      cb && cb(null, d.state, Number(d.updated) || 0);
+    });
+  }
+
+  function push(cb) {
+    var b = bound();
+    if (!b) return cb && cb('未綁定');
+    if (pushing) return cb && cb('忙碌中');
+    pushing = true;
+    post({ action: 'state_put', user_id: b.id, state: pack() }, function (err, d) {
+      pushing = false;
+      if (!err) {
+        try { localStorage.setItem('dsh__sync', String(d.updated || Date.now())); } catch (e) {}
+      }
+      cb && cb(err, d);
+    });
+  }
+
+  function pushSoon(ms) {
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(function () { push(); }, ms || 1500);
+  }
+
+  /* 開頁時拉雲端存檔；回傳 changed=true 表示有覆蓋本地，頁面要重畫 */
+  function hydrate(cb) {
+    var b = bound();
+    if (!b) return cb && cb(null, false);
+    if (sessionStorage.getItem('dsh__hyd')) return cb && cb(null, false);
+    sessionStorage.setItem('dsh__hyd', '1');
+    pull(function (err, st, upd) {
+      if (err || !st) return cb && cb(err, false);
+      var prev = Number(localStorage.getItem('dsh__sync') || 0);
+      if (upd <= prev) return cb && cb(null, false);
+      apply(st);
+      try { localStorage.setItem('dsh__sync', String(upd)); } catch (e) {}
+      cb && cb(null, true);
+    });
+  }
+
   /* ── 右上角的名字：只有一個，沒有下拉、不能換人 ── */
   function mount(host) {
     if (!host || document.getElementById('whoChip')) return;
@@ -169,6 +266,11 @@
     unbind: unbind,
     switchTo: switchTo,
     login: login,
+    pull: pull,
+    push: push,
+    pushSoon: pushSoon,
+    hydrate: hydrate,
+    syncInfo: function () { return { last: Number(localStorage.getItem('dsh__sync') || 0) }; },
     mount: function (host) { installStyles(); mount(host); }
   };
 })();

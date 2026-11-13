@@ -287,6 +287,7 @@
   var SESSION = { s: 0, m: 0, w: 0 };
   function addStar(n) {
     stars += n; SESSION.s += n; localStorage.setItem(STARS_KEY, stars); paintStars();
+    if (window.Player) window.Player.pushSoon(1500);
   }
   function toast(msg) {
     var t = $('toast'); t.textContent = msg; t.classList.add('on');
