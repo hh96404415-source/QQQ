@@ -1782,6 +1782,10 @@
       streak = 0;
       setCombo();
       sfxWrongS();
+      if (window.Juice) {
+        window.Juice.flash('rgba(190,30,30,.16)', 110);
+        window.Juice.fx('hit');
+      }
       for (var k = 0; k < q.options.length; k++) {
         if (q.options[k] === q.answer && opts[k]) opts[k].classList.add('reveal');
       }
