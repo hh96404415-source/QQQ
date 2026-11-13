@@ -1617,7 +1617,7 @@
         if (window.Player) window.Player.push();   /* 回社區前先存一次 */
       });
     })();
-    if (window.SND) { window.SND.mount(document.getElementById('topbar')); window.SND.bgm('fear.mp3', 0.30); }
+    if (window.SND) { window.SND.mount(document.getElementById('topbar')); window.SND.bgm('fear.mp3', 0.30, { start: 0.3 }); }
     if (window.Player) window.Player.mount(document.getElementById('topbar'));
     if (window.Time) window.Time.mount(document.getElementById('topbar'));
     setTimeout(function () {

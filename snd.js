@@ -61,12 +61,28 @@
   }
 
   /* ── 背景音樂 ──────────────────────────────────────────────
-     SND.bgm('fear.mp3', 0.35)
+     SND.bgm('fear.mp3', 0.35, { start: 6.4 })
      · 瀏覽器不許自動播音，所以第一次使用者碰畫面/按鍵才開始播
      · 音效關掉時一併暫停；重新開啟會接回原本的進度
      · 切到別的頁籤（hidden）也暫停，回來再播
+     · start：跳過前面的鋪陳（那些「空氣」），loop 時也從這裡接
+     · 播放位置存在 sessionStorage，換頁（例如選完蛋重載）不會從頭播
      ────────────────────────────────────────────────────────── */
   var bgmEl = null, bgmWanted = false, bgmVolume = 0.35, unlocked = false;
+  var bgmStart = 0, bgmSrc = '', bgmSaveT = null;
+  var POS_KEY = 'dsh_bgm_pos';   /* '檔名|秒數' */
+
+  function readPos(src) {
+    try {
+      var v = (sessionStorage.getItem(POS_KEY) || '').split('|');
+      if (v[0] === src && v[1]) return parseFloat(v[1]) || 0;
+    } catch (e) {}
+    return 0;
+  }
+  function savePos() {
+    if (!bgmEl || !bgmSrc) return;
+    try { sessionStorage.setItem(POS_KEY, bgmSrc + '|' + Math.round(bgmEl.currentTime * 10) / 10); } catch (e) {}
+  }
 
   function tryPlay() {
     if (!bgmEl || !bgmWanted || !unlocked || !on()) return;
@@ -82,25 +98,46 @@
     unlocked = true;
     tryPlay();
   }
-  function bgm(src, vol) {
+  function bgm(src, vol, opt) {
     if (!src) return null;
     if (typeof vol === 'number') bgmVolume = vol;
+    var startAt = (opt && typeof opt.start === 'number') ? opt.start : 0;
     if (!bgmEl) {
       bgmEl = document.createElement('audio');
       bgmEl.id = 'bgm';
-      bgmEl.loop = true;
+      bgmEl.loop = false;          /* 自己處理 loop，才能每次都從 start 接 */
       bgmEl.preload = 'auto';
       bgmEl.volume = bgmVolume;
       bgmEl.setAttribute('playsinline', '');
       document.body.appendChild(bgmEl);
+      bgmEl.addEventListener('ended', function () {
+        bgmEl.currentTime = bgmStart;
+        tryPlay();
+      });
+      bgmEl.addEventListener('loadedmetadata', function () {
+        var pos = readPos(bgmSrc);
+        var to = pos > bgmStart ? pos : bgmStart;
+        if (to > 0 && to < (bgmEl.duration || 1e9) - 1) {
+          try { bgmEl.currentTime = to; } catch (e) {}
+        }
+      });
+      bgmSaveT = setInterval(savePos, 2000);
+      w.addEventListener('pagehide', savePos);
       ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) {
         w.addEventListener(ev, unlock, { once: true, passive: true });
       });
       document.addEventListener('visibilitychange', function () {
-        if (document.hidden) tryPause(); else tryPlay();
+        if (document.hidden) { savePos(); tryPause(); } else tryPlay();
       });
     }
-    if (!bgmEl.src || bgmEl.src.indexOf(encodeURI(src)) === -1) bgmEl.src = src;
+    if (bgmSrc !== src) {
+      bgmSrc = src;
+      bgmStart = startAt;
+      bgmEl.src = src;
+      try { bgmEl.load(); } catch (e) {}
+    } else if (startAt && !bgmStart) {
+      bgmStart = startAt;
+    }
     bgmEl.volume = bgmVolume;
     bgmWanted = true;
     tryPlay();
