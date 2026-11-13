@@ -35,8 +35,13 @@
     width:64%;height:12px;border-radius:50%;background:rgba(0,0,0,.25);filter:blur(3px);z-index:0}
   .pet img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;
     position:relative;z-index:1;animation:petBreathe 2.8s ease-in-out infinite;
+    transform-origin:50% 100%;
     filter:drop-shadow(0 4px 4px rgba(0,0,0,.18))}
-  @keyframes petBreathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+  @keyframes petBreathe{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-2px) scaleY(1.022)}}
+  @keyframes petHop{0%{transform:translateY(0) scaleY(1)}14%{transform:translateY(-16px) scaleY(1.06)}
+    30%{transform:translateY(0) scaleY(.92)}44%{transform:translateY(-7px) scaleY(1.03)}
+    60%{transform:translateY(0) scaleY(.97)}100%{transform:translateY(0) scaleY(1)}}
+  .pet img.hop{animation:petHop .85s cubic-bezier(.25,1.5,.5,1)}
   .pet.excited{filter:drop-shadow(0 0 10px #fff6a0) brightness(1.08);animation:pulse .9s infinite}
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
   .pet .bubble{position:absolute;top:-6px;left:50%;transform:translate(-50%,-100%) scale(.86);
@@ -515,6 +520,7 @@
 </div>
 <script src="petlang.js"></script>
 <script src="snd.js"></script>
+<script src="juice.js"></script>
 <script src="player.js"></script>
 <script src="time.js"></script>
 <script>
@@ -1789,6 +1795,24 @@
     window.SND.mount(farmArea, 'position:absolute;top:10px;right:10px;z-index:30');
     window.SND.bgm('prontera.mp3', 0.28);
   }
+
+  /* 偶爾自己蹦一下（隨機 5–11 秒），讓農場看起來有生命 */
+  (function hopLoop() {
+    setTimeout(function () {
+      try {
+        var cands = pets.filter(function (p) { return p.inFarm && p.el && p.stage > 0; });
+        if (cands.length) {
+          var p = cands[(Math.random() * cands.length) | 0];
+          var im = p.el.querySelector('img');
+          if (im && !im.classList.contains('hop')) {
+            im.classList.add('hop');
+            setTimeout(function () { im.classList.remove('hop'); }, 900);
+          }
+        }
+      } catch (e) {}
+      hopLoop();
+    }, 5000 + Math.random() * 6000);
+  })();
 
   /* 現在是哪一位小朋友：貼在農場左上角（星星下面） */
   if (window.Player && farmArea) {

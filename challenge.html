@@ -213,6 +213,9 @@
     padding:5px 15px;border-radius:999px;box-shadow:0 6px 18px rgba(249,115,22,.55);
     transition:opacity .2s, transform .2s;pointer-events:none}
   #combo.hidden{opacity:0;transform:translateY(-10px)}
+  #combo.c3{background:linear-gradient(180deg,#f97316,#c2410c);box-shadow:0 6px 20px rgba(249,115,22,.75)}
+  #combo.c5{background:linear-gradient(180deg,#f43f5e,#9f1239);box-shadow:0 6px 24px rgba(244,63,94,.8);transform:scale(1.06)}
+  #combo.c7{background:linear-gradient(180deg,#a855f7,#6b21a8);box-shadow:0 6px 28px rgba(168,85,247,.85);transform:scale(1.12)}
   .dmg{position:absolute;font-weight:900;font-size:34px;color:#fde047;z-index:9;
     -webkit-text-stroke:3px #7c2d12;paint-order:stroke fill;
     text-shadow:0 4px 12px rgba(0,0,0,.9),0 0 22px rgba(253,224,71,.7);
@@ -388,6 +391,7 @@
 <script src="hw/hwdata1.js"></script>
 <script src="petlang.js"></script>
 <script src="snd.js"></script>
+<script src="juice.js"></script>
 <script src="player.js"></script>
 <script src="time.js"></script>
 <script>
@@ -1378,6 +1382,14 @@
       /* 怪物登場：從右邊跳進來 */
       monImg.classList.remove('enter'); void monImg.offsetWidth; monImg.classList.add('enter');
       setTimeout(function () { monImg.classList.remove('enter'); }, 700);
+      /* 首領登場的儀式：暗一下、鼓聲、橫幅 */
+      if (isBoss && window.Juice) {
+        window.Juice.fx('boss');
+        window.Juice.flash('rgba(120,20,10,.55)', 140);
+        window.Juice.banner((hue ? '👑 異色首領' : '👑 BOSS') + ' 出現！', { ms: 1500, target: arenaEl });
+      } else if (window.Juice && battles > 1) {
+        window.Juice.fx('tap');
+      }
     }
 
     function renderDex() {
@@ -1632,6 +1644,13 @@
       burst(pt.x, pt.y, '#fde047', 14);
       burst(pt.x, pt.y, '#fff', 8);
       sfxBoom();
+      /* 打死那一下：假慢動作（凍 + 推近 + 白閃）+ 彩帶 */
+      if (window.Juice) {
+        window.Juice.fx('boom');
+        window.Juice.slowmo(190, arenaEl);
+        var ar2 = arenaEl ? arenaEl.getBoundingClientRect() : null;
+        if (ar2) window.Juice.confetti(14, { x: ar2.left + pt.x, y: ar2.top + pt.y });
+      }
       /* 星星雨 */
       for (var i = 0; i < 8; i++) {
         (function (k) {
@@ -1654,10 +1673,15 @@
     function setCombo() {
       if (!comboEl) return;
       if (streak >= 2) {
-        comboEl.textContent = '🔥 連對 ' + streak;
+        comboEl.textContent = (streak >= 5 ? '⚡' : '🔥') + ' 連對 ' + streak;
         comboEl.classList.remove('hidden');
+        comboEl.classList.toggle('c3', streak >= 3 && streak < 5);
+        comboEl.classList.toggle('c5', streak >= 5 && streak < 7);
+        comboEl.classList.toggle('c7', streak >= 7);
+        if (window.Juice) window.Juice.bump(comboEl, streak >= 5 ? 1.28 : 1.14);
       } else {
         comboEl.classList.add('hidden');
+        comboEl.classList.remove('c3', 'c5', 'c7');
       }
     }
     function setGhost(pct) {

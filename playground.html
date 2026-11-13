@@ -260,6 +260,7 @@
 
 <script src="petlang.js"></script>
 <script src="snd.js"></script>
+<script src="juice.js"></script>
 <script src="player.js"></script>
 <script>
 (function(){
@@ -387,6 +388,12 @@
     recordWin();
     sfx.win();
     confetti();
+    if (window.Juice) {
+      window.Juice.fx('win');
+      window.Juice.banner('🎉 你贏了！+' + WIN_STARS + ' ⭐', { ms: 1400, target: boardEl });
+      var br = boardEl.getBoundingClientRect();
+      window.Juice.confetti(18, { x: br.left + br.width / 2, y: br.top + br.height * 0.42 });
+    }
   }
 
   /* ================= 棋盤工具 ================= */
