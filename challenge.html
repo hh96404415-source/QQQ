@@ -1590,6 +1590,11 @@
     } catch (e) {}
     if (!petInfo || petInfo.s === 0) petInfo = { k: 'fire_dragon', s: 1, n: '火苗龍', no: 1 };
     petImg.src = 'pets/' + petInfo.k + '/0' + (petInfo.s + 1) + '_' + STAGE_NAMES[petInfo.s] + '.webp';
+    /* 越長越大：同一隻寵物在高階時上場更有氣勢 */
+    var PET_GROW = [0.80, 0.90, 1.0, 1.12, 1.24];
+    var pg = PET_GROW[petInfo.s] || 1;
+    petImg.style.width = Math.round(150 * pg) + 'px';
+    petImg.style.height = Math.round(150 * pg) + 'px';
     document.getElementById('petTag').textContent = petInfo.n || '火苗龍';
 
     function petSay(key, opts) {
