@@ -1777,7 +1777,10 @@
   if (harvest && !picking) setTimeout(harvestShow, 700);
 
   /* 音效開關：貼在農場右上角 */
-  if (window.SND) window.SND.mount(farmArea, 'position:absolute;top:10px;right:10px;z-index:30');
+  if (window.SND) {
+    window.SND.mount(farmArea, 'position:absolute;top:10px;right:10px;z-index:30');
+    window.SND.bgm('prontera.mp3', 0.28);
+  }
 
   /* 現在是哪一位小朋友：貼在農場左上角（星星下面） */
   if (window.Player && farmArea) {

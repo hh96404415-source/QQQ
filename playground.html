@@ -972,7 +972,7 @@
       } catch (e) {}
     });
   })();
-  if (window.SND) window.SND.mount(document.getElementById('topbar'));
+  if (window.SND) { window.SND.mount(document.getElementById('topbar')); window.SND.bgm('prontera.mp3', 0.22); }
   if (window.Player) window.Player.mount(document.getElementById('topbar'));
 
   var m = location.search.match(/[?&]game=(ttt|c4|rv)/);

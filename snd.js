@@ -14,7 +14,7 @@
   function set(v) {
     try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) {}
     paint();
-    if (v && w.SND && w.SND._onEnable) { try { w.SND._onEnable(); } catch (e) {} }
+    if (v) tryPlay(); else tryPause();
   }
   function toggle() { set(!on()); }
 
@@ -60,7 +60,56 @@
     document.head.appendChild(st);
   }
 
-  w.SND = { on: on, set: set, toggle: toggle, mount: mount, installStyles: installStyles };
+  /* ── 背景音樂 ──────────────────────────────────────────────
+     SND.bgm('fear.mp3', 0.35)
+     · 瀏覽器不許自動播音，所以第一次使用者碰畫面/按鍵才開始播
+     · 音效關掉時一併暫停；重新開啟會接回原本的進度
+     · 切到別的頁籤（hidden）也暫停，回來再播
+     ────────────────────────────────────────────────────────── */
+  var bgmEl = null, bgmWanted = false, bgmVolume = 0.35, unlocked = false;
+
+  function tryPlay() {
+    if (!bgmEl || !bgmWanted || !unlocked || !on()) return;
+    if (document.hidden) return;
+    var p = bgmEl.play();
+    if (p && p.catch) p.catch(function () {});
+  }
+  function tryPause() {
+    if (bgmEl && !bgmEl.paused) bgmEl.pause();
+  }
+  function unlock() {
+    if (unlocked) return;
+    unlocked = true;
+    tryPlay();
+  }
+  function bgm(src, vol) {
+    if (!src) return null;
+    if (typeof vol === 'number') bgmVolume = vol;
+    if (!bgmEl) {
+      bgmEl = document.createElement('audio');
+      bgmEl.id = 'bgm';
+      bgmEl.loop = true;
+      bgmEl.preload = 'auto';
+      bgmEl.volume = bgmVolume;
+      bgmEl.setAttribute('playsinline', '');
+      document.body.appendChild(bgmEl);
+      ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) {
+        w.addEventListener(ev, unlock, { once: true, passive: true });
+      });
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) tryPause(); else tryPlay();
+      });
+    }
+    if (!bgmEl.src || bgmEl.src.indexOf(encodeURI(src)) === -1) bgmEl.src = src;
+    bgmEl.volume = bgmVolume;
+    bgmWanted = true;
+    tryPlay();
+    return bgmEl;
+  }
+
+  // 音效開關改變時，跟著播/停背景音樂
+  w.SND = { on: on, set: set, toggle: toggle, mount: mount, installStyles: installStyles,
+            bgm: bgm, _onEnable: tryPlay, _bgmEl: function () { return bgmEl; } };
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', installStyles);
   } else {
