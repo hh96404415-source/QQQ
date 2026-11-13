@@ -486,6 +486,14 @@
     background:#7dd3fc;border-radius:999px;padding:1px 7px}
   #shopTip{font-size:12px;font-weight:700;color:#8fa1bd;text-align:center;margin:12px 0 0}
 
+
+  .fac img.fico{display:block;object-fit:contain;pointer-events:none;
+    filter:drop-shadow(0 5px 8px rgba(0,0,0,.45))}
+  .fac.lv1 img.fico{width:64px;height:64px}
+  .fac.lv2 img.fico{width:84px;height:84px}
+  .fac.lv3 img.fico{width:108px;height:108px}
+  .shopCard img.fico{width:76px;height:76px;object-fit:contain;pointer-events:none;
+    filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
 </style>
 <link rel="stylesheet" href="fonts/theme.css">
 </head>
@@ -630,6 +638,7 @@
 <script src="petlang.js"></script>
 <script src="snd.js"></script>
 <script src="juice.js"></script>
+<script src="motion.js"></script>
 <script src="player.js"></script>
 <script src="time.js"></script>
 <script>
@@ -957,10 +966,21 @@
       d.style.left = f.x + '%';
       d.style.top = f.y + '%';
       d.style.zIndex = String(Math.round(f.y * 10) - 40);
+      d.classList.add('lv' + (lv || 0));
+      if (window.Motion) { try { window.Motion.tag(d, f.id === 'tree' ? 'tree' : (f.id === 'ride' ? 'ride' : (f.id === 'pond' ? 'pond' : 'home'))); } catch (e) {} }
       var ico = document.createElement('div');
       ico.className = 'fico';
       ico.textContent = lv ? f.lv[lv - 1].ico : '+';
       d.appendChild(ico);
+      if (lv) {
+        var im = document.createElement('img');
+        im.className = 'fico';
+        im.alt = '';
+        im.src = 'images/fac/' + f.id + lv + '.webp';
+        im.onerror = function () { if (im.parentNode) im.parentNode.removeChild(im); };
+        im.onload = function () { if (ico.parentNode) ico.parentNode.removeChild(ico); };
+        d.appendChild(im);
+      }
       if (lv) {
         var tag = document.createElement('div');
         tag.className = 'flv';
@@ -1112,6 +1132,15 @@
         ico.textContent = lv ? f.lv[lv - 1].ico : '➕';
         card.appendChild(ico);
         if (lv) {
+          var fim = document.createElement('img');
+          fim.className = 'fico';
+          fim.alt = '';
+          fim.src = 'images/fac/' + f.id + lv + '.webp';
+          fim.onerror = function () { if (fim.parentNode) fim.parentNode.removeChild(fim); };
+          fim.onload = function () { if (ico.parentNode) ico.parentNode.removeChild(ico); };
+          card.appendChild(fim);
+        }
+        if (lv) {
           var tag = document.createElement('div');
           tag.className = 'lv';
           tag.textContent = lv + '級';
@@ -1172,6 +1201,7 @@
     facState[id] = lv + 1;
     saveFac();
     renderFac();
+
     var el = facEls[id];
     if (el) { el.classList.add('pop'); setTimeout(function () { el.classList.remove('pop'); }, 520); }
     shopRender();
@@ -2518,5 +2548,13 @@
   <div class="cgFlash"></div>
 </div>
 
+
+<script>
+/* 環境動態：雲飄、鳥飛、光斑、設施微動 */
+window.addEventListener('load', function () {
+  if (!window.Motion) return;
+  try { window.Motion.farm(document.getElementById('farmArea')); } catch (e) {}
+});
+</script>
 </body>
 </html>

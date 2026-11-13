@@ -480,6 +480,7 @@
 <script src="petlang.js"></script>
 <script src="snd.js"></script>
 <script src="juice.js"></script>
+<script src="motion.js"></script>
 <script src="player.js"></script>
 <script src="time.js"></script>
 <script>
@@ -2190,6 +2191,14 @@
       }
     } catch (e) {}
   })();
+</script>
+
+<script>
+/* 競技場環境動態：雲飄、鳥飛、光斑 */
+window.addEventListener('load', function () {
+  if (!window.Motion) return;
+  try { window.Motion.arena(document.getElementById('arena')); } catch (e) {}
+});
 </script>
 </body>
 </html>
