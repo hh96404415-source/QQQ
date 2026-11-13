@@ -1776,8 +1776,9 @@
   /* 從挑戰頁回來 → 演「帶回家」那一段 */
   if (harvest && !picking) setTimeout(harvestShow, 700);
 
-  /* 開頁先問雲端有沒有更新的存檔（換機／清快取後靠這個救回來） */
-  if (window.Player && !picking) {
+  /* 開頁先問雲端有沒有更新的存檔（換機／清快取後靠這個救回來）
+     注意：選蛋階段也要問 —— 換機時還沒有 dsh_pick，正是最需要救回來的時候 */
+  if (window.Player) {
     window.Player.hydrate(function (err, changed) {
       if (changed) setTimeout(function () { location.reload(); }, 260);
     });
