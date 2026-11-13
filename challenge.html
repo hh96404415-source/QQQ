@@ -692,7 +692,7 @@
     }
     /* 這一趟的收成：回社區時要讓牠「帶回家」 */
     var BACK_KEY = 'dsh_back';
-    var SESSION = { s: 0, m: 0, w: 0 };
+    var SESSION = { s: 0, m: 0, w: 0, q: 0 };
     function addStar(n){
       var got = (n || 1);
       stars += got;
@@ -1729,10 +1729,20 @@
       var back = document.getElementById('backBtn');
       if (!back) return;
       back.addEventListener('click', function () {
-        if (!SESSION.s && !SESSION.m && !SESSION.w) return;   /* 什麼都沒做就不用演 */
+        /* 挑戰完成獎勵：每答 3 題多送 1 顆星（最多 5 顆），答得越多領得越多 */
+        var bonus = Math.min(5, Math.floor(SESSION.q / 3));
+        if (bonus > 0) {
+          stars += bonus;
+          paintStars();
+          try { localStorage.setItem(SKEY, String(stars)); } catch (e) {}
+          if (window.Player) window.Player.pushSoon(1200);
+        }
+        SESSION.b = bonus;
+        if (!SESSION.s && !SESSION.m && !SESSION.w && !bonus) return;   /* 什麼都沒做就不用演 */
         try {
           localStorage.setItem(BACK_KEY, JSON.stringify({
-            s: SESSION.s, m: SESSION.m, w: SESSION.w,
+            s: SESSION.s, m: SESSION.m, w: SESSION.w, b: bonus,
+            q: SESSION.q,
             k: petInfo.k, no: petInfo.no, t: Date.now()
           }));
         } catch (e) {}
@@ -2006,6 +2016,7 @@
       /* 攻擊數字：題目越難、打得越痛（每隻怪固定 3 下，所以分母是 3） */
       var dmg = Math.round(dmgTotal() / 3);
       hitsOnCur++;
+      SESSION.q++;
       hpPct = Math.max(0, 100 - hitsOnCur * 100 / 3);
       hp.style.width = hpPct + '%';
       setGhost(hpPct);

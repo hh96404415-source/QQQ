@@ -116,6 +116,31 @@
     padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}
 
   /* ── 面板 ── */
+
+  /* ══════════ 社區設施（用星星建造／升級） ══════════ */
+  #facLayer{position:absolute;inset:0;pointer-events:none}
+  .fac{position:absolute;transform:translate(-50%,-100%);pointer-events:auto;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;line-height:1;
+    transition:transform .18s}
+  .fac:hover{transform:translate(-50%,-100%) scale(1.08)}
+  .fac .fico{font-size:60px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
+  .fac .flv{position:absolute;right:-6px;top:-2px;font-size:10px;font-weight:900;color:#0f172a;
+    background:linear-gradient(180deg,#fde68a,#fbbf24);border-radius:999px;padding:1px 6px;
+    border:1px solid rgba(120,53,15,.5)}
+  .fac.empty .fico{font-size:26px;color:rgba(255,255,255,.8);
+    width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    border:2px dashed rgba(255,255,255,.6);background:rgba(15,23,42,.25)}
+  .fac.pop{animation:facPop .5s ease-out}
+  @keyframes facPop{0%{transform:translate(-50%,-100%) scale(1)}40%{transform:translate(-50%,-100%) scale(1.28)}100%{transform:translate(-50%,-100%) scale(1)}}
+
+  #facCard{position:absolute;z-index:9750;width:min(230px,80%);padding:12px;
+    border-radius:16px;background:rgba(15,23,42,.97);border:1px solid rgba(255,255,255,.16);
+    box-shadow:0 18px 40px rgba(0,0,0,.5);display:none}
+  #facCard.show{display:block}
+  #facCard h4{margin:0 0 4px;font-size:17px;color:#fde047}
+  #facCard .frow{font-size:12.5px;color:#cbd5e1;margin:3px 0}
+  #facCard button{display:block;width:100%;margin-top:8px}
+
   #panel{position:absolute;left:0;top:0;width:min(240px,78%);
     background:linear-gradient(160deg, rgba(30,41,59,.97), rgba(15,23,42,.99));
     backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.15);
@@ -424,6 +449,14 @@
   <div id="farmPane">
     <div id="farmArea">
       <div id="fxLayer"></div>
+  <div id="facLayer"></div>
+  <div id="facCard">
+    <h4 id="fName">小屋</h4>
+    <div class="frow" id="fLv">目前：空地</div>
+    <div class="frow" id="fCost">升級需要 8 ⭐</div>
+    <button id="fDo">建造</button>
+    <button id="fClose" class="ghostBtn">關閉</button>
+  </div>
       <div id="farmHint">👆 點寵物</div>
       <div id="pickGuide" class="hidden">👇 到下面選 2 顆你喜歡的蛋</div>
       <div id="farmStars">⭐ <span id="starCount">0</span> <button id="btnStar">+1</button></div>
@@ -462,6 +495,7 @@
     </div>
   </div>
 </div>
+
 
 <div id="panel">
   <div id="pName" class="name"></div>
@@ -799,6 +833,146 @@
     return p;
   }
   for (var i=0;i<10;i++){ pets.push(makePet(i)); }
+
+  /* ══════════ 社區設施 ══════════
+     星星是唯一貨幣：餵食要花、設施也要花，但設施是「看得見的王國在長大」。 */
+  var FAC_KEY = 'dsh_fac';
+  var FAC = [
+    { id:'home', name:'小屋',   x:70, y:72,
+      lv:[ {cost:8,  ico:'⛺', label:'帳篷'},
+           {cost:20, ico:'🏡', label:'小屋'},
+           {cost:45, ico:'🏰', label:'城堡'} ] },
+    { id:'tree', name:'大樹',   x:20, y:66,
+      lv:[ {cost:5,  ico:'🌱', label:'樹苗'},
+           {cost:14, ico:'🌳', label:'大樹'},
+           {cost:32, ico:'🌸', label:'花樹'} ] },
+    { id:'ride', name:'遊樂場', x:50, y:88,
+      lv:[ {cost:10, ico:'🛝', label:'滑梯'},
+           {cost:24, ico:'🎠', label:'旋轉木馬'},
+           {cost:48, ico:'🎡', label:'摩天輪'} ] },
+    { id:'pond', name:'水池',   x:8,  y:80,
+      lv:[ {cost:6,  ico:'💧', label:'小水窪'},
+           {cost:16, ico:'🪷', label:'荷花池'},
+           {cost:36, ico:'⛲', label:'噴泉'} ] }
+  ];
+  var facState = (function () {
+    var o = {};
+    FAC.forEach(function (f) { o[f.id] = 0; });
+    try {
+      var raw = JSON.parse(localStorage.getItem(FAC_KEY) || '{}') || {};
+      FAC.forEach(function (f) {
+        var v = parseInt(raw[f.id], 10);
+        if (v >= 0 && v <= 3) o[f.id] = v;
+      });
+    } catch (e) {}
+    return o;
+  })();
+  var facLayer = document.getElementById('facLayer');
+  var facCard = document.getElementById('facCard');
+  var facCur = null;
+  var facEls = {};
+
+  function saveFac() {
+    try { localStorage.setItem(FAC_KEY, JSON.stringify(facState)); } catch (e) {}
+    if (window.Player) window.Player.pushSoon(1500);
+  }
+  function facById(id) {
+    for (var i = 0; i < FAC.length; i++) if (FAC[i].id === id) return FAC[i];
+    return null;
+  }
+  function renderFac() {
+    if (!facLayer) return;
+    facLayer.innerHTML = '';
+    facEls = {};
+    FAC.forEach(function (f) {
+      var lv = facState[f.id];
+      var d = document.createElement('div');
+      d.className = 'fac' + (lv ? '' : ' empty');
+      d.style.left = f.x + '%';
+      d.style.top = f.y + '%';
+      d.style.zIndex = String(Math.round(f.y * 10) - 40);
+      var ico = document.createElement('div');
+      ico.className = 'fico';
+      ico.textContent = lv ? f.lv[lv - 1].ico : '+';
+      d.appendChild(ico);
+      if (lv) {
+        var tag = document.createElement('div');
+        tag.className = 'flv';
+        tag.textContent = lv + '級';
+        d.appendChild(tag);
+      }
+      d.addEventListener('click', function (e) {
+        e.stopPropagation();
+        openFac(f.id);
+      });
+      facLayer.appendChild(d);
+      facEls[f.id] = d;
+    });
+  }
+  function openFac(id) {
+    var f = facById(id);
+    if (!f) return;
+    facCur = id;
+    var lv = facState[id];
+    document.getElementById('fName').textContent = f.name;
+    var next = lv < 3 ? f.lv[lv] : null;
+    document.getElementById('fLv').textContent = lv
+      ? ('目前：' + f.lv[lv - 1].label + '（' + lv + '/3 級）')
+      : '目前：空地';
+    document.getElementById('fCost').textContent = next
+      ? ('升級需要 ' + next.cost + ' ⭐（你有 ' + stars + ' ⭐）')
+      : '已經滿級了';
+    var btn = document.getElementById('fDo');
+    btn.textContent = next ? (lv ? '升級 → ' + next.label : '建造 ' + next.label) : '已滿級';
+    btn.disabled = !next || stars < next.cost;
+    var el = facEls[id];
+    if (el && facCard) {
+      var r = el.getBoundingClientRect(), a = farmArea.getBoundingClientRect();
+      var w = 230;
+      var left = Math.max(6, Math.min(a.width - w - 6, r.left - a.left + r.width / 2 - w / 2));
+      var top = r.top - a.top - 10;
+      facCard.style.left = left + 'px';
+      facCard.style.top = Math.max(6, top) + 'px';
+    }
+    facCard.classList.add('show');
+    sfxTap();
+  }
+  function closeFac() {
+    facCur = null;
+    if (facCard) facCard.classList.remove('show');
+  }
+  function doFac() {
+    if (!facCur) return;
+    var f = facById(facCur);
+    var lv = facState[facCur];
+    if (lv >= 3) return;
+    var next = f.lv[lv];
+    if (stars < next.cost) { sfxWrong(); return; }
+    stars -= next.cost;
+    starEl.textContent = stars;
+    saveStars();
+    facState[facCur] = lv + 1;
+    saveFac();
+    renderFac();
+    var el = facEls[facCur];
+    if (el) { el.classList.add('pop'); setTimeout(function () { el.classList.remove('pop'); }, 520); }
+    if (window.Juice) window.Juice.fx('level');
+    sfxLevel();
+    cheer(pets[0], '王國又大了一點！', 2600);
+    openFac(facCur);
+  }
+  if (document.getElementById('fDo')) {
+    document.getElementById('fDo').addEventListener('click', doFac);
+    document.getElementById('fClose').addEventListener('click', closeFac);
+  }
+  document.addEventListener('click', function (e) {
+    if (!facCard || !facCard.classList.contains('show')) return;
+    if (facCard.contains(e.target)) return;
+    if (e.target.closest && e.target.closest('.fac')) return;
+    closeFac();
+  });
+  renderFac();
+
 
   /* 選過蛋：只留下那 2 隻；沒選過 → 進入選蛋模式（picking） */
   (function(){
@@ -1711,7 +1885,7 @@
     var glow = el.querySelector('.hvGlow');
 
     img.src = formImg(p, p.stage);
-    var earned = Math.max(0, harvest.s || 0);
+    var earned = Math.max(0, (harvest.s || 0) + (harvest.b || 0));
     title.textContent = harvest.w ? '🎉 打贏了！' : '🎒 收成';
     count.textContent = '⭐ 0';
     sub.textContent = '';
@@ -1775,7 +1949,8 @@
     setTimeout(function () {
       bump(earned);
       var bits = [];
-      if (earned) bits.push('+' + earned + ' 顆星');
+      if (harvest.s) bits.push('+' + harvest.s + ' 顆星');
+      if (harvest.b) bits.push('挑戰獎勵 +' + harvest.b + ' 顆');
       if (harvest.m) bits.push('+' + harvest.m + ' 分鐘');
       sub.textContent = bits.join('　');
       if (sub.animate) sub.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}], {duration:360,fill:'forwards'});
