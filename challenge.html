@@ -1133,14 +1133,21 @@
         var qlen = q.text.length;
         qText.className = qlen > 26 ? 'xlong' : (qlen > 14 ? 'long' : '');
         opts.forEach(function(b, i){
-          b.textContent = q.options[i];
+          if (i < q.options.length) {
+            b.style.display = '';
+            b.textContent = q.options[i];
+          } else {
+            b.style.display = 'none';
+            b.textContent = '';
+          }
           b.classList.remove('correct','wrong','reveal');
           b.disabled = false;
         });
+        optionsEl.style.gridTemplateColumns = 'repeat(' + Math.max(2, Math.min(opts.length, q.options.length)) + ',1fr)';
         hideHanzi();
         fb.textContent = '答對出招 · 答錯擋一擋';
       }
-      if (qMeta) qMeta.textContent = '第 ' + qNum + ' 題' + (q.type === 'hanzi' ? ' · 寫字' : '') + (q.type === 'remote' ? ' · 📡' : '') + (streak ? ' · 連對 ' + streak : '');
+      if (qMeta) qMeta.textContent = '第 ' + qNum + ' 題' + (q.type === 'hanzi' ? ' · 寫字' : '') + (q.type === 'remote' ? ' · 題庫' : '') + (streak ? ' · 連對 ' + streak : '');
       qaT0 = Date.now();
     }
 
