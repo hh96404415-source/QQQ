@@ -98,8 +98,8 @@
 
   window.Motion = {
     sky: sky,
-    farm: function (host) { sky(host, { clouds: 3, birds: 2, motes: 8, ray: true }); },
-    arena: function (host) { sky(host, { clouds: 2, birds: 1, motes: 5, ray: true }); },
+    farm: function (host) { sky(host, { clouds: 3, birds: 0, motes: 10, ray: true }); },
+    arena: function (host) { sky(host, { clouds: 2, birds: 0, motes: 6, ray: true }); },
     /* 給設施上動態類別 */
     tag: function (el, kind) {
       style();
