@@ -177,6 +177,9 @@
     border:2px solid rgba(96,165,250,.35);border-radius:20px;padding:14px}
   #unitPanel h2{margin:0 0 10px;font-size:17px;color:#93c5fd}
   .unitGrade{font-size:13px;font-weight:900;color:#94a3b8;margin:12px 0 6px;letter-spacing:1px}
+  .unitGrade.en{color:#5eead4}
+  .unitItem.en{border-color:rgba(94,234,212,.45)}
+  .unitItem.en.on{background:linear-gradient(180deg,#0f766e,#115e59);border-color:#5eead4}
   .unitRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
   .unitItem{appearance:none;font-family:inherit;text-align:left;cursor:pointer;border-radius:12px;padding:10px 12px;
     font-size:13px;font-weight:800;color:#e2e8f0;background:rgba(30,41,59,.9);
@@ -738,6 +741,14 @@
     /* ── 數學單元：跟課本進度對得上（全部本地生成，不接 GAS） ── */
     function rnd(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
     function pickOne(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function shuffle(a) {
+      var b = a.slice();
+      for (var i = b.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = b[i]; b[i] = b[j]; b[j] = t;
+      }
+      return b;
+    }
 
     /* 應用題用的角色與物件 */
     var WP_NAMES = ['小明', '小美', '小晴', '家寶', '妹妹', '哥哥', '志明', '美玲', '阿樂'];
@@ -986,6 +997,69 @@
         } }
     ];
 
+    /* ══════════ 英文 ══════════
+       用 emoji 當圖，小朋友不用讀中文提示也看得懂；
+       全部都是「四選一」，不用打字。 */
+    var EN_WORDS = [
+      ['🍎', 'apple', '蘋果'], ['🍌', 'banana', '香蕉'], ['🐱', 'cat', '貓'], ['🐶', 'dog', '狗'],
+      ['🐟', 'fish', '魚'], ['🐦', 'bird', '鳥'], ['🥚', 'egg', '蛋'], ['🥛', 'milk', '牛奶'],
+      ['🍚', 'rice', '飯'], ['🍞', 'bread', '麵包'], ['🚗', 'car', '車'], ['🚌', 'bus', '巴士'],
+      ['🏠', 'house', '房子'], ['🌳', 'tree', '樹'], ['🌞', 'sun', '太陽'], ['🌙', 'moon', '月亮'],
+      ['⭐', 'star', '星星'], ['☂️', 'umbrella', '雨傘'], ['📖', 'book', '書'], ['✏️', 'pencil', '鉛筆'],
+      ['🐘', 'elephant', '大象'], ['🐰', 'rabbit', '兔'], ['🐷', 'pig', '豬'], ['🐔', 'chicken', '雞'],
+      ['🍇', 'grape', '葡萄'], ['🍊', 'orange', '橙'], ['🧦', 'sock', '襪'], ['👟', 'shoe', '鞋'],
+      ['🪑', 'chair', '椅'], ['🥕', 'carrot', '紅蘿蔔'], ['🐸', 'frog', '青蛙'], ['🎈', 'balloon', '氣球'],
+      ['🎂', 'cake', '蛋糕'], ['🚲', 'bike', '單車'], ['⚽', 'ball', '球']
+    ];
+    var EN_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+    MATH_UNITS.push(
+      { id: 'e1_abc', g: 1, subj: 'en', name: '字母大小寫', gen: function () {
+          var i = rnd(0, 25), ch = EN_LETTERS[i], ans = ch.toLowerCase();
+          var pick3 = [];
+          while (pick3.length < 3) {
+            var c = EN_LETTERS[rnd(0, 25)].toLowerCase();
+            if (c !== ans && pick3.indexOf(c) < 0) pick3.push(c);
+          }
+          return { text: '大寫 ' + ch + ' 的小寫是哪一個？', answer: ans,
+                   options: shuffle([ans].concat(pick3)) };
+        } },
+      { id: 'e1_word', g: 1, subj: 'en', name: '看圖選字', gen: function () {
+          var w = pickOne(EN_WORDS), ans = w[1], pick3 = [];
+          while (pick3.length < 3) {
+            var c = pickOne(EN_WORDS)[1];
+            if (c !== ans && pick3.indexOf(c) < 0) pick3.push(c);
+          }
+          return { text: w[0] + ' 這個的英文是？', answer: ans,
+                   options: shuffle([ans].concat(pick3)) };
+        } },
+      { id: 'e2_word', g: 2, subj: 'en', name: '中譯英', gen: function () {
+          var w = pickOne(EN_WORDS), ans = w[1], pick3 = [];
+          while (pick3.length < 3) {
+            var c = pickOne(EN_WORDS)[1];
+            if (c !== ans && pick3.indexOf(c) < 0) pick3.push(c);
+          }
+          return { text: '「' + w[2] + '」的英文是？', answer: ans,
+                   options: shuffle([ans].concat(pick3)) };
+        } },
+      { id: 'e3_sent', g: 3, subj: 'en', name: '短句理解', gen: function () {
+          var S = [
+            ['I like apples.', '我喜歡蘋果'], ['She is my sister.', '她是我的姐姐'],
+            ['He can swim.', '他會游泳'], ['We go to school.', '我們去上學'],
+            ['The cat is sleeping.', '貓在睡覺'], ['I have two pencils.', '我有兩支鉛筆'],
+            ['My mother is cooking.', '我媽媽在煮飯'], ['It is raining.', '下雨了'],
+            ['Do you like milk?', '你喜歡牛奶嗎'], ['This is my house.', '這是我的房子']
+          ];
+          var s = pickOne(S), ans = s[1], pick3 = [];
+          while (pick3.length < 3) {
+            var c = pickOne(S)[1];
+            if (c !== ans && pick3.indexOf(c) < 0) pick3.push(c);
+          }
+          return { text: s[0] + ' 這句是什麼意思？', answer: ans,
+                   options: shuffle([ans].concat(pick3)) };
+        } }
+    );
+
     /* 分數選項：從合法真分數裡挑，避免出現 1/1 或重複 */
     function fracOpts(ans) {
       var pool = [];
@@ -1022,7 +1096,7 @@
     function gradeName(g) { return g === 1 ? '一年級' : g === 2 ? '二年級' : '三年級'; }
     function paintUnitBtn() {
       var u = unitById(curUnit);
-      unitBtn.textContent = gradeName(u.g) + ' · ' + u.name + ' ▾';
+      unitBtn.textContent = (u.subj === 'en' ? '英文' : gradeName(u.g)) + ' · ' + u.name + ' ▾';
     }
 
     /* ══════════ 題庫連線（GAS） ══════════
@@ -1134,10 +1208,19 @@
     /* 單元選擇面板 */
     function renderUnitList() {
       var html = '';
+      /* 英文自己一區，排最前面（中文寫字是每 3 題自動出現，不列在這裡） */
+      var en = MATH_UNITS.filter(function (u) { return u.subj === 'en'; });
+      if (en.length) {
+        html += '<div class="unitGrade en">英文 English</div><div class="unitRow">';
+        en.forEach(function (u) {
+          html += '<button class="unitItem en' + (u.id === curUnit ? ' on' : '') + '" data-id="' + u.id + '">' + u.name + '</button>';
+        });
+        html += '</div>';
+      }
       [1, 2, 3].forEach(function (g) {
         html += '<div class="unitGrade">' + gradeName(g) + '</div><div class="unitRow">';
         MATH_UNITS.forEach(function (u) {
-          if (u.g !== g) return;
+          if (u.g !== g || u.subj === 'en') return;
           html += '<button class="unitItem' + (u.id === curUnit ? ' on' : '') + '" data-id="' + u.id + '">' + u.name + '</button>';
         });
         html += '</div>';
@@ -2015,7 +2098,12 @@
     } catch (e) {}
     try {
       var uu = new URLSearchParams(location.search).get('unit');
-      if (uu && MATH_UNITS.some(function (u) { return u.id === uu; })) curUnit = uu;
+      if (uu && MATH_UNITS.some(function (u) { return u.id === uu; }) && uu !== curUnit) {
+        curUnit = uu;
+        paintUnitBtn();
+        qNum = 0; streak = 0;
+        nextQ();
+      }
     } catch (e) {}
     /* 測試鉤子：window.__math.check('單元', 次數) 回傳問題清單 */
     window.__math = {
