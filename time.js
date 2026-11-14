@@ -97,17 +97,17 @@
     return steps;
   }
 
-  /* 隨機禮物：連對越多、答得越快，中獎率越高；金額 30/60/90/120 秒 */
-  var GIFTS = [30, 60, 60, 90, 90, 120];
+  /* 隨機禮物：偶爾才有（基礎 4%），連對越多、答得越快機率略高；金額 20–40 秒 */
+  var GIFTS = [20, 20, 30, 30, 40];
   function gift(opt) {
     opt = opt || {};
     var streak = Math.max(0, opt.streak || 0);
     var ms = opt.ms || 0;
     var fast = ms > 0 && ms < 6000;
-    var chance = 0.12 + Math.min(0.33, streak * 0.06) + (fast ? 0.10 : 0);
+    var chance = 0.015 + Math.min(0.05, streak * 0.008) + (fast ? 0.015 : 0);
     if (Math.random() > chance) return null;
     var sec = GIFTS[Math.floor(Math.random() * GIFTS.length)];
-    if (fast && sec < 90) sec += 30;
+    if (fast && sec < 40) sec += 10;
     var why = fast ? '答得好快' : (streak >= 5 ? '連對 ' + streak + ' 題' : '手氣好');
     earn(sec);
     return { sec: sec, label: why };

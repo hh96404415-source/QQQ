@@ -687,6 +687,11 @@
     try { stage = Math.max(1, parseInt(localStorage.getItem(STAGE_KEY) || '1', 10) || 1); } catch (e) {}
     var q = null;
     var qNum = 0, streak = 0;
+    /* ── 難度旋鈕（不顯示給小孩）── */
+    var RAMP_KEY = 'dsh_ramp';
+    var ramp = 0, badRounds = 0;
+    try { ramp = Math.max(0, Math.min(1, parseFloat(localStorage.getItem(RAMP_KEY) || '0') || 0)); } catch (e) {}
+    var roundQ = [];            /* 這一局每題 {ok, ms} */
 
     /* ── 星星：跟社群頁共用同一本帳（localStorage）── */
     var SKEY = 'dsh_stars';
@@ -879,10 +884,18 @@
           return { text: a + ' 和 ' + b + '，哪一個比較大？', answer: big, options: pool };
         } },
       { id: 'p1_seq', g: 1, name: '數數（下一個）', gen: function () {
-          var s = rnd(0, 16);
-          var ans = s + 4;
-          return { text: s + ' , ' + (s + 1) + ' , ' + (s + 2) + ' , ' + (s + 3) + ' , ?', answer: ans,
-                   options: [ans, ans + 1, ans + 2, ans + 3] };
+          var step = pickOne([1, 1, 2, 2, 3, 4, 5]);
+          var s = rnd(0, Math.max(2, 20 - step * 4));
+          var ans = s + step * 4;
+          var opts = [ans];
+          var d = 1;
+          while (opts.length < 4) {
+            if (opts.indexOf(ans + d) < 0) opts.push(ans + d);
+            d = d > 0 ? -d : -d + 1;
+            if (d > 6) break;
+          }
+          return { text: s + ' , ' + (s + step) + ' , ' + (s + step * 2) + ' , ' + (s + step * 3) + ' , ?',
+                   answer: ans, options: shuffle(opts) };
         } },
 
       /* ── 二年級 ── */
@@ -1068,7 +1081,13 @@
       ['🍇', 'grape', '葡萄'], ['🍊', 'orange', '橙'], ['🧦', 'sock', '襪'], ['👟', 'shoe', '鞋'],
       ['🪑', 'chair', '椅'], ['🥕', 'carrot', '紅蘿蔔'], ['🐸', 'frog', '青蛙'], ['🎈', 'balloon', '氣球'],
       ['🎂', 'cake', '蛋糕'], ['🚲', 'bike', '單車'], ['⚽', 'ball', '球']
-    ];
+    ,['🍇', 'grape', '葡萄'],['🍉', 'watermelon', '西瓜'],['🍓', 'strawberry', '草莓'],
+    ['🐘', 'elephant', '大象'],['🐯', 'tiger', '老虎'],['🐰', 'rabbit', '兔子'],['🐷', 'pig', '豬'],
+    ['🐑', 'sheep', '綿羊'],['🐴', 'horse', '馬'],['🐦', 'bird', '鳥'],['🐟', 'fish', '魚'],
+    ['🚲', 'bicycle', '腳踏車'],['✈️', 'plane', '飛機'],['⛵', 'boat', '船'],['🌳', 'tree', '樹'],
+    ['🌸', 'flower', '花'],['☀️', 'sun', '太陽'],['🌙', 'moon', '月亮'],['⭐', 'star', '星星'],
+    ['☂️', 'umbrella', '雨傘'],['🪑', 'chair', '椅子'],['🚪', 'door', '門'],['🪟', 'window', '窗'],
+    ['📕', 'book', '書'],['🖊️', 'pen', '筆'],['🏫', 'school', '學校'],['🏠', 'house', '房子']];
     var EN_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
   /* 中文量詞（一 __ 貓）＋英文句子填空用的資料 */
@@ -1076,7 +1095,14 @@
     ['🐱', '貓', '隻'], ['🐶', '狗', '隻'], ['🐟', '魚', '條'], ['🐍', '蛇', '條'],
     ['📄', '紙', '張'], ['🪑', '椅子', '張'], ['🌳', '樹', '棵'], ['🌸', '花', '朵'],
     ['📚', '書', '本'], ['✏️', '鉛筆', '枝'], ['🚗', '車', '輛'], ['🏠', '房子', '間'],
-    ['🍎', '蘋果', '個'], ['🥚', '蛋', '隻'], ['👕', '衣服', '件'], ['🍞', '麵包', '片']
+    ['🍎', '蘋果', '個'], ['🥚', '蛋', '隻'], ['👕', '衣服', '件'], ['🍞', '麵包', '片'],
+    ['🍌', '香蕉', '條'], ['🍇', '葡萄', '串'], ['🍚', '飯', '碗'], ['🥛', '牛奶', '杯'],
+    ['🐘', '大象', '隻'], ['🐦', '小鳥', '隻'], ['🐴', '馬', '匹'], ['🐮', '牛', '頭'],
+    ['🌙', '月亮', '個'], ['⭐', '星星', '顆'], ['💎', '寶石', '顆'], ['🪙', '硬幣', '枚'],
+    ['🚲', '腳踏車', '輛'], ['✈️', '飛機', '架'], ['⛵', '船', '艘'], ['🚪', '門', '扇'],
+    ['🪟', '窗', '扇'], ['🧵', '線', '條'], ['🧦', '襪子', '雙'], ['👟', '鞋', '雙'],
+    ['🖊️', '筆', '枝'], ['📏', '尺', '把'], ['☂️', '傘', '把'], ['🔑', '鑰匙', '把'],
+    ['🥕', '紅蘿蔔', '條'], ['🍰', '蛋糕', '個'], ['🏀', '球', '個'], ['🎈', '氣球', '個']
   ];
   var ZH_LIANGCI_POOL = ['隻', '條', '張', '棵', '朵', '本', '枝', '輛', '間', '個', '件', '片'];
 
@@ -1090,19 +1116,34 @@
     ['The ___ is on the bed.', '貓在床上。', ['cat', 'kat', 'catt', 'caat']],
     ['I can ___ very fast.', '我跑得很快。', ['run', 'runs', 'running', 'ran']],
     ['This is my ___.', '這是我的書。', ['book', 'buk', 'booke', 'boook']],
-    ['He is my ___.', '他是我的朋友。', ['friend', 'freind', 'frend', 'frien']]
+    ['He is my ___.', '他是我的朋友。', ['friend', 'freind', 'frend', 'frien']],
+    ['I ___ milk every day.', '我每天喝牛奶。', ['drink', 'drinks', 'drinking', 'drank']],
+    ['The sun is ___ today.', '今天太陽很亮。', ['bright', 'brite', 'brigh', 'brightt']],
+    ['We ___ to the park.', '我們去公園。', ['go', 'goes', 'going', 'went']],
+    ['My dad ___ a car.', '爸爸有一輛車。', ['has', 'have', 'hass', 'had']],
+    ['The ___ is very big.', '這隻狗很大。', ['dog', 'dag', 'dogg', 'dogs']],
+    ['I can ___ a bike.', '我會騎腳踏車。', ['ride', 'raid', 'rid', 'ried']],
+    ['She ___ to music.', '她聽音樂。', ['listens', 'listen', 'listening', 'listened']],
+    ['This is a red ___.', '這是一朵紅花。', ['flower', 'flowr', 'flour', 'flawer']],
+    ['I ___ my homework.', '我做功課。', ['do', 'does', 'doing', 'did']],
+    ['The ___ is cold.', '水很冷。', ['water', 'watter', 'wather', 'wader']],
+    ['My cat is very ___.', '我的貓很可愛。', ['cute', 'cut', 'cutes', 'kute']],
+    ['We ___ in Hong Kong.', '我們住在香港。', ['live', 'lives', 'living', 'lived']],
+    ['He ___ fast.', '他跑得很快。', ['runs', 'run', 'running', 'ran']]
   ];
 
     MATH_UNITS.push(
       { id: 'e1_abc', g: 1, subj: 'en', name: '字母大小寫', gen: function () {
-          var i = rnd(0, 25), ch = EN_LETTERS[i], ans = ch.toLowerCase();
+          var i = rnd(0, 25), up = Math.random() < 0.5, ch = EN_LETTERS[i];
+          var ans = up ? ch.toLowerCase() : ch.toUpperCase();
+          var head = up ? ('大寫 ' + ch + ' → 小寫是？') : ('小寫 ' + ch.toLowerCase() + ' → 大寫是？');
           var pick3 = [];
 
           while (pick3.length < 3) {
             var c = EN_LETTERS[rnd(0, 25)].toLowerCase();
             if (c !== ans && pick3.indexOf(c) < 0) pick3.push(c);
           }
-          return { text: '大寫 ' + ch + ' 的小寫是哪一個？', answer: ans,
+          return { text: head, answer: ans,
                    options: shuffle([ans].concat(pick3)) };
         } },
       { id: 'e1_word', g: 1, subj: 'en', name: '看圖選字', gen: function () {
@@ -1129,7 +1170,14 @@
             ['He can swim.', '他會游泳'], ['We go to school.', '我們去上學'],
             ['The cat is sleeping.', '貓在睡覺'], ['I have two pencils.', '我有兩支鉛筆'],
             ['My mother is cooking.', '我媽媽在煮飯'], ['It is raining.', '下雨了'],
-            ['Do you like milk?', '你喜歡牛奶嗎'], ['This is my house.', '這是我的房子']
+            ['Do you like milk?', '你喜歡牛奶嗎'], ['This is my house.', '這是我的房子'],
+            ['I am hungry.', '我餓了'], ['She has a red bag.', '她有一個紅色的袋'],
+            ['We are in the classroom.', '我們在課室裡'], ['My dog can run fast.', '我的狗跑得很快'],
+            ['The sky is blue.', '天空是藍色的'], ['I want some water.', '我想要一些水'],
+            ['He is reading a book.', '他正在看書'], ['They are playing football.', '他們在踢足球'],
+            ['It is time for lunch.', '是吃午飯的時候了'], ['My father works in an office.', '我爸爸在辦公室工作'],
+            ['Please open the door.', '請開門'], ['I like to draw pictures.', '我喜歡畫畫'],
+            ['The baby is crying.', '寶寶在哭']
           ];
           var s = pickOne(S), ans = s[1], pick3 = [];
           while (pick3.length < 3) {
@@ -1348,15 +1396,39 @@
       qaPost({ action: 'complete_set', user_id: qaCfg.uid, pin: qaCfg.pin || '', answers: batch }, function () {});
     }
 
+    /* 最近出過的題目（避免同一個單元一直重複同一題） */
+    var recentQ = [];
     function makeQ() {
       var rq = qaTake();
       if (rq) return rq;
-      var r = unitById(curUnit).gen();
-      return {
-        text: r.text,
-        answer: r.answer,
-        options: r.options ? r.options : buildOpts(r.answer, r.spread, r.min)
-      };
+      var u = unitById(curUnit);
+      var r = u.gen();
+      for (var t = 0; t < 6; t++) {
+        if (recentQ.indexOf(r.text) < 0) break;
+        r = u.gen();
+      }
+      recentQ.push(r.text);
+      if (recentQ.length > 15) recentQ.shift();
+      var opts;
+      if (r.options) {
+        opts = r.options.slice();
+      } else {
+        /* 難度越高，選項越貼近正解（spread 8 → 3） */
+        var sp = r.spread || 6;
+        var tight = Math.round(sp * (1 - ramp * 0.62));
+        opts = buildOpts(r.answer, Math.max(2, tight), r.min);
+        /* 再偶爾塞一個「差一點」的選項（答得順的小孩才遇到） */
+        if (ramp > 0.2 && Math.random() < ramp * 0.75) {
+          var near = r.answer + (Math.random() < 0.5 ? -1 : 1);
+          if (opts.indexOf(near) < 0) {
+            var at = opts.length - 1;
+            while (at > 0 && opts[at] === r.answer) at--;
+            opts[at] = near;
+            opts = shuffle(opts);
+          }
+        }
+      }
+      return { text: r.text, answer: r.answer, options: opts };
     }
 
     /* 單元選擇面板 */
@@ -1773,6 +1845,15 @@
       chap: function (n) { chapterClear(n || 1); }
     };
 
+    window.__ramp = {
+      get: function () { return ramp; },
+      len: function () { return roundQ.length; },
+      set: function (v) {
+        ramp = Math.max(0, Math.min(1, Number(v) || 0));
+        try { localStorage.setItem(RAMP_KEY, ramp.toFixed(3)); } catch (e) {}
+      }
+    };
+
     function paintStage() {
       var t = document.getElementById('stageNow');
       if (t) t.textContent = stage;
@@ -1820,6 +1901,24 @@
     }
 
     function pick() {
+      /* 上一局結算：全對又快 → 難一點；錯太多或太慢 → 鬆一點 */
+      if (roundQ.length >= 3 && roundQ.length < 40) {
+        var oks = roundQ.filter(function (x) { return x.ok; }).length;
+        var ms = roundQ.map(function (x) { return x.ms; }).sort(function (a, b) { return a - b; });
+        var med = ms[Math.floor(ms.length / 2)] || 0;
+        var bad = (oks <= roundQ.length - 2) || med > 12000;
+        if (oks === roundQ.length && med < 6000) {
+          ramp = Math.min(1, ramp + 0.06); badRounds = 0;
+        } else if (bad) {
+          ramp = Math.max(0, ramp - 0.08); badRounds++;
+          if (badRounds >= 2) { ramp = Math.max(0, ramp - 0.15); badRounds = 0; }
+        } else {
+          badRounds = 0;
+        }
+        try { localStorage.setItem(RAMP_KEY, ramp.toFixed(3)); } catch (e) {}
+        if (window.Player && window.Player.pushSoon) { try { window.Player.pushSoon(2500); } catch (e) {} }
+      }
+      roundQ = [];
       battles++;
       hitsOnCur = 0;
       paintRound();
@@ -2194,6 +2293,7 @@
 
     function attack(btn) {
       if (btn) btn.classList.add('correct');
+      roundQ.push({ ok: true, ms: Date.now() - (qLogT0 || Date.now()) });
       if (q && q.type === 'hanzi' && q.ch) hwMark(q.ch);
       if (q && q.type === 'remote') qaLogAnswer(q, true, String(q.answer), Date.now() - qaT0);
       logAnswer(true);
@@ -2276,6 +2376,7 @@
     /* 答錯 */
     function missed(btn) {
       if (btn) btn.classList.add('wrong');
+      roundQ.push({ ok: false, ms: Date.now() - (qLogT0 || Date.now()) });
       logAnswer(false);
       if (q && q.type === 'remote') {
         qaLogAnswer(q, false, btn ? String(btn.textContent) : '', Date.now() - qaT0);
