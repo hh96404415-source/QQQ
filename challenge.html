@@ -1060,6 +1060,30 @@
                    options: shuffle([ans].concat(pick3)) };
         } }
     );
+  /* 英文：拼字填空（把字挖一個字母，四選一） */
+  MATH_UNITS.push({
+    id: 'e2_spell', subj: 'en', g: 2, name: '拼字填空',
+    gen: function () {
+      var w = pickOne(EN_WORDS);
+      var word = w[1];
+      if (word.length < 3) word = 'cat';
+      var pos = 1 + Math.floor(Math.random() * (word.length - 1));
+      var miss = word.charAt(pos);
+      var shown = word.slice(0, pos) + '_' + word.slice(pos + 1);
+      var pool = 'abcdefghijklmnopqrstuvwxyz'.split('').filter(function (c) {
+        return c !== miss && word.indexOf(c) < 0;
+      });
+      var opts = [miss];
+      while (opts.length < 4 && pool.length) {
+        opts.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      }
+      return {
+        text: w[0] + ' ' + w[2] + ' → ' + shown,
+        options: shuffle(opts),
+        answer: miss
+      };
+    }
+  });
 
     /* 分數選項：從合法真分數裡挑，避免出現 1/1 或重複 */
     function fracOpts(ans) {
