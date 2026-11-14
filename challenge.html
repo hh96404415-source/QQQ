@@ -1281,7 +1281,9 @@
   MATH_UNITS.push({
     id: 'c1_fanyi', subj: 'zh', g: 1, name: '相反詞',
     gen: function () {
-      var w = pickOne(ZH_OPP), flip = Math.random() < 0.5;
+      var pool = ZH_OPP;
+      if (ramp >= 0.3 && Math.random() < ramp * 0.6) pool = ZH_OPP.filter(function (x) { return x[0].length >= 2; });
+      var w = pickOne(pool), flip = Math.random() < 0.5;
       var qWord = flip ? w[1] : w[0], ans = flip ? w[0] : w[1];
       var pool = [];
       ZH_OPP.forEach(function (x) { if (x[0] !== ans && x[1] !== ans) pool.push(x[0]); });
@@ -1557,7 +1559,8 @@
         return {
           text: r.text,
           answer: r.answer,
-          options: r.options ? r.options.slice() : buildOpts(r.answer, r.spread || 6, r.min)
+          options: r.options ? r.options.slice() : buildOpts(r.answer, r.spread || 6, r.min),
+          _unit: u.id
         };
       }
     });
@@ -1578,17 +1581,75 @@
                answer: hideB ? B : A, spread: Math.max(3, r.spread || 6) };
     }
 
+    /* B3 第三層：中英題難度漸變（對應數學 hardenNumeric）
+       守則同數學：答案與題目文字不變、單元名稱不說謊、不顯示難度。
+       做法＝ramp 越高，越有機會把「一個」非答案選項換成「更易混淆」的。 */
+    var CONFUSE_LETTERS = {
+      'a': ['e', 'o', 'u'], 'e': ['a', 'i'], 'i': ['e', 'l'], 'o': ['a', 'u', 'q'],
+      'u': ['o', 'v'], 'b': ['d', 'p'], 'd': ['b', 'p', 'q'], 'p': ['b', 'd', 'q'],
+      'q': ['p', 'g', 'o'], 'g': ['q', 'y'], 'm': ['n', 'w'], 'n': ['m'], 'w': ['v', 'm'],
+      'v': ['u', 'w'], 'c': ['k', 's'], 'k': ['c'], 's': ['c', 'z'], 'z': ['s'],
+      'l': ['i', 'r'], 'r': ['l'], 't': ['d'], 'y': ['g', 'i'], 'h': ['n']
+    };
+    function confusablePool(id, ans) {
+      if (id === 'e1_abc' || id === 'e2_spell') {
+        return (CONFUSE_LETTERS[String(ans).toLowerCase()] || []).slice();
+      }
+      if (id === 'e1_num') {
+        var i = EN_NUMW.indexOf(ans);
+        var out = [];
+        if (i > 0) out.push(EN_NUMW[i - 1]);
+        if (i >= 0 && i < EN_NUMW.length - 1) out.push(EN_NUMW[i + 1]);
+        return out;
+      }
+      if (id === 'e1_color') {
+        var m = { red: ['pink', 'orange'], pink: ['red', 'purple'], orange: ['red', 'yellow'],
+          yellow: ['orange', 'gold'], blue: ['purple', 'green'], purple: ['blue', 'pink'],
+          green: ['blue', 'yellow'], brown: ['black', 'grey'], black: ['brown', 'grey'],
+          white: ['grey', 'pink'], grey: ['white', 'black'], gold: ['yellow', 'orange'] };
+        return (m[ans] || []).slice();
+      }
+      if (id === 'e2_prep') {
+        return ['in', 'on', 'under', 'next to', 'onto', 'at'].filter(function (x) { return x !== ans; });
+      }
+      if (id === 'c1_liangci') {
+        return ['個', '隻', '條', '張'].filter(function (x) { return x !== ans; });
+      }
+      return [];
+    }
+    function hardenLingual(r, u) {
+      if (!r || !r.options || r.options.length < 4 || !u || !u.id) return r;
+      if (ramp < 0.2) return r;
+      if (Math.random() > ramp * 0.75) return r;
+      var uid = r._unit || u.id;
+      var pool = confusablePool(uid, r.answer);
+      if (!pool.length) return r;
+      var cand = pool.filter(function (x) { return x !== r.answer && r.options.indexOf(x) < 0; });
+      if (!cand.length) return r;
+      var rep = cand[Math.floor(Math.random() * cand.length)];
+      var opts = r.options.slice();
+      var idx = opts.length - 1;
+      while (idx >= 0 && opts[idx] === r.answer) idx--;
+      if (idx < 0) return r;
+      opts[idx] = rep;
+      r.options = shuffle(opts);
+      return r;
+    }
+    function harden(r, u) {
+      return hardenLingual(hardenNumeric(r), u);
+    }
+
     /* 最近出過的題目（避免同一個單元一直重複同一題） */
     var recentQ = [];
     function makeQ() {
       var rq = qaTake();
       if (rq) return rq;
       var u = unitById(curUnit);
-      var r = hardenNumeric(u.gen());
+      var r = harden(u.gen(), u);
       for (var t = 0; t < 6; t++) {
         if (recentQ.indexOf(r.text) < 0) break;
         if (u.id === 'mix_all') break;   /* 綜合模式每次都會換科，不要重抽 */
-        r = u.gen();
+        r = harden(u.gen(), u);
       }
       recentQ.push(r.text);
       if (recentQ.length > 15) recentQ.shift();
