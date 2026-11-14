@@ -760,13 +760,13 @@ function renderTime(){
   var s = window.Time ? window.Time.stats() : null;
   if (!s) { document.getElementById('timeStats').innerHTML = '<div class="why">時間代幣未載入。</div>'; return; }
   document.getElementById('timeStats').innerHTML =
-    '<div class="stat"><div class="k">今日已賺</div><div class="v">' + s.earned + ' <small>分鐘</small></div></div>' +
-    '<div class="stat"><div class="k">今日已用</div><div class="v">' + s.used + ' <small>分鐘</small></div></div>' +
-    '<div class="stat"><div class="k">剩餘可用</div><div class="v">' + s.balance + ' <small>/ ' + s.cap + '</small></div></div>';
+    '<div class="stat"><div class="k">今日已賺</div><div class="v">' + s.earned + ' <small>秒</small></div></div>' +
+    '<div class="stat"><div class="k">今日已用</div><div class="v">' + s.used + ' <small>秒</small></div></div>' +
+    '<div class="stat"><div class="k">剩餘可用</div><div class="v">' + s.balance + ' <small>/ ' + s.capSec + ' 秒</small></div></div>';
   document.getElementById('capInput').value = s.cap;
   document.getElementById('timeNote').textContent =
-    '規則：答對一題賺 ' + s.minPerAnswer + ' 分鐘娛樂；每日最多 ' + s.cap + ' 分鐘。' +
-    '娛樂時間可以換星星（' + s.starCost + ' 分鐘 = 1 顆），但星星換不回時間。' +
+    '規則：答對一題賺 ' + s.secPerAnswer + ' 秒娛樂；每日最多 ' + s.cap + ' 分鐘。' +
+    '連對、答得快還會有隨機秒數禮物。娛樂時間可以換星星（' + s.starCost + ' 秒 = 1 顆），但星星換不回時間。' +
     '改上限只影響今日之後的結算。';
 }
 renderTime();

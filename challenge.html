@@ -317,6 +317,19 @@
     color:#fde047;-webkit-text-stroke:2px #7c2d12;paint-order:stroke fill;
     animation:scPop 1.1s ease-in-out infinite}
   #evoIntro .evSub,#evoDone .evSub{margin-top:10px;font-size:15px;font-weight:800;color:#e9d5ff}
+
+  #gift{position:fixed;left:50%;top:26%;transform:translate(-50%,-50%) scale(.7);z-index:76;
+    font-size:23px;font-weight:900;color:#fef3c7;pointer-events:none;opacity:0;max-width:min(300px,42vw);white-space:normal;text-align:center;line-height:1.25;
+    -webkit-text-stroke:3px #7c2d12;paint-order:stroke fill;
+    filter:drop-shadow(0 0 18px rgba(251,191,36,.9))}
+  #gift.show{animation:giftPop 1.9s cubic-bezier(.2,.9,.3,1) forwards}
+  @keyframes giftPop{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(.6) rotate(-6deg)}
+    14%{opacity:1;transform:translate(-50%,-50%) scale(1.18) rotate(3deg)}
+    26%{transform:translate(-50%,-50%) scale(1) rotate(0)}
+    72%{opacity:1;transform:translate(-50%,-64%) scale(1)}
+    100%{opacity:0;transform:translate(-50%,-92%) scale(.94)}
+  }
 </style>
 <link rel="stylesheet" href="fonts/theme.css">
 </head>
@@ -330,6 +343,7 @@
     <div id="stars">⭐ 0</div>
   </div>
   <div id="reward"></div>
+<div id="gift"></div>
 
   <div id="main">
     <div id="leftCol">
@@ -377,7 +391,7 @@
     <div id="padPane">
       <div id="scoreBoard">
         <div class="sb star"><span class="sbIcon">⭐</span><span class="sbNum" id="sbStars">0</span></div>
-        <div class="sb time"><span class="sbIcon">⏱</span><span class="sbNum" id="sbTime">0</span><span class="sbUnit">分</span></div>
+        <div class="sb time"><span class="sbIcon">⏱</span><span class="sbNum" id="sbTime">0</span><span class="sbUnit">秒</span></div>
       </div>
       <div id="padHead">
         <b>✍️ 手寫板</b>
@@ -659,10 +673,24 @@
         setTimeout(function(){ sbStarsEl.classList.remove('pop'); }, 600);
       }
     }
+    var giftEl = document.getElementById('gift');
+    function giftPop(text){
+      if (!giftEl) return;
+      var r = arenaEl ? arenaEl.getBoundingClientRect() : null;
+      if (r) {
+        giftEl.style.left = (r.left + r.width / 2) + 'px';
+        giftEl.style.top = (r.top + r.height * 0.42) + 'px';
+      }
+      giftEl.textContent = text;
+      giftEl.classList.remove('show');
+      void giftEl.offsetWidth;
+      giftEl.classList.add('show');
+      if (window.Juice) window.Juice.fx('coin');
+    }
     function paintScoreTime(){
       if (!sbTimeEl) return;
-      var m = (window.Time && window.Time.balance) ? window.Time.balance() : 0;
-      sbTimeEl.textContent = m;
+      var sec = (window.Time && window.Time.balance) ? window.Time.balance() : 0;
+      sbTimeEl.textContent = sec;
       sbTimeEl.classList.remove('pop'); void sbTimeEl.offsetWidth; sbTimeEl.classList.add('pop');
       setTimeout(function(){ sbTimeEl.classList.remove('pop'); }, 600);
     }
@@ -1371,6 +1399,7 @@
       paintQaState();
     })();
 
+    var qT0 = 0;
     function nextQ(){
       qNum++;
       qLogT0 = Date.now();
@@ -1407,6 +1436,7 @@
       }
       if (qMeta) qMeta.textContent = '第 ' + qNum + ' 題' + (q.type === 'hanzi' ? ' · 寫字' : '') + (q.type === 'remote' ? ' · 題庫' : '') + (streak ? ' · 連對 ' + streak : '');
       qaT0 = Date.now();
+      qT0 = Date.now();
     }
 
     /* ── 中文題：田字格描紅（字表＝教育局《香港小學學習字詞表》，由淺到深） ── */
@@ -2026,10 +2056,19 @@
       logAnswer(true);
       fb.textContent = '✅ 答對了！出招！ +1 ⭐';
       addStar();
-      if (window.Time) { window.Time.earn(window.Time.minPerAnswer()); SESSION.m += window.Time.minPerAnswer(); }
+      var earnSec = (window.Time && window.Time.secPerAnswer) ? window.Time.secPerAnswer() : 300;
+      if (window.Time) { window.Time.earn(earnSec); SESSION.m += earnSec; }
       paintScoreTime();
-      var earnMin = (window.Time && window.Time.minPerAnswer) ? window.Time.minPerAnswer() : 5;
-      rewardPop('+1⭐　+' + earnMin + '分');
+      rewardPop('+1⭐　+' + earnSec + ' 秒');
+      /* 隨機秒數禮物：連對、答得快，中獎率高一點 */
+      if (window.Time && window.Time.gift) {
+        var g = window.Time.gift({ streak: streak + 1, ms: Date.now() - qT0 });
+        if (g) {
+          SESSION.m += g.sec;
+          paintScoreTime();
+          setTimeout(function () { giftPop('🎁 ' + g.label + '　+' + g.sec + ' 秒'); }, 620);
+        }
+      }
       streak++;
       setCombo();
       sfxRight();

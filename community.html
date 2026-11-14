@@ -584,7 +584,7 @@
   <button id="btnPlay" class="hidden">🎾 陪牠玩</button>
   <button id="btnComfort" class="hidden">🤗 安慰牠</button>
   <button id="btnToggle" class="hidden">🏡 放入農場</button>
-  <button id="btnTrade" class="hidden">⏱ 換 1 顆星（花 5 分鐘）</button>
+  <button id="btnTrade" class="hidden">⏱ 換 1 顆星（花 300 秒）</button>
 </div>
 
 <!-- 家長設定：孩子的小名（必須放在主 script 之前，腳本才抓得到） -->
@@ -2245,7 +2245,7 @@
       var bits = [];
       if (harvest.s) bits.push('+' + harvest.s + ' 顆星');
       if (harvest.b) bits.push('挑戰獎勵 +' + harvest.b + ' 顆');
-      if (harvest.m) bits.push('+' + harvest.m + ' 分鐘');
+      if (harvest.m) bits.push('+' + harvest.m + ' 秒');
       sub.textContent = bits.join('　');
       if (sub.animate) sub.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}], {duration:360,fill:'forwards'});
       var line = petLine(p, harvest.w ? 'win' : 'greet', { force: true });
