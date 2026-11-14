@@ -13,7 +13,18 @@
   var CAP_KEY = 'dsh_time_cap';
   var KEY = 'dsh_time';
   var DEF_CAP = 45;        // 每日娛樂上限（分鐘）
-  var MIN_PER_ANSWER = 5;  // 每答對 1 題賺的分鐘數
+  /* 做題比例：關卡越高，一題換到的分鐘越少（E1）
+     stage 1-2 → 5 分鐘／題，3-4 → 4，5-6 → 3，7+ → 2 */
+  var STAGE_RAMP = [5, 5, 5, 4, 4, 3, 3, 2];
+  function stageNow() {
+    var v = parseInt(localStorage.getItem('dsh_stage') || '1', 10);
+    return (isNaN(v) || v < 1) ? 1 : v;
+  }
+  function minNow() {
+    var st = stageNow();
+    return STAGE_RAMP[Math.min(st, STAGE_RAMP.length) - 1] || 2;
+  }
+  // 每答對 1 題賺的分鐘數
   var STAR_COST = 5;       // 幾分鐘換 1 顆星
 
   function today() {
@@ -81,7 +92,7 @@
     var o = load();
     return {
       day: o.day, earned: o.earned, used: o.used, star: o.star,
-      cap: cap(), balance: balance(), minPerAnswer: MIN_PER_ANSWER, starCost: STAR_COST
+      cap: cap(), balance: balance(), minPerAnswer: minNow(), starCost: STAR_COST
     };
   }
   function paint() {
@@ -118,7 +129,7 @@
 
   w.Time = {
     cap: cap, setCap: setCap,
-    minPerAnswer: function () { return MIN_PER_ANSWER; },
+    minPerAnswer: function () { return minNow(); },
     starCost: function () { return STAR_COST; },
     earn: earn, used: used, balance: balance, use: use, toStars: toStars,
     stats: stats, mount: mount, paint: paint, installStyles: installStyles

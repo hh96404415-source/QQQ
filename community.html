@@ -11,7 +11,7 @@
   #app{display:flex;height:100vh;height:100dvh}
 
   /* ── 左半 ── */
-  #farmPane{position:relative;width:50%;height:100%;display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,.1)}
+  #farmPane{position:relative;width:100%;height:100%;display:flex;flex-direction:column}
   #farmArea{flex:1;position:relative;overflow:hidden;
     background:
       linear-gradient(180deg, rgba(12,24,44,.34) 0%, rgba(12,24,44,.12) 24%, rgba(12,24,44,0) 36%),
@@ -81,14 +81,28 @@
   .chip .dot.sad{background:#ef4444}
 
   /* ── 右半：遊戲區 ── */
-  #gamePane{position:relative;width:50%;height:100%;padding:12px;display:flex;flex-direction:column;gap:10px;
+  #gamePane{position:absolute;right:0;top:0;height:100%;width:min(640px,56vw);z-index:3000;padding:12px;
+    display:flex;flex-direction:column;gap:10px;
+    transform:translateX(102%);transition:transform .3s cubic-bezier(.2,.7,.3,1);
+    box-shadow:-16px 0 40px rgba(0,0,0,.5);
     background:
       linear-gradient(180deg, rgba(9,16,30,.18) 0%, rgba(9,16,30,.44) 46%, rgba(9,16,30,.74) 100%),
       url('images/bg_playground.webp') center 32% / cover no-repeat,
       linear-gradient(#1e293b,#0f172a)}
+  #gamePane.open{transform:none}
+  #gamePane:not(.open){pointer-events:none}
+  #bookBtn{position:absolute;top:10px;right:136px;z-index:31;display:flex;align-items:center;
+    justify-content:center;width:34px;height:34px;border-radius:12px;font-size:17px;
+    background:rgba(15,23,42,.72);border:1px solid rgba(255,255,255,.16);cursor:pointer;
+    transition:background .2s,transform .12s}
+  #bookBtn:hover{background:rgba(30,41,59,.95);transform:translateY(-1px)}
+  #bookBtn:active{transform:scale(.94)}
+  #bookClose{position:absolute;top:10px;right:10px;z-index:2;width:32px;height:32px;border-radius:10px;
+    border:1px solid rgba(255,255,255,.18);background:rgba(15,23,42,.8);color:#e2e8f0;
+    font-size:15px;font-weight:900;cursor:pointer;font-family:inherit}
   .ghead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .gtitle{color:#fbbf24;font-weight:900;font-size:20px;text-shadow:0 2px 6px rgba(0,0,0,.55)}
-  .gsub{color:#94a3b8;font-size:14px;margin-left:auto}
+  .gsub{color:#94a3b8;font-size:14px;margin-left:auto;margin-right:40px}
   .pgrid{flex:1;display:grid;gap:8px;align-content:center}
   .card{position:relative;border-radius:12px;background:#334155;cursor:pointer;
     display:flex;align-items:center;justify-content:center;aspect-ratio:1;min-height:44px;
@@ -487,15 +501,15 @@
   #shopTip{font-size:12px;font-weight:700;color:#8fa1bd;text-align:center;margin:12px 0 0}
 
 
-  .fac::after{content:'';position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);
-    width:78%;height:14px;border-radius:50%;pointer-events:none;z-index:-1;
-    background:radial-gradient(ellipse at center,rgba(0,0,0,.45) 0%,rgba(0,0,0,.18) 46%,rgba(0,0,0,0) 76%);
-    filter:blur(3px)}
+  .fac::after{content:'';position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);
+    width:88%;height:20px;border-radius:50%;pointer-events:none;z-index:-1;
+    background:radial-gradient(ellipse at center,rgba(0,0,0,.58) 0%,rgba(0,0,0,.26) 44%,rgba(0,0,0,0) 78%);
+    filter:blur(4px)}
   .fac img.fico{display:block;object-fit:contain;pointer-events:none;
     filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
-  .fac.lv1 img.fico{width:72px;height:72px}
-  .fac.lv2 img.fico{width:98px;height:98px}
-  .fac.lv3 img.fico{width:128px;height:128px}
+  .fac.lv1 img.fico{width:120px;height:120px}
+  .fac.lv2 img.fico{width:172px;height:172px}
+  .fac.lv3 img.fico{width:220px;height:220px}
   .shopCard img.fico{width:76px;height:76px;object-fit:contain;pointer-events:none;
     filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
 </style>
@@ -519,6 +533,7 @@
       <div id="farmStars">⭐ <span id="starCount">0</span> <button id="btnStar">+1</button></div>
       <a id="homeBtn" href="index.html" title="回登入頁">🏠</a>
       <button id="shopBtn" title="星星商店">🛒</button>
+      <button id="bookBtn" title="孩子的手冊">📖</button>
     </div>
     <div id="petBarWrap">
       <button id="petPrev" class="pbarNav" aria-label="上一頁">‹</button>
@@ -527,6 +542,7 @@
     </div>
   </div>
   <div id="gamePane">
+    <button id="bookClose" title="收起來">✕</button>
     <div id="playLayer" class="hidden">
       <div class="ghead">
         <span class="gtitle" id="gameTitle">🎪 寵物遊樂場</span>
@@ -917,19 +933,19 @@
      星星是唯一貨幣：餵食要花、設施也要花，但設施是「看得見的王國在長大」。 */
   var FAC_KEY = 'dsh_fac';
   var FAC = [
-    { id:'home', name:'小屋',   x:70, y:72,
+    { id:'home', name:'小屋',   x:27, y:80,
       lv:[ {cost:8,  ico:'⛺', label:'帳篷'},
            {cost:20, ico:'🏡', label:'小屋'},
            {cost:45, ico:'🏰', label:'城堡'} ] },
-    { id:'tree', name:'大樹',   x:20, y:66,
+    { id:'tree', name:'大樹',   x:9,  y:73,
       lv:[ {cost:5,  ico:'🌱', label:'樹苗'},
            {cost:14, ico:'🌳', label:'大樹'},
            {cost:32, ico:'🌸', label:'花樹'} ] },
-    { id:'ride', name:'遊樂場', x:50, y:88,
+    { id:'ride', name:'遊樂場', x:51, y:71,
       lv:[ {cost:10, ico:'🛝', label:'滑梯'},
            {cost:24, ico:'🎠', label:'旋轉木馬'},
            {cost:48, ico:'🎡', label:'摩天輪'} ] },
-    { id:'pond', name:'水池',   x:15, y:80,
+    { id:'pond', name:'水池',   x:79, y:72,
       lv:[ {cost:6,  ico:'💧', label:'小水窪'},
            {cost:16, ico:'🪷', label:'荷花池'},
            {cost:36, ico:'⛲', label:'噴泉'} ] }
@@ -1213,6 +1229,23 @@
     shopRender();
     shopCelebrate(null, lv ? '王國又大了一點！' : '我們有' + next.label + '了！');
   }
+  /* ── 孩子的手冊：點 📖 才滑出來，平常把整個寬度留給農場 ── */
+  (function bookWire() {
+    var pane = document.getElementById('gamePane');
+    var open = document.getElementById('bookBtn');
+    var close = document.getElementById('bookClose');
+    if (!pane) return;
+    if (open) open.addEventListener('click', function (e) {
+      e.stopPropagation();
+      pane.classList.add('open');
+      if (window.Juice) { try { window.Juice.fx('page'); } catch (err) {} }
+    });
+    if (close) close.addEventListener('click', function (e) {
+      e.stopPropagation();
+      pane.classList.remove('open');
+    });
+  })();
+
   (function shopWire() {
     var btn = document.getElementById('shopBtn');
     var close = document.getElementById('shopClose');

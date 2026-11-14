@@ -118,10 +118,42 @@
         background:linear-gradient(90deg,#4c1d95,#6d28d9);color:#ede9fe;
         font-size:11.5px;font-weight:800;padding:6px 8px;letter-spacing:.04em}
   @media(max-width:760px){#wrap{padding:18px 14px 80px}#big .n{font-size:36px}#stats{grid-template-columns:repeat(2,1fr)}}
+
+  /* ---- 家長閘 ---- */
+  #lock{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;
+    background:radial-gradient(80% 70% at 50% 35%,#1b2a4a 0%,#0a1120 70%,#05080f 100%)}
+  #lock.on{display:flex}
+  #lockBox{width:min(92vw,360px);text-align:center;padding:22px 18px;border-radius:22px;
+    background:rgba(15,23,42,.86);border:1px solid rgba(148,163,184,.28);
+    box-shadow:0 24px 60px rgba(0,0,0,.55)}
+  #lockBox h2{margin:0 0 6px;font-size:22px;color:#f8fafc}
+  #lockBox p{margin:0 0 16px;font-size:13px;color:#94a3b8;line-height:1.6}
+  #lockDots{display:flex;gap:12px;justify-content:center;margin-bottom:16px}
+  #lockDots i{width:14px;height:14px;border-radius:50%;background:rgba(148,163,184,.35);
+    border:1px solid rgba(148,163,184,.5)}
+  #lockDots i.on{background:#fbbf24;border-color:#fbbf24;box-shadow:0 0 12px rgba(251,191,36,.7)}
+  #lockPad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  #lockPad button{padding:14px 0;font-size:22px;font-weight:900;border-radius:14px;cursor:pointer;
+    background:rgba(148,163,184,.16);color:#e2e8f0;border:1px solid rgba(148,163,184,.25)}
+  #lockPad button:active{transform:scale(.95)}
+  #lockPad button:disabled{visibility:hidden}
+  #lockErr{min-height:18px;margin-top:10px;font-size:12px;color:#fca5a5}
+  #lockSkip{display:none;margin-top:12px;font-size:12px;color:#7dd3fc;cursor:pointer;text-decoration:underline}
+
 </style>
 <link rel="stylesheet" href="fonts/theme.css">
 </head>
 <body>
+<div id="lock">
+  <div id="lockBox">
+    <h2 id="lockTitle">家長 PIN</h2>
+    <p id="lockHint">輸入 4 位數字</p>
+    <div id="lockDots"><i></i><i></i><i></i><i></i></div>
+    <div id="lockPad"></div>
+    <div id="lockErr"></div>
+    <div id="lockSkip">這次先略過</div>
+  </div>
+</div>
 <div id="bg"></div><div id="veil"></div>
 
 <div id="top">
@@ -179,6 +211,63 @@
 
 <script src="player.js"></script>
 <script src="time.js"></script>
+
+<script>
+(function(){
+  var PIN='dsh_parent_pin', OK='dsh_parent_ok', DAY=86400000;
+  var lock=document.getElementById('lock'), pad=document.getElementById('lockPad');
+  var dots=[].slice.call(document.querySelectorAll('#lockDots i'));
+  var err=document.getElementById('lockErr'), hint=document.getElementById('lockHint');
+  var skip=document.getElementById('lockSkip');
+  var buf='', first='', mode='enter';
+
+  function pin(){ return localStorage.getItem(PIN)||''; }
+  function need(){
+    var t=parseInt(localStorage.getItem(OK)||'0',10);
+    if(!pin()) return false;
+    return !t || (Date.now()-t) > 30*DAY;
+  }
+  function paint(){
+    dots.forEach(function(d,i){ d.className = i<buf.length?'on':''; });
+  }
+  function unlock(){
+    localStorage.setItem(OK,String(Date.now()));
+    lock.classList.remove('on');
+  }
+  function show(){
+    mode = pin() ? 'enter' : 'setup';
+    hint.textContent = pin() ? '輸入家長 4 位 PIN' : '第一次使用：設定 4 位家長 PIN';
+    skip.style.display = pin() ? 'none' : 'block';
+    err.textContent=''; buf=''; first=''; paint();
+    lock.classList.add('on');
+  }
+  ['1','2','3','4','5','6','7','8','9','←','0',''].forEach(function(k){
+    var b=document.createElement('button');
+    b.textContent=k; b.disabled=(k==='');
+    b.addEventListener('click',function(){
+      if(k==='←'){ buf=buf.slice(0,-1); paint(); return; }
+      if(buf.length>=4) return;
+      buf+=k; paint();
+      if(buf.length===4) setTimeout(done,120);
+    });
+    pad.appendChild(b);
+  });
+  function done(){
+    if(mode==='setup'){
+      if(!first){ first=buf; buf=''; paint(); hint.textContent='再打一次確認'; return; }
+      if(first!==buf){ err.textContent='兩次不一樣，再試一次'; mode='setup'; first=''; buf=''; paint(); hint.textContent='設定 4 位家長 PIN'; return; }
+      localStorage.setItem(PIN,buf); localStorage.setItem(OK,String(Date.now()));
+      lock.classList.remove('on');
+      return;
+    }
+    if(buf===pin()){ unlock(); }
+    else { err.textContent='PIN 不對'; buf=''; paint(); }
+  }
+  skip.addEventListener('click',function(){ lock.classList.remove('on'); });
+  if(need()) show();
+})();
+</script>
+
 <script>
 /* ══════════════════════════════════════════════════════════════
    1. 文案（直接沿用 GAS-Code.gs 的 SKILL_NAME / ACT / tagOf_ / verdictOf_）
