@@ -177,6 +177,8 @@
     border:2px solid rgba(96,165,250,.35);border-radius:20px;padding:14px}
   #unitPanel h2{margin:0 0 10px;font-size:17px;color:#93c5fd}
   .unitGrade{font-size:13px;font-weight:900;color:#94a3b8;margin:12px 0 6px;letter-spacing:1px}
+  .unitGrade.zh{color:#fcd34d}
+  .unitItem.zh{border-color:rgba(252,211,77,.45)}
   .unitGrade.en{color:#5eead4}
   .unitItem.en{border-color:rgba(94,234,212,.45)}
   .unitItem.en.on{background:linear-gradient(180deg,#0f766e,#115e59);border-color:#5eead4}
@@ -330,6 +332,23 @@
     72%{opacity:1;transform:translate(-50%,-64%) scale(1)}
     100%{opacity:0;transform:translate(-50%,-92%) scale(.94)}
   }
+
+  /* 過章儀式：比過關更強（紫金框、多一層光暈） */
+  #chapClear{position:fixed;inset:0;z-index:9995;display:flex;align-items:center;justify-content:center;
+    opacity:0;visibility:hidden;pointer-events:none;transition:opacity .3s}
+  #chapClear.on{opacity:1;visibility:visible}
+  #chapClear .scVeil{position:absolute;inset:0;
+    background:radial-gradient(circle at 50% 46%,rgba(76,29,149,.62),rgba(3,6,15,.95))}
+  #chapClear .scBox{position:relative;text-align:center;padding:30px 54px;border-radius:28px;
+    background:linear-gradient(180deg,rgba(49,46,129,.96),rgba(15,23,42,.97));
+    border:3px solid rgba(196,181,253,.85);
+    box-shadow:0 0 70px rgba(139,92,246,.55),0 0 120px rgba(251,191,36,.35),inset 0 0 30px rgba(251,191,36,.12);
+    animation:scPop 1.6s ease-in-out infinite}
+  #chapClear .scKicker{font-size:13px;letter-spacing:.34em;font-weight:900;color:#ddd6fe;margin-bottom:6px}
+  #chapClear .scTitle{font-size:clamp(30px,5.2vmin,50px);font-weight:900;color:#fef3c7;
+    -webkit-text-stroke:2px #7c2d12;paint-order:stroke fill;text-shadow:0 6px 0 rgba(0,0,0,.35)}
+  #chapClear .scStars{font-size:30px;margin:10px 0 6px;letter-spacing:6px}
+  #chapClear .scSub{font-size:15px;font-weight:800;color:#c7d2fe}
 </style>
 <link rel="stylesheet" href="fonts/theme.css">
 </head>
@@ -429,6 +448,16 @@
       <div class="scTitle">第 <span id="scNum">1</span> 關 通過！</div>
       <div class="scStars">⭐ ⭐ ⭐</div>
       <div class="scSub">怪物會越來越強 · 繼續加油</div>
+    </div>
+  </div>
+
+  <div id="chapClear">
+    <div class="scVeil"></div>
+    <div class="scBox">
+      <div class="scKicker">CHAPTER CLEAR</div>
+      <div class="scTitle">第 <span id="chapNum">1</span> 章 完成！</div>
+      <div class="scStars">⭐ ⭐ ⭐</div>
+      <div class="scSub" id="chapGift">獎勵：+180 秒 · +3 顆星</div>
     </div>
   </div>
 
@@ -1042,10 +1071,33 @@
     ];
     var EN_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
+  /* 中文量詞（一 __ 貓）＋英文句子填空用的資料 */
+  var ZH_LIANGCI = [
+    ['🐱', '貓', '隻'], ['🐶', '狗', '隻'], ['🐟', '魚', '條'], ['🐍', '蛇', '條'],
+    ['📄', '紙', '張'], ['🪑', '椅子', '張'], ['🌳', '樹', '棵'], ['🌸', '花', '朵'],
+    ['📚', '書', '本'], ['✏️', '鉛筆', '枝'], ['🚗', '車', '輛'], ['🏠', '房子', '間'],
+    ['🍎', '蘋果', '個'], ['🥚', '蛋', '隻'], ['👕', '衣服', '件'], ['🍞', '麵包', '片']
+  ];
+  var ZH_LIANGCI_POOL = ['隻', '條', '張', '棵', '朵', '本', '枝', '輛', '間', '個', '件', '片'];
+
+  var EN_SENT = [
+    ['I like ___.', '我喜歡蘋果。', ['apples', 'apple', 'appls', 'appel']],
+    ['The ___ is blue.', '天空是藍色的。', ['sky', 'ski', 'skies', 'skay']],
+    ['I have two ___.', '我有兩隻貓。', ['cats', 'cat', 'cates', 'kats']],
+    ['She ___ a red bag.', '她有一個紅色的袋。', ['has', 'have', 'hass', 'had']],
+    ['We go to ___ every day.', '我們每天上學。', ['school', 'schol', 'skool', 'shcool']],
+    ['My mum ___ rice.', '媽媽煮飯。', ['cooks', 'cook', 'cooking', 'cooked']],
+    ['The ___ is on the bed.', '貓在床上。', ['cat', 'kat', 'catt', 'caat']],
+    ['I can ___ very fast.', '我跑得很快。', ['run', 'runs', 'running', 'ran']],
+    ['This is my ___.', '這是我的書。', ['book', 'buk', 'booke', 'boook']],
+    ['He is my ___.', '他是我的朋友。', ['friend', 'freind', 'frend', 'frien']]
+  ];
+
     MATH_UNITS.push(
       { id: 'e1_abc', g: 1, subj: 'en', name: '字母大小寫', gen: function () {
           var i = rnd(0, 25), ch = EN_LETTERS[i], ans = ch.toLowerCase();
           var pick3 = [];
+
           while (pick3.length < 3) {
             var c = EN_LETTERS[rnd(0, 25)].toLowerCase();
             if (c !== ans && pick3.indexOf(c) < 0) pick3.push(c);
@@ -1101,6 +1153,8 @@
       var pool = 'abcdefghijklmnopqrstuvwxyz'.split('').filter(function (c) {
         return c !== miss && word.indexOf(c) < 0;
       });
+
+
       var opts = [miss];
       while (opts.length < 4 && pool.length) {
         opts.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
@@ -1110,6 +1164,53 @@
         options: shuffle(opts),
         answer: miss
       };
+    }
+  });
+
+  /* 數學：填空求未知數（7 + __ = 12） */
+  MATH_UNITS.push({
+    id: 'p1_fill', g: 1, name: '填空（求未知）',
+    gen: function () {
+      var a = rnd(1, 9), b = rnd(1, 9), sum = a + b;
+      var askSecond = Math.random() < 0.5;
+      var text = askSecond ? (a + ' + __ = ' + sum) : (a + ' + ' + b + ' = __');
+      var ans = askSecond ? b : sum;
+      return { text: text, options: buildOpts(ans, 3, 0), answer: ans };
+    }
+  });
+
+  /* 數學：選運算符（3 __ 4 = 7） */
+  MATH_UNITS.push({
+    id: 'p2_op', g: 2, name: '選運算符',
+    gen: function () {
+      var a = rnd(2, 9), b = rnd(2, 9);
+      var op = pickOne(['+', '-', '×']);
+      var val = op === '+' ? a + b : (op === '-' ? a - b : a * b);
+      if (op === '-' && a - b < 0) { var t = a; a = b; b = t; val = a - b; }
+      var wrong = ['+', '-', '×', '÷'].filter(function (x) { return x !== op; });
+      return { text: a + ' __ ' + b + ' = ' + val + '　（選運算符）', options: shuffle([op].concat(wrong)), answer: op };
+    }
+  });
+
+  /* 中文：量詞（一 __ 貓） */
+  MATH_UNITS.push({
+    id: 'c1_liangci', subj: 'zh', g: 1, name: '量詞',
+    gen: function () {
+      var w = pickOne(ZH_LIANGCI);
+      var ans = w[2];
+      var pool = ZH_LIANGCI_POOL.filter(function (c) { return c !== ans; });
+      var opts = [ans];
+      while (opts.length < 4 && pool.length) opts.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      return { text: w[0] + ' 一 __ ' + w[1], options: shuffle(opts), answer: ans };
+    }
+  });
+
+  /* 英文：句子填空（I like ___.） */
+  MATH_UNITS.push({
+    id: 'e2_sent', subj: 'en', g: 2, name: '句子填空',
+    gen: function () {
+      var w = pickOne(EN_SENT);
+      return { text: w[0] + '　（' + w[1] + '）', options: shuffle(w[2].slice()), answer: w[2][0] };
     }
   });
 
@@ -1262,6 +1363,14 @@
     function renderUnitList() {
       var html = '';
       /* 英文自己一區，排最前面（中文寫字是每 3 題自動出現，不列在這裡） */
+      var zh = MATH_UNITS.filter(function (u) { return u.subj === 'zh'; });
+      if (zh.length) {
+        html += '<div class="unitGrade zh">中文 Chinese</div><div class="unitRow">';
+        zh.forEach(function (u) {
+          html += '<button class="unitItem zh' + (u.id === curUnit ? ' on' : '') + '" data-id="' + u.id + '">' + u.name + '</button>';
+        });
+        html += '</div>';
+      }
       var en = MATH_UNITS.filter(function (u) { return u.subj === 'en'; });
       if (en.length) {
         html += '<div class="unitGrade en">英文 English</div><div class="unitRow">';
@@ -1273,7 +1382,7 @@
       [1, 2, 3].forEach(function (g) {
         html += '<div class="unitGrade">' + gradeName(g) + '</div><div class="unitRow">';
         MATH_UNITS.forEach(function (u) {
-          if (u.g !== g || u.subj === 'en') return;
+          if (u.g !== g || u.subj === 'en' || u.subj === 'zh') return;
           html += '<button class="unitItem' + (u.id === curUnit ? ' on' : '') + '" data-id="' + u.id + '">' + u.name + '</button>';
         });
         html += '</div>';
@@ -1628,7 +1737,41 @@
         window.Juice.flash('rgba(255,240,180,.5)', 220);
       }
       sfxLevel();
+      /* 每 3 關＝一章：再加一層更強的儀式（C1） */
+      var done = stage - 1;
+      if (done % 3 === 0) setTimeout(function () { chapterClear(done / 3); }, 1500);
     }
+
+    /* 過章：紫金框 + 額外 180 秒 / 3 顆星 */
+    function chapterClear(ch) {
+      var el = document.getElementById('chapClear');
+      var num = document.getElementById('chapNum');
+      var gift = document.getElementById('chapGift');
+      var BONUS_SEC = 180, BONUS_STAR = 3;
+      if (num) num.textContent = ch;
+      if (gift) gift.textContent = '獎勵：+' + BONUS_SEC + ' 秒 · +' + BONUS_STAR + ' 顆星';
+      addStar(BONUS_STAR);
+      if (window.Time && window.Time.earn) window.Time.earn(BONUS_SEC);
+      if (window.SESSION) { }   /* 章節獎勵不計入回社區的收成，避免重複 */
+      paintScoreTime();
+      if (el) {
+        el.classList.add('on');
+        setTimeout(function () { el.classList.remove('on'); }, 3800);
+      }
+      if (window.Juice) {
+        window.Juice.fx('level');
+        window.Juice.confetti(44, { x: window.innerWidth / 2, y: window.innerHeight * 0.4 });
+        window.Juice.flash('rgba(196,181,253,.55)', 260);
+        window.Juice.banner('🎉 第 ' + ch + ' 章 完成', { ms: 2000 });
+      }
+      sfxLevel();
+    }
+
+    /* 測試鉤子（不影響正常流程） */
+    window.__dbg = {
+      clear: function () { stageClear(); },
+      chap: function (n) { chapterClear(n || 1); }
+    };
 
     function paintStage() {
       var t = document.getElementById('stageNow');
