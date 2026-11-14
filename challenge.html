@@ -1396,13 +1396,30 @@
       qaPost({ action: 'complete_set', user_id: qaCfg.uid, pin: qaCfg.pin || '', answers: batch }, function () {});
     }
 
+    /* 難度高的時候，把「a + b = ?」改寫成「a + __ = c」，數字不變但要想反過來 */
+    function hardenNumeric(r) {
+      if (!r || typeof r.answer !== 'number' || !r.text) return r;
+      if (ramp < 0.3) return r;
+      var m = String(r.text).match(/^(\d+)\s*([+\u2212\u00d7])\s*(\d+)\s*=\s*\?$/);
+      if (!m) return r;
+      if (Math.random() > ramp) return r;
+      var A = parseInt(m[1], 10), B = parseInt(m[3], 10), op = m[2], C = r.answer;
+      var hideB = Math.random() < 0.5;
+      if (op === '\u00d7') {
+        return { text: hideB ? (A + ' \u00d7 __ = ' + C) : ('__ \u00d7 ' + B + ' = ' + C),
+                 answer: hideB ? B : A, spread: 2 };
+      }
+      return { text: hideB ? (A + ' ' + op + ' __ = ' + C) : ('__ ' + op + ' ' + B + ' = ' + C),
+               answer: hideB ? B : A, spread: Math.max(3, r.spread || 6) };
+    }
+
     /* 最近出過的題目（避免同一個單元一直重複同一題） */
     var recentQ = [];
     function makeQ() {
       var rq = qaTake();
       if (rq) return rq;
       var u = unitById(curUnit);
-      var r = u.gen();
+      var r = hardenNumeric(u.gen());
       for (var t = 0; t < 6; t++) {
         if (recentQ.indexOf(r.text) < 0) break;
         r = u.gen();
