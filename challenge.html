@@ -177,6 +177,8 @@
     border:2px solid rgba(96,165,250,.35);border-radius:20px;padding:14px}
   #unitPanel h2{margin:0 0 10px;font-size:17px;color:#93c5fd}
   .unitGrade{font-size:13px;font-weight:900;color:#94a3b8;margin:12px 0 6px;letter-spacing:1px}
+  .unitGrade.mix{color:#f0abfc}
+  .unitItem.mix{border-color:rgba(240,171,252,.5)}
   .unitGrade.zh{color:#fcd34d}
   .unitItem.zh{border-color:rgba(252,211,77,.45)}
   .unitGrade.en{color:#5eead4}
@@ -1131,6 +1133,66 @@
     ['We ___ in Hong Kong.', '我們住在香港。', ['live', 'lives', 'living', 'lived']],
     ['He ___ fast.', '他跑得很快。', ['runs', 'run', 'running', 'ran']]
   ];
+  /* 中文：相反詞 */
+  var ZH_OPP = [
+    ['大', '小'], ['多', '少'], ['高', '矮'], ['長', '短'], ['上', '下'],
+    ['前', '後'], ['左', '右'], ['早', '晚'], ['快', '慢'], ['熱', '冷'],
+    ['開', '關'], ['黑', '白'], ['新', '舊'], ['遠', '近'], ['厚', '薄'],
+    ['乾淨', '骯髒'], ['開心', '傷心'], ['安全', '危險']
+  ];
+  /* 中文：詞語填空（句子 / 正解 / 三個干擾） */
+  var ZH_CLOZE = [
+    ['我每天早上七點___。', '起床', ['睡覺', '吃飯', '洗澡']],
+    ['下雨了，記得帶___。', '雨傘', ['書包', '水壺', '帽子']],
+    ['媽媽在廚房___。', '煮飯', ['看書', '打球', '唱歌']],
+    ['老師在___上寫字。', '黑板', ['地板', '桌子', '牆壁']],
+    ['我用___把鉛筆削好。', '鉛筆刨', ['剪刀', '膠水', '尺子']],
+    ['天黑了，我們要___。', '回家', ['上學', '跑步', '游泳']],
+    ['弟弟生病了，要去___。', '看醫生', ['看電影', '去公園', '買玩具']],
+    ['過馬路要看___。', '紅綠燈', ['雲', '風', '花']],
+    ['我把功課寫在___上。', '手冊', ['枕頭', '衣服', '鞋']],
+    ['口渴了，我想___。', '喝水', ['睡覺', '跳繩', '畫畫']],
+    ['我用___寫字。', '鉛筆', ['筷子', '牙刷', '湯匙']],
+    ['太陽出來了，天亮了，我要___。', '起床', ['睡覺', '關燈', '做夢']],
+    ['我們用___看東西。', '眼睛', ['耳朵', '鼻子', '嘴巴']],
+    ['放學了，老師說___。', '再見', ['早安', '謝謝你', '對不起']],
+    ['我在圖書館要___。', '安靜', ['大叫', '跑步', '唱歌']],
+    ['冬天很冷，我要穿___。', '外套', ['拖鞋', '泳衣', '短褲']],
+    ['我把垃圾丟進___。', '垃圾桶', ['書包', '雪櫃', '鞋櫃']],
+    ['過生日會吃___。', '蛋糕', ['白飯', '麵包', '粥']],
+    ['我在___裡洗澡。', '浴室', ['廚房', '客廳', '睡房']],
+    ['上課要舉手___。', '發言', ['睡覺', '聊天', '走動']]
+  ];
+  /* 英文：顏色 / 數字 / 單複數 / 介詞 */
+  var EN_COLOR = [
+    ['🍎', 'red'], ['🌙', 'yellow'], ['🌊', 'blue'], ['🌿', 'green'],
+    ['🍊', 'orange'], ['🍆', 'purple'], ['🐻', 'brown'], ['⬛', 'black'],
+    ['⬜', 'white'], ['💗', 'pink'], ['🩶', 'grey'], ['🥇', 'gold']
+  ];
+  var EN_NUMW = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
+  var EN_PLURAL = [
+    ['cat', 'cats'], ['dog', 'dogs'], ['book', 'books'], ['bus', 'buses'],
+    ['box', 'boxes'], ['baby', 'babies'], ['apple', 'apples'], ['bird', 'birds'],
+    ['child', 'children'], ['man', 'men'], ['foot', 'feet'], ['fish', 'fish']
+  ];
+  var EN_PREP = [
+    ['The cat is ___ the box.', 'in', '在盒子裡面'],
+    ['The book is ___ the table.', 'on', '在桌子上面'],
+    ['The ball is ___ the chair.', 'under', '在椅子下面'],
+    ['The bird is ___ the tree.', 'in', '在樹上'],
+    ['She sits ___ me.', 'next to', '在我旁邊'],
+    ['We go ___ school.', 'to', '去學校'],
+    ['He is good ___ maths.', 'at', '擅長數學'],
+    ['The gift is ___ you.', 'for', '給你的'],
+    ['I go to school ___ bus.', 'by', '坐巴士去學校'],
+    ['She is ___ home.', 'at', '她在家'],
+    ['Look ___ the board.', 'at', '看著黑板'],
+    ['He is taller ___ me.', 'than', '他比我高'],
+    ['I play ___ my friends.', 'with', '我和朋友一起玩'],
+    ['The cat jumps ___ the table.', 'onto', '跳上桌子']
+  ];
+
 
     MATH_UNITS.push(
       { id: 'e1_abc', g: 1, subj: 'en', name: '字母大小寫', gen: function () {
@@ -1212,6 +1274,82 @@
         options: shuffle(opts),
         answer: miss
       };
+    }
+  });
+
+  /* 中文：相反詞 */
+  MATH_UNITS.push({
+    id: 'c1_fanyi', subj: 'zh', g: 1, name: '相反詞',
+    gen: function () {
+      var w = pickOne(ZH_OPP), flip = Math.random() < 0.5;
+      var qWord = flip ? w[1] : w[0], ans = flip ? w[0] : w[1];
+      var pool = [];
+      ZH_OPP.forEach(function (x) { if (x[0] !== ans && x[1] !== ans) pool.push(x[0]); });
+      var opts = [ans];
+      while (opts.length < 4 && pool.length) opts.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      return { text: '「' + qWord + '」的相反詞是？', options: shuffle(opts), answer: ans };
+    }
+  });
+
+  /* 中文：詞語填空 */
+  MATH_UNITS.push({
+    id: 'c2_ciyu', subj: 'zh', g: 2, name: '詞語填空',
+    gen: function () {
+      var w = pickOne(ZH_CLOZE);
+      var opts = [w[1]].concat(w[2].slice(0, 3));
+      return { text: w[0], options: shuffle(opts), answer: w[1] };
+    }
+  });
+
+  /* 英文：顏色 */
+  MATH_UNITS.push({
+    id: 'e1_color', subj: 'en', g: 1, name: '顏色',
+    gen: function () {
+      var w = pickOne(EN_COLOR);
+      var pool = EN_COLOR.map(function (x) { return x[1]; }).filter(function (c) { return c !== w[1]; });
+      var opts = [w[1]];
+      while (opts.length < 4 && pool.length) opts.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      return { text: w[0] + '　這個是什麼顏色？', options: shuffle(opts), answer: w[1] };
+    }
+  });
+
+  /* 英文：數字 */
+  MATH_UNITS.push({
+    id: 'e1_num', subj: 'en', g: 1, name: '數字',
+    gen: function () {
+      var n = rnd(1, 20), ans = EN_NUMW[n - 1];
+      var pool = EN_NUMW.filter(function (x) { return x !== ans; });
+      var opts = [ans];
+      while (opts.length < 4 && pool.length) opts.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      return { text: n + ' 的英文是？', options: shuffle(opts), answer: ans };
+    }
+  });
+
+  /* 英文：單複數 */
+  MATH_UNITS.push({
+    id: 'e2_plural', subj: 'en', g: 2, name: '單複數',
+    gen: function () {
+      var w = pickOne(EN_PLURAL);
+      var ans = Math.random() < 0.6 ? w[1] : w[0];
+      var ask = ans === w[1] ? ('one ' + w[0] + ', two ___') : ('two ' + w[1] + ', one ___');
+      var raw = EN_PLURAL.map(function (x) { return x[0]; }).concat(EN_PLURAL.map(function (x) { return x[1]; }));
+      var pool = [];
+      raw.forEach(function (c) { if (c !== ans && pool.indexOf(c) < 0) pool.push(c); });
+      var opts = [ans];
+      while (opts.length < 4 && pool.length) opts.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      return { text: ask, options: shuffle(opts), answer: ans };
+    }
+  });
+
+  /* 英文：介詞 */
+  MATH_UNITS.push({
+    id: 'e2_prep', subj: 'en', g: 2, name: '介詞',
+    gen: function () {
+      var w = pickOne(EN_PREP);
+      var pool = ['in', 'on', 'under', 'next to', 'to', 'at', 'for', 'with'].filter(function (x) { return x !== w[1]; });
+      var opts = [w[1]];
+      while (opts.length < 4 && pool.length) opts.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      return { text: w[0] + '　（' + w[2] + '）', options: shuffle(opts), answer: w[1] };
     }
   });
 
@@ -1397,6 +1535,33 @@
     }
 
     /* 難度高的時候，把「a + b = ?」改寫成「a + __ = c」，數字不變但要想反過來 */
+    /* 綜合：中 → 英 → 數 輪流，避免數學題獨大 */
+    var MIX_SUBJ = ['zh', 'en', 'math'];
+    var mixStep = 0;
+    function mixPickUnit() {
+      var subj = MIX_SUBJ[mixStep % 3];
+      mixStep++;
+      var pool = MATH_UNITS.filter(function (u) {
+        if (subj === 'zh') return u.subj === 'zh';
+        if (subj === 'en') return u.subj === 'en';
+        return !u.subj && u.id !== 'mix_all';
+      });
+      if (!pool.length) pool = MATH_UNITS.filter(function (u) { return u.id !== 'mix_all'; });
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+    MATH_UNITS.push({
+      id: 'mix_all', g: 0, name: '綜合（中英數）',
+      gen: function () {
+        var u = mixPickUnit();
+        var r = u.gen();
+        return {
+          text: r.text,
+          answer: r.answer,
+          options: r.options ? r.options.slice() : buildOpts(r.answer, r.spread || 6, r.min)
+        };
+      }
+    });
+
     function hardenNumeric(r) {
       if (!r || typeof r.answer !== 'number' || !r.text) return r;
       if (ramp < 0.3) return r;
@@ -1422,6 +1587,7 @@
       var r = hardenNumeric(u.gen());
       for (var t = 0; t < 6; t++) {
         if (recentQ.indexOf(r.text) < 0) break;
+        if (u.id === 'mix_all') break;   /* 綜合模式每次都會換科，不要重抽 */
         r = u.gen();
       }
       recentQ.push(r.text);
@@ -1452,6 +1618,14 @@
     function renderUnitList() {
       var html = '';
       /* 英文自己一區，排最前面（中文寫字是每 3 題自動出現，不列在這裡） */
+      var mix = MATH_UNITS.filter(function (u) { return u.id === 'mix_all'; });
+      if (mix.length) {
+        html += '<div class="unitGrade mix">綜合 Balanced</div><div class="unitRow">';
+        mix.forEach(function (u) {
+          html += '<button class="unitItem mix' + (u.id === curUnit ? ' on' : '') + '" data-id="' + u.id + '">🔀 ' + u.name + '</button>';
+        });
+        html += '</div>';
+      }
       var zh = MATH_UNITS.filter(function (u) { return u.subj === 'zh'; });
       if (zh.length) {
         html += '<div class="unitGrade zh">中文 Chinese</div><div class="unitRow">';
