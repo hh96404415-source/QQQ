@@ -1365,15 +1365,16 @@
         }
       }
     }
-    /* ── 新手禮（只給一次）：一隻蛋 + 一隻已經孵好的 1 級夥伴 + 100 星星 ──
+    /* ── 新手禮（只給一次）：第一隻直接是剛孵好的 1 級夥伴 + 第二隻蛋 + 100 星星 ──
        原因：蛋（0 級）不能上戰場，孩子如果两只都是蛋，就卡住沒法答題賺金幣。
-       所以第二隻直接是「剛孵出來的幼獸」，孩子一進來就有夥伴可以帶去挑戰。 */
+       所以第一隻直接是「剛孵出來的幼獸」，孩子一進來就有夥伴可以帶去挑戰；
+       第二隻維持蛋，讓孩子自己餵星星體驗孵化。 */
     var newbieDone = false;
     try { newbieDone = localStorage.getItem('dsh_newbie_gift') === '1'; } catch(e){}
     if (!newbieDone){
       if (!saved){
-        pets[1].stage = 1;
-        pets[1].growth = FORMS[1].next;
+        pets[0].stage = 1;
+        pets[0].growth = FORMS[1].next;
         stars += 100;
         try { localStorage.setItem('dsh_newbie_guide', '1'); } catch(e){}
       }
