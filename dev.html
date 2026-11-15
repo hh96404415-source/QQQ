@@ -90,6 +90,7 @@
   <div class="tabs">
     <button class="on" data-tab="fam">🏠 家庭 / 孩子</button>
     <button data-tab="cfg">⚙️ 系統參數</button>
+    <button data-tab="blk">🛡 封印清單</button>
   </div>
 
   <div class="msg" id="msg"></div>
@@ -118,6 +119,36 @@
     </div>
   </div>
 </div>
+
+  <div id="viewBlk" style="display:none">
+    <div class="card">
+      <div class="fhead">
+        <span class="fname">🛡 封印清單</span>
+        <span class="meta">全域 ＝ 所有家庭都吃；選某個家庭 ＝ 只在該家加減（蓋過全域）</span>
+      </div>
+      <div class="form">
+        <select id="blkFam"></select>
+        <input id="blkDomain" placeholder="域名（例：youtube.com）" maxlength="80">
+        <select id="blkCat">
+          <option value="video">影音</option>
+          <option value="game">遊戲</option>
+          <option value="social">社交</option>
+          <option value="study">學業</option>
+          <option value="other">其他</option>
+        </select>
+        <select id="blkAction">
+          <option value="block">封鎖</option>
+          <option value="allow">放行</option>
+        </select>
+        <button class="btn" id="blkAdd">加入</button>
+      </div>
+      <div class="meta" id="blkEff" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <div class="fhead"><span class="fname">清單</span><span class="meta" id="blkCount"></span></div>
+      <div id="blkList"></div>
+    </div>
+  </div>
 
 <div id="mask"><div id="box"></div></div>
 
@@ -233,6 +264,9 @@
           badge +
           '<span class="sp"></span>' +
           '<button class="btn sm" data-u="' + esc(u.id) + '" data-f="' + esc(f.id) + '" data-act="editkid">編輯</button>' +
+          '<button class="btn sm ghost" data-u="' + esc(u.id) + '" data-act="resetkid">♻️ 重置</button>' +
+          '<button class="btn sm ghost" data-u="' + esc(u.id) + '" data-act="archivekid" data-v="' + (u.active ? 1 : 0) + '">' + (u.active ? '📦 封存' : '↩️ 復原') + '</button>' +
+          '<button class="btn sm danger" data-u="' + esc(u.id) + '" data-act="delkid">🗑 刪除</button>' +
         '</div>';
       }).join('') || '<div class="empty">這個家庭還沒有孩子（應為 1 個）</div>';
 
@@ -243,6 +277,7 @@
             ' · 路由器 ' + f.routers + '</span>' +
           (f.active ? '<span class="badge">啟用</span>' : '<span class="badge off">停用</span>') +
           '<span class="sp" style="flex:1"></span>' +
+          '<button class="btn sm ghost" data-f="' + esc(f.id) + '" data-act="addkid">＋孩子</button>' +
           '<button class="btn sm" data-f="' + esc(f.id) + '" data-act="editfam">改家庭</button>' +
           '<button class="btn sm ' + (f.active ? 'danger' : '') + '" data-f="' + esc(f.id) + '" data-act="togglefam" data-v="' + (f.active?1:0) + '">' + (f.active?'停用':'啟用') + '</button>' +
         '</div>' + kids +
@@ -258,7 +293,21 @@
   function onAction(){
     var act = this.getAttribute('data-act');
     var fid = Number(this.getAttribute('data-f'));
+    var uid = Number(this.getAttribute('data-u'));
     if (act === 'editfam') return editFamily(fid);
+    if (act === 'addkid') return addKid(fid);
+    if (act === 'resetkid') return resetKid(uid);
+    if (act === 'delkid') return delKid(uid);
+    if (act === 'archivekid'){
+      var cur = this.getAttribute('data-v') === '1';
+      this.disabled = true;
+      post('devArchiveUser', { user_id: uid, archived: cur }, function(e, d){
+        if (e || !d || !d.ok){ say((d && d.error) || '失敗', true); return; }
+        say(cur ? '已封存（登不進去，資料保留）' : '已復原');
+        load();
+      });
+      return;
+    }
     if (act === 'togglefam'){
       var v = this.getAttribute('data-v') === '1';
       this.disabled = true;
@@ -301,6 +350,65 @@
       post('devSaveFamily', { family_id: fid, f: ff }, function(e, d){
         if (e || !d || !d.ok){ m.className='msg bad'; m.textContent = (d && d.error) || '失敗'; return; }
         closeBox(); say('已更新家庭'); load();
+      });
+    });
+  }
+
+  function kidOf(uid){
+    var found = null;
+    (DATA.families || []).forEach(function(f){
+      (f.kids || []).forEach(function(k){ if (String(k.id) === String(uid)) found = k; });
+    });
+    return found;
+  }
+
+  function resetKid(uid){
+    var k = kidOf(uid), nm = k ? k.name : ('#' + uid);
+    if (!window.confirm('重置「' + nm + '」？\n\n會清空：雲端存檔、金幣、等級、今日分鐘、進行中的時間卷。\n名字與 PIN 會保留。')) return;
+    post('devResetUser', { user_id: uid }, function(e, d){
+      if (e || !d || !d.ok){ say((d && d.error) || '重置失敗', true); return; }
+      say('已重置：' + nm + '（' + ((d.log || []).join('、')) + '）');
+      load();
+    });
+  }
+
+  function delKid(uid){
+    var k = kidOf(uid), nm = k ? k.name : ('#' + uid);
+    if (!window.confirm('刪除「' + nm + '」？\n\n會真的刪掉：帳號、雲端存檔、技能進度、金幣流水、時間卷。\n作答與兌換歷史會保留。不能復原。')) return;
+    if (!window.confirm('再確認一次：真的要刪除「' + nm + '」？')) return;
+    post('devDeleteUser', { user_id: uid }, function(e, d){
+      if (e || !d || !d.ok){ say((d && d.error) || '刪除失敗', true); return; }
+      say('已刪除：' + nm);
+      load();
+    });
+  }
+
+  function addKid(fid){
+    var f = (DATA.families || []).filter(function(x){ return x.id === fid; })[0];
+    openBox(
+      '<h3>在「' + esc(f ? f.name : ('家庭 ' + fid)) + '」新增孩子</h3>' +
+      '<div class="row2"><div><label>名字</label><input id="akName" maxlength="20"></div>' +
+      '<div><label>頭像 emoji</label><input id="akAvatar" value="🐲" maxlength="4"></div></div>' +
+      '<div class="row2"><div><label>孩子 PIN（6 位）</label><input id="akPin" inputmode="numeric" maxlength="6"></div>' +
+      '<div><label>年級</label><input id="akGrade" placeholder="P2" maxlength="8"></div></div>' +
+      '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="akSave">建立</button></div>' +
+      '<div class="msg" id="akMsg"></div>' +
+      '<div class="meta" style="margin-top:8px">正常情況一個家庭一個孩子；多寶家庭才需要多加。</div>'
+    );
+    document.getElementById('akSave').addEventListener('click', function(){
+      var ff = {
+        display_name: document.getElementById('akName').value.trim(),
+        avatar: document.getElementById('akAvatar').value.trim() || '🐲',
+        pin: document.getElementById('akPin').value.trim(),
+        grade: document.getElementById('akGrade').value.trim()
+      };
+      var m = document.getElementById('akMsg');
+      if (!ff.display_name){ m.className = 'msg bad'; m.textContent = '名字要填'; return; }
+      if (!/^\d{6}$/.test(ff.pin)){ m.className = 'msg bad'; m.textContent = '孩子 PIN 要 6 位數字'; return; }
+      this.disabled = true;
+      post('devCreateUser', { family_id: fid, f: ff }, function(e, d){
+        if (e || !d || !d.ok){ m.className = 'msg bad'; m.textContent = (d && d.error) || '建立失敗'; return; }
+        closeBox(); say('已新增孩子 ' + ff.display_name + '（' + d.user_id + '）'); load();
       });
     });
   }
@@ -408,6 +516,95 @@
     })();
   });
 
+  /* ── 封印清單 ── */
+  var blkFam = document.getElementById('blkFam');
+  var blkList = document.getElementById('blkList');
+  var BLK = null;
+
+  function fillBlkFam(){
+    var opts = '<option value="0">全域（所有家庭）</option>';
+    (DATA && DATA.families ? DATA.families : []).forEach(function(f){
+      opts += '<option value="' + f.id + '">' + esc(f.name || ('家庭 ' + f.id)) + '</option>';
+    });
+    blkFam.innerHTML = opts;
+    blkFam.value = '0';
+  }
+
+  function loadBlk(fid){
+    post('devListBlocklist', { family_id: Number(fid) || 0 }, function(e, d){
+      if (e || !d || !d.ok){ blkList.innerHTML = '<div class="empty">讀取失敗</div>'; return; }
+      BLK = d;
+      var rows = (fid == 0) ? (d.global || []) : (d.family || []);
+      document.getElementById('blkEff').textContent =
+        '目前生效：封鎖 ' + d.effective.block.length + ' 個、放行 ' + d.effective.allow.length + ' 個（rev ' + d.effective.rev + '）';
+      document.getElementById('blkCount').textContent = rows.length + ' 條';
+      if (!rows.length){ blkList.innerHTML = '<div class="empty">這份清單是空的</div>'; return; }
+      blkList.innerHTML = rows.map(function(b){
+        var isAllow = String(b.action).toLowerCase() === 'allow';
+        var off = !(b.active === true || b.active === 'TRUE' || b.active === 'true');
+        return '<div class="kid">' +
+          '<span class="nm">' + esc(b.domain) + '</span>' +
+          '<span class="sub">' + esc(b.category || '—') + '</span>' +
+          '<span class="badge' + (isAllow ? '' : ' free') + '">' + (isAllow ? '放行' : '封鎖') + '</span>' +
+          (off ? '<span class="badge off">停用</span>' : '') +
+          '<span class="sp"></span>' +
+          '<button class="btn sm ghost" data-act="blkToggle" data-id="' + esc(b.blocklist_id) + '" data-on="' + (off ? '0' : '1') + '" data-d="' + esc(b.domain) + '" data-c="' + esc(b.category) + '" data-a="' + esc(b.action) + '" data-f="' + esc(b.family_id) + '">' + (off ? '啟用' : '停用') + '</button>' +
+          '<button class="btn sm danger" data-act="blkDel" data-id="' + esc(b.blocklist_id) + '" data-d="' + esc(b.domain) + '">刪除</button>' +
+        '</div>';
+      }).join('');
+      var btns = blkList.querySelectorAll('button[data-act]');
+      for (var i = 0; i < btns.length; i++) btns[i].addEventListener('click', onBlkAction);
+    });
+  }
+
+  function onBlkAction(){
+    var act = this.getAttribute('data-act');
+    var id = this.getAttribute('data-id');
+    var dom = this.getAttribute('data-d');
+    if (act === 'blkDel'){
+      if (!window.confirm('刪除「' + dom + '」？')) return;
+      this.disabled = true;
+      post('devDelBlocklist', { blocklist_id: id }, function(e, d){
+        if (e || !d || !d.ok){ say((d && d.error) || '刪除失敗', true); return; }
+        say('已刪除 ' + dom); loadBlk(blkFam.value);
+      });
+      return;
+    }
+    var on = this.getAttribute('data-on') === '1';
+    this.disabled = true;
+    post('devSetBlocklist', {
+      family_id: Number(this.getAttribute('data-f')) || 0,
+      domain: dom,
+      category: this.getAttribute('data-c'),
+      blk_action: this.getAttribute('data-a'),
+      active: !on,
+      blocklist_id: id
+    }, function(e, d){
+      if (e || !d || !d.ok){ say((d && d.error) || '失敗', true); return; }
+      say(on ? '已停用' : '已啟用'); loadBlk(blkFam.value);
+    });
+  }
+
+  blkFam.addEventListener('change', function(){ loadBlk(this.value); });
+
+  document.getElementById('blkAdd').addEventListener('click', function(){
+    var dom = document.getElementById('blkDomain').value.trim();
+    if (!dom){ say('要填域名', true); return; }
+    var btn = this; btn.disabled = true;
+    post('devSetBlocklist', {
+      family_id: Number(blkFam.value) || 0,
+      domain: dom,
+      category: document.getElementById('blkCat').value,
+      blk_action: document.getElementById('blkAction').value,
+      active: true
+    }, function(e, d){
+      btn.disabled = false;
+      if (e || !d || !d.ok){ say((d && d.error) || '加入失敗', true); return; }
+      document.getElementById('blkDomain').value = '';
+      say('已加入 ' + dom); loadBlk(blkFam.value);
+    });
+  });
+
   /* ── tabs ── */
   var tabBtns = document.querySelectorAll('.tabs button');
   for (var t = 0; t < tabBtns.length; t++){
@@ -417,7 +614,12 @@
       var tab = this.getAttribute('data-tab');
       document.getElementById('viewFam').style.display = tab === 'fam' ? '' : 'none';
       document.getElementById('viewCfg').style.display = tab === 'cfg' ? '' : 'none';
+      document.getElementById('viewBlk').style.display = tab === 'blk' ? '' : 'none';
       if (tab === 'cfg' && !CFG) loadCfg();
+      if (tab === 'blk'){
+        if (!DATA) { say('先等家庭清單載入…'); load(); setTimeout(function(){ if (DATA){ fillBlkFam(); loadBlk(0); } }, 1200); }
+        else { fillBlkFam(); loadBlk(0); }
+      }
     });
   }
 
