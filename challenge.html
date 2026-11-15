@@ -264,6 +264,15 @@
   #combo.c3{background:linear-gradient(180deg,#f97316,#c2410c);box-shadow:0 6px 20px rgba(249,115,22,.75)}
   #combo.c5{background:linear-gradient(180deg,#f43f5e,#9f1239);box-shadow:0 6px 24px rgba(244,63,94,.8);transform:scale(1.06)}
   #combo.c7{background:linear-gradient(180deg,#a855f7,#6b21a8);box-shadow:0 6px 28px rgba(168,85,247,.85);transform:scale(1.12)}
+  /* ── 打擊感（Day1）：命中瞬間的微停格、金幣飛入計分板、Fever 暖光 ── */
+  .hitstop #monImg,.hitstop #hpWrap,.hitstop .petsay{animation-play-state:paused!important}
+  #arena.hitstop{filter:contrast(1.12) saturate(1.12)}
+  .coinFly{position:absolute;font-size:22px;z-index:10;pointer-events:none;
+    filter:drop-shadow(0 0 8px rgba(251,191,36,.9));will-change:transform,opacity}
+  #feverGlow{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:0;
+    background:radial-gradient(circle at 50% 62%,rgba(251,146,60,.28),rgba(251,146,60,0) 62%);
+    transition:opacity .25s}
+  #feverGlow.on{opacity:1}
   .dmg{position:absolute;font-weight:900;font-size:34px;color:#fde047;z-index:9;
     -webkit-text-stroke:3px #7c2d12;paint-order:stroke fill;
     text-shadow:0 4px 12px rgba(0,0,0,.9),0 0 22px rgba(253,224,71,.7);
@@ -728,9 +737,26 @@
       giftEl.classList.add('show');
       if (window.Juice) window.Juice.fx('coin');
     }
+    var coinShown = 0, coinTween = null;
     function paintScoreTime(){
       if (!sbCoinsEl) return;
-      sbCoinsEl.textContent = coins;
+      var target = coins, from = coinShown;
+      if (coinTween) { clearInterval(coinTween); coinTween = null; }
+      if (target === from) {
+        sbCoinsEl.textContent = target;
+      } else {
+        var steps = Math.min(20, Math.max(6, Math.abs(target - from)));
+        var i = 0;
+        coinTween = setInterval(function () {
+          i++;
+          sbCoinsEl.textContent = Math.round(from + (target - from) * (i / steps));
+          if (i >= steps) {
+            clearInterval(coinTween); coinTween = null;
+            sbCoinsEl.textContent = target;
+          }
+        }, 26);
+      }
+      coinShown = target;
       sbCoinsEl.classList.remove('pop'); void sbCoinsEl.offsetWidth; sbCoinsEl.classList.add('pop');
       setTimeout(function(){ sbCoinsEl.classList.remove('pop'); }, 600);
     }
@@ -792,7 +818,14 @@
         o.start(); o.stop(a.currentTime + dur);
       } catch (e) {}
     }
-    function sfxRight(){ beep(880,.09,'triangle',.10); setTimeout(function(){ beep(1320,.13,'triangle',.07); }, 70); }
+    function sfxRight(n){
+      /* 連對越多、音高越往上（半音級進），孩子聽得出「我越來越順」 */
+      var s = Math.max(0, Math.min(7, (n || 0) | 0));
+      if (window.Juice && window.Juice.fx) { window.Juice.fx('correct', { streak: s }); return; }
+      var mul = Math.pow(2, s / 12);
+      beep(880 * mul, .09, 'triangle', .10);
+      setTimeout(function(){ beep(1320 * mul, .13, 'triangle', .07); }, 70);
+    }
     function sfxWrongS(){ beep(150,.18,'sawtooth',.08); }
     function sfxWinS(){ [523,659,784,1047].forEach(function(f,i){ setTimeout(function(){ beep(f,.2,'triangle',.10); }, i*120); }); }
     /* 過關：上行五音 + 尾音長鳴 */
@@ -2674,6 +2707,57 @@
       ], { duration: 720, easing: 'cubic-bezier(.3,.7,.4,1)' })
         .onfinish = function () { if (s.parentNode) s.parentNode.removeChild(s); };
     }
+    /* ── 打擊感（Day1）：微震動 / 命中停格 / 金幣飛入計分板 / Fever 暖光 ── */
+    function haptic(pat) {
+      try {
+        if (navigator.vibrate && (!window.SND || window.SND.on())) navigator.vibrate(pat || 16);
+      } catch (e) {}
+    }
+    function hitStop(ms) {
+      if (!arenaEl) return;
+      arenaEl.classList.add('hitstop');
+      setTimeout(function () { arenaEl.classList.remove('hitstop'); }, ms || 80);
+    }
+    /* 從怪物身上彈出金幣飛進右上角計分板；金幣早就加好了，這只是「看見它進帳」 */
+    function coinFly(x, y, n) {
+      if (!fxEl || !sbCoinsEl) return;
+      var ar = arenaEl ? arenaEl.getBoundingClientRect() : null;
+      var br = sbCoinsEl.getBoundingClientRect();
+      if (!ar || !br) return;
+      var tx = br.left + br.width / 2 - ar.left, ty = br.top + br.height / 2 - ar.top;
+      var cnt = n || 3;
+      for (var i = 0; i < cnt; i++) {
+        (function (k) {
+          var c = document.createElement('div');
+          c.className = 'coinFly';
+          c.textContent = '🪙';
+          var sx = x + (Math.random() * 26 - 13), sy = y + (Math.random() * 20 - 10);
+          c.style.left = sx + 'px';
+          c.style.top = sy + 'px';
+          fxEl.appendChild(c);
+          var midX = (tx - sx) * 0.45 + (Math.random() * 40 - 20);
+          var midY = Math.min(-40, (ty - sy) * 0.35) - Math.random() * 30;
+          c.animate([
+            { transform: 'translate(-50%,-50%) scale(.5)', opacity: 0 },
+            { transform: 'translate(-50%,-92%) scale(1.15)', opacity: 1, offset: .18 },
+            { transform: 'translate(calc(-50% + ' + midX + 'px),calc(-50% + ' + midY + 'px)) scale(1)', opacity: 1, offset: .55 },
+            { transform: 'translate(calc(-50% + ' + (tx - sx) + 'px),calc(-50% + ' + (ty - sy) + 'px)) scale(.45)', opacity: .12 }
+          ], { duration: 600 + k * 70, easing: 'cubic-bezier(.3,.75,.35,1)' })
+            .onfinish = function () {
+              if (c.parentNode) c.parentNode.removeChild(c);
+              if (k === 0 && sbCoinsEl) {
+                sbCoinsEl.classList.remove('pop'); void sbCoinsEl.offsetWidth; sbCoinsEl.classList.add('pop');
+              }
+            };
+        })(i);
+      }
+    }
+    function fever(on) {
+      var g = document.getElementById('feverGlow');
+      if (!g) { g = document.createElement('div'); g.id = 'feverGlow'; (arenaEl || document.body).appendChild(g); }
+      g.classList.toggle('on', !!on);
+      if (on) setTimeout(function () { g.classList.remove('on'); }, 1400);
+    }
     /* 寵物到怪物的水平距離（衝過去要衝多遠） */
     function rushDist() {
       if (!petImg || !monImg) return 220;
@@ -2787,6 +2871,13 @@
         comboEl.classList.toggle('c5', streak >= 5 && streak < 7);
         comboEl.classList.toggle('c7', streak >= 7);
         if (window.Juice) window.Juice.bump(comboEl, streak >= 5 ? 1.28 : 1.14);
+        /* 3／5／7 連對各給一次「Fever」：暖光 + 短橫幅，1 秒內收掉，不擋題目 */
+        if (streak === 3 || streak === 5 || streak === 7) {
+          fever(true);
+          if (window.Juice && window.Juice.banner) {
+            window.Juice.banner((streak >= 7 ? '⚡' : '🔥') + ' 連對 ' + streak + '！', { ms: 900 });
+          }
+        }
       } else {
         comboEl.classList.add('hidden');
         comboEl.classList.remove('c3', 'c5', 'c7');
@@ -2836,8 +2927,9 @@
       paintScoreTime();
       streak++;
       setCombo();
-      sfxRight();
+      sfxRight(streak - 1);
       sfxSlash();
+      haptic(14);
       /* 等獎勵字收掉再講話，避免泡泡與「+1⭐」重疊 */
       setTimeout(function () { petSay(streak >= 3 ? 'combo' : 'correct', { gap: 2600 }); }, 1250);
 
@@ -2864,6 +2956,8 @@
         ultSlam();
         setTimeout(function () {
           flashHit(); shakeArena();
+          hitStop(120); haptic([18, 46, 30]);
+          coinFly(pt.x, pt.y, 8);
           if (comboEl) comboEl.classList.add('hidden');   /* 連對徽章讓位給 9999 */
           ultNum(pt.x, skyY(), dmgTotal());
           burst(pt.x, pt.y, '#fde047', 24);
@@ -2888,6 +2982,9 @@
       rushSlash();
       setTimeout(function () {
         flashHit(); shakeArena(); hitMonster(); sfxHit();
+        hitStop(80); haptic([10, 28, 16]);
+        coinFly(pt.x, pt.y, 3);
+        if (window.Juice) window.Juice.fx('coin');
         ring(pt.x, pt.y, '#fde047');
         dmgNum('−' + dmg, pt.x, pt.y - 60);
         burst(pt.x, pt.y, '#fde047', 10);
