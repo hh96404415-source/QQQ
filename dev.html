@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>開發者後台</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠</text></svg>">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+    background:radial-gradient(1200px 600px at 50% -10%,#1b2a4a 0%,#0b1220 55%,#070b14 100%);
+    color:#e2e8f0;min-height:100vh;padding:16px 14px 60px}
+  #top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:1100px;margin:0 auto 14px}
+  #top h1{font-size:19px;margin:0}
+  .chip{font-size:12.5px;font-weight:900;padding:6px 11px;border-radius:999px;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#cbd5e1}
+  .chip b{color:#fbbf24}
+  #top .sp{flex:1}
+  button{font:inherit;cursor:pointer}
+  .btn{font-size:13px;font-weight:900;padding:8px 14px;border-radius:11px;border:1px solid rgba(147,197,253,.35);
+    background:rgba(59,130,246,.16);color:#bfdbfe}
+  .btn.ghost{background:rgba(255,255,255,.05);color:#cbd5e1;border-color:rgba(255,255,255,.14)}
+  .btn.danger{background:rgba(248,113,113,.14);color:#fca5a5;border-color:rgba(248,113,113,.35)}
+  .btn.sm{font-size:12px;padding:5px 10px;border-radius:9px}
+  #wrap{max-width:1100px;margin:0 auto}
+  .tabs{display:flex;gap:8px;margin-bottom:14px}
+  .tabs button{font-size:13.5px;font-weight:900;padding:8px 16px;border-radius:999px;
+    background:rgba(255,255,255,.05);color:#94a3b8;border:1px solid rgba(255,255,255,.12)}
+  .tabs button.on{background:rgba(251,191,36,.16);color:#fbbf24;border-color:rgba(251,191,36,.5)}
+  .card{background:rgba(17,26,43,.9);border:1px solid rgba(255,255,255,.09);border-radius:16px;
+    padding:14px 16px;margin-bottom:12px}
+  .card.off{opacity:.55}
+  .fhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .fname{font-size:16px;font-weight:900}
+  .meta{font-size:12.5px;color:#94a3b8}
+  .kid{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 10px;border-radius:12px;
+    background:rgba(255,255,255,.04);margin-top:7px}
+  .kid .nm{font-weight:900;font-size:14px}
+  .kid .sub{font-size:12px;color:#94a3b8}
+  .kid .sp{flex:1}
+  .badge{font-size:11.5px;font-weight:900;padding:3px 8px;border-radius:999px;
+    background:rgba(34,197,94,.16);color:#86efac;border:1px solid rgba(34,197,94,.4)}
+  .badge.free{background:rgba(251,191,36,.16);color:#fbbf24;border-color:rgba(251,191,36,.45)}
+  .badge.off{background:rgba(148,163,184,.14);color:#94a3b8;border-color:rgba(148,163,184,.3)}
+  .form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}
+  input,select{font:inherit;font-size:13.5px;font-weight:700;padding:9px 11px;border-radius:10px;
+    background:rgba(9,14,26,.9);color:#e2e8f0;border:1px solid rgba(255,255,255,.15);min-width:0}
+  .msg{min-height:18px;font-size:12.5px;font-weight:800;color:#86efac;margin:6px 0}
+  .msg.bad{color:#fca5a5}
+  #mask{position:fixed;inset:0;background:rgba(3,6,15,.82);display:none;align-items:center;justify-content:center;z-index:50;padding:18px}
+  #mask.on{display:flex}
+  #box{width:min(94vw,520px);background:#111a2b;border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:18px}
+  #box h3{margin:0 0 12px;font-size:16px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+  .row2 label{display:block;font-size:11.5px;color:#94a3b8;font-weight:800;margin-bottom:4px}
+  #lock{position:fixed;inset:0;background:#070b14;display:none;align-items:center;justify-content:center;z-index:99}
+  #lock.on{display:flex}
+  #lockBox{width:min(92vw,320px);text-align:center}
+  #lockDots{display:flex;gap:10px;justify-content:center;margin:14px 0}
+  #lockDots i{width:13px;height:13px;border-radius:50%;background:rgba(148,163,184,.3)}
+  #lockDots i.on{background:#fbbf24}
+  #lockPad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  #lockPad button{padding:14px 0;font-size:21px;font-weight:900;border-radius:13px;
+    background:rgba(255,255,255,.06);color:#e2e8f0;border:1px solid rgba(255,255,255,.12)}
+  #lockPad button:disabled{visibility:hidden}
+  #lockErr{min-height:18px;font-size:12px;color:#fca5a5;margin-top:8px}
+  .prow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 0;border-bottom:1px dashed rgba(255,255,255,.08)}
+  .prow .k{flex:1;font-size:13px;font-weight:800}
+  .prow .c{font-size:11.5px;color:#64748b;width:100%;padding-left:2px}
+  .prow input{width:110px;text-align:right}
+  .empty{font-size:13px;color:#64748b;padding:10px 0}
+</style>
+</head>
+<body>
+
+<div id="top">
+  <h1>🛠 開發者後台</h1>
+  <span class="chip">家庭 <b id="tFam">—</b></span>
+  <span class="chip">孩子 <b id="tKid">—</b></span>
+  <span class="chip">金幣 <b id="tCoin">—</b></span>
+  <span class="chip">使用中 <b id="tSess">—</b></span>
+  <span class="sp"></span>
+  <button class="btn ghost" id="btnReload">重新整理</button>
+  <button class="btn ghost" id="btnLock">鎖定</button>
+</div>
+
+<div id="wrap">
+  <div class="tabs">
+    <button class="on" data-tab="fam">🏠 家庭 / 孩子</button>
+    <button data-tab="cfg">⚙️ 系統參數</button>
+  </div>
+
+  <div class="msg" id="msg"></div>
+  <div id="viewFam">
+    <div class="card">
+      <div class="fhead"><span class="fname">➕ 新增家庭（一個家庭 = 一個孩子）</span></div>
+      <div class="form">
+        <input id="nfName" placeholder="家庭名稱（例：陳家）" maxlength="20">
+        <input id="nfPin" placeholder="家長 PIN（8 位）" inputmode="numeric" maxlength="8">
+        <input id="ncName" placeholder="孩子名字" maxlength="20">
+        <input id="ncPin" placeholder="孩子 PIN（6 位）" inputmode="numeric" maxlength="6">
+        <input id="ncGrade" placeholder="年級（P2）" maxlength="8">
+        <input id="ncAvatar" placeholder="頭像 emoji（🐲）" maxlength="4">
+        <button class="btn" id="btnNewFam">建立</button>
+      </div>
+      <div class="meta" style="margin-top:8px">家長用 8 位 PIN 從 parent.html 進來；孩子用 6 位 PIN 從首頁進來。</div>
+    </div>
+    <div id="famList"></div>
+  </div>
+
+  <div id="viewCfg" style="display:none">
+    <div class="card">
+      <div class="fhead"><span class="fname">⚙️ 系統參數（Settings）</span></div>
+      <div id="cfgList"></div>
+      <div style="margin-top:12px"><button class="btn" id="btnSaveCfg">儲存全部改動</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="mask"><div id="box"></div></div>
+
+<div id="lock">
+  <div id="lockBox">
+    <div style="font-size:34px">🛠</div>
+    <div style="font-size:14px;font-weight:900;margin-top:6px">開發者 PIN（6 位）</div>
+    <div id="lockDots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div id="lockPad"></div>
+    <div id="lockErr"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec';
+  var TOKEN = 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
+  var DEV_PIN = '514404';
+  var SKEY = 'dsh_dev_ok';
+
+  var msgEl = document.getElementById('msg');
+  var famList = document.getElementById('famList');
+  var cfgList = document.getElementById('cfgList');
+  var mask = document.getElementById('mask');
+  var box = document.getElementById('box');
+  var DATA = null;
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function say(t, bad){
+    msgEl.textContent = t || '';
+    msgEl.className = 'msg' + (bad?' bad':'');
+    if (t) setTimeout(function(){ if (msgEl.textContent === t) { msgEl.textContent=''; } }, 4000);
+  }
+  function mmss(s){
+    s = Math.max(0, Math.floor(s||0));
+    var m = Math.floor(s/60), x = s%60;
+    return (m>9?m:'0'+m) + ':' + (x>9?x:'0'+x);
+  }
+  function post(action, params, cb){
+    var body = { token: TOKEN, action: action, dev_pin: DEV_PIN };
+    if (params) for (var k in params) body[k] = params[k];
+    fetch(GAS_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(body), redirect:'follow'
+    }).then(function(r){ return r.json(); })
+      .then(function(d){ cb(null, d); })
+      .catch(function(e){ cb(e, null); });
+  }
+
+  /* ── 鎖 ── */
+  var lock = document.getElementById('lock'), pad = document.getElementById('lockPad');
+  var dots = [].slice.call(document.querySelectorAll('#lockDots i'));
+  var lockErr = document.getElementById('lockErr');
+  var buf = '';
+  ['1','2','3','4','5','6','7','8','9','←','0',''].forEach(function(k){
+    var b = document.createElement('button');
+    b.textContent = k; b.disabled = (k === '');
+    b.addEventListener('click', function(){
+      if (k === '←'){ buf = buf.slice(0,-1); paint(); return; }
+      if (buf.length >= 6) return;
+      buf += k; paint();
+      if (buf.length === 6) setTimeout(check, 100);
+    });
+    pad.appendChild(b);
+  });
+  function paint(){ dots.forEach(function(d,i){ d.className = i < buf.length ? 'on' : ''; }); }
+  function check(){
+    if (buf === DEV_PIN){
+      try { sessionStorage.setItem(SKEY,'1'); } catch(e){}
+      lock.classList.remove('on');
+      load();
+    } else {
+      lockErr.textContent = 'PIN 不對';
+      buf = ''; paint();
+    }
+  }
+  function showLock(){
+    buf = ''; lockErr.textContent = ''; paint();
+    lock.classList.add('on');
+  }
+  document.getElementById('btnLock').addEventListener('click', function(){
+    try { sessionStorage.removeItem(SKEY); } catch(e){}
+    showLock();
+  });
+
+  /* ── 載入 ── */
+  function load(){
+    post('devOverview', null, function(err, d){
+      if (err || !d || !d.ok){ say((d && d.error) || '讀取失敗', true); return; }
+      DATA = d;
+      document.getElementById('tFam').textContent = d.totals.families;
+      document.getElementById('tKid').textContent = d.totals.kids;
+      document.getElementById('tCoin').textContent = d.totals.coins;
+      document.getElementById('tSess').textContent = d.totals.active_sessions;
+      renderFamilies();
+    });
+  }
+
+  function renderFamilies(){
+    if (!DATA || !DATA.families.length){ famList.innerHTML = '<div class="empty">還沒有家庭</div>'; return; }
+    famList.innerHTML = DATA.families.map(function(f){
+      var kids = f.kids.map(function(u){
+        var badge = !u.active ? '<span class="badge off">停用</span>'
+          : (u.remaining_sec > 0 ? '<span class="badge free">使用中 ' + mmss(u.remaining_sec) + '</span>'
+                                : '<span class="badge">學習模式</span>');
+        return '<div class="kid">' +
+          '<span style="font-size:20px">' + esc(u.avatar) + '</span>' +
+          '<span class="nm">' + esc(u.name) + '</span>' +
+          '<span class="sub">PIN ' + esc(u.pin) + ' · ' + esc(u.grade || '—') +
+            ' · Lv' + esc(u.level) + ' · 💰' + esc(u.coins) +
+            ' · 今日 ' + esc(u.today_minutes) + ' 分</span>' +
+          badge +
+          '<span class="sp"></span>' +
+          '<button class="btn sm" data-u="' + esc(u.id) + '" data-f="' + esc(f.id) + '" data-act="editkid">編輯</button>' +
+        '</div>';
+      }).join('') || '<div class="empty">這個家庭還沒有孩子（應為 1 個）</div>';
+
+      return '<div class="card' + (f.active ? '' : ' off') + '">' +
+        '<div class="fhead">' +
+          '<span class="fname">' + esc(f.name || ('家庭 ' + f.id)) + '</span>' +
+          '<span class="meta">家長 PIN ' + esc(f.pin) + ' · 方案 ' + esc(f.plan || '—') +
+            ' · 路由器 ' + f.routers + '</span>' +
+          (f.active ? '<span class="badge">啟用</span>' : '<span class="badge off">停用</span>') +
+          '<span class="sp" style="flex:1"></span>' +
+          '<button class="btn sm" data-f="' + esc(f.id) + '" data-act="editfam">改家庭</button>' +
+          '<button class="btn sm ' + (f.active ? 'danger' : '') + '" data-f="' + esc(f.id) + '" data-act="togglefam" data-v="' + (f.active?1:0) + '">' + (f.active?'停用':'啟用') + '</button>' +
+        '</div>' + kids +
+      '</div>';
+    }).join('');
+
+    var btns = famList.querySelectorAll('button[data-act]');
+    for (var i = 0; i < btns.length; i++){
+      btns[i].addEventListener('click', onAction);
+    }
+  }
+
+  function onAction(){
+    var act = this.getAttribute('data-act');
+    var fid = Number(this.getAttribute('data-f'));
+    if (act === 'editfam') return editFamily(fid);
+    if (act === 'togglefam'){
+      var v = this.getAttribute('data-v') === '1';
+      this.disabled = true;
+      post('devSetFamilyActive', { family_id: fid, active: !v }, function(e, d){
+        if (e || !d || !d.ok){ say((d && d.error) || '失敗', true); return; }
+        say(v ? '已停用家庭' : '已啟用家庭');
+        load();
+      });
+      return;
+    }
+    if (act === 'editkid') return editKid(Number(this.getAttribute('data-u')));
+  }
+
+  function closeBox(){ mask.classList.remove('on'); box.innerHTML = ''; }
+  function openBox(html){
+    box.innerHTML = html;
+    mask.classList.add('on');
+  }
+  mask.addEventListener('click', function(e){ if (e.target === mask) closeBox(); });
+
+  function editFamily(fid){
+    var f = (DATA.families || []).filter(function(x){ return x.id === fid; })[0];
+    if (!f) return;
+    openBox(
+      '<h3>編輯家庭</h3>' +
+      '<div class="row2"><div><label>家庭名稱</label><input id="efName" value="' + esc(f.name) + '" maxlength="20"></div>' +
+      '<div><label>方案</label><input id="efPlan" value="' + esc(f.plan) + '" maxlength="12"></div></div>' +
+      '<div class="row2"><div><label>家長 PIN（8 位）</label><input id="efPin" value="' + esc(f.pin) + '" inputmode="numeric" maxlength="8"></div>' +
+      '<div style="display:flex;align-items:flex-end"><button class="btn" id="efSave">儲存</button></div></div>' +
+      '<div class="msg" id="efMsg"></div>'
+    );
+    document.getElementById('efSave').addEventListener('click', function(){
+      var ff = {
+        family_name: document.getElementById('efName').value.trim(),
+        plan: document.getElementById('efPlan').value.trim(),
+        parent_pin: document.getElementById('efPin').value.trim()
+      };
+      var m = document.getElementById('efMsg');
+      this.disabled = true;
+      post('devSaveFamily', { family_id: fid, f: ff }, function(e, d){
+        if (e || !d || !d.ok){ m.className='msg bad'; m.textContent = (d && d.error) || '失敗'; return; }
+        closeBox(); say('已更新家庭'); load();
+      });
+    });
+  }
+
+  function editKid(uid){
+    var u = null, fid = 0;
+    (DATA.families || []).forEach(function(f){
+      (f.kids || []).forEach(function(k){ if (String(k.id) === String(uid)){ u = k; fid = f.id; } });
+    });
+    if (!u) return;
+    openBox(
+      '<h3>編輯孩子</h3>' +
+      '<div class="row2"><div><label>名字</label><input id="ekName" value="' + esc(u.name) + '" maxlength="20"></div>' +
+      '<div><label>頭像 emoji</label><input id="ekAvatar" value="' + esc(u.avatar) + '" maxlength="4"></div></div>' +
+      '<div class="row2"><div><label>孩子 PIN（6 位）</label><input id="ekPin" value="' + esc(u.pin) + '" inputmode="numeric" maxlength="6"></div>' +
+      '<div><label>年級</label><input id="ekGrade" value="' + esc(u.grade) + '" maxlength="8"></div></div>' +
+      '<div class="row2"><div><label>等級</label><input id="ekLevel" value="' + esc(u.level) + '" inputmode="numeric"></div>' +
+      '<div><label>金幣（直接設定總額）</label><input id="ekCoins" value="' + esc(u.coins) + '" inputmode="numeric"></div></div>' +
+      '<div class="row2"><div style="display:flex;align-items:flex-end"><button class="btn" id="ekSave">儲存</button></div>' +
+      '<div style="display:flex;align-items:flex-end"><button class="btn ' + (u.active?'danger':'') + '" id="ekToggle">' + (u.active?'停用這個孩子':'啟用這個孩子') + '</button></div></div>' +
+      '<div class="msg" id="ekMsg"></div>'
+    );
+    document.getElementById('ekSave').addEventListener('click', function(){
+      var f = {
+        display_name: document.getElementById('ekName').value.trim(),
+        avatar: document.getElementById('ekAvatar').value.trim(),
+        pin: document.getElementById('ekPin').value.trim(),
+        grade: document.getElementById('ekGrade').value.trim(),
+        level: Number(document.getElementById('ekLevel').value) || 1,
+        coins: Number(document.getElementById('ekCoins').value) || 0
+      };
+      var m = document.getElementById('ekMsg');
+      this.disabled = true;
+      post('devSaveUser', { user_id: Number(uid), f: f }, function(e, d){
+        if (e || !d || !d.ok){ m.className='msg bad'; m.textContent = (d && d.error) || '失敗'; return; }
+        closeBox(); say('已更新孩子'); load();
+      });
+    });
+    document.getElementById('ekToggle').addEventListener('click', function(){
+      var m = document.getElementById('ekMsg');
+      this.disabled = true;
+      post('devSaveUser', { user_id: Number(uid), f: { active: !u.active } }, function(e, d){
+        if (e || !d || !d.ok){ m.className='msg bad'; m.textContent = (d && d.error) || '失敗'; return; }
+        closeBox(); say(u.active ? '已停用孩子' : '已啟用孩子'); load();
+      });
+    });
+  }
+
+  document.getElementById('btnNewFam').addEventListener('click', function(){
+    var f = {
+      family_name: document.getElementById('nfName').value.trim(),
+      parent_pin: document.getElementById('nfPin').value.trim(),
+      child_name: document.getElementById('ncName').value.trim(),
+      child_pin: document.getElementById('ncPin').value.trim(),
+      grade: document.getElementById('ncGrade').value.trim(),
+      avatar: document.getElementById('ncAvatar').value.trim() || '🐲'
+    };
+    if (!/^\d{8}$/.test(f.parent_pin)) { say('家長 PIN 要 8 位數字', true); return; }
+    if (!/^\d{6}$/.test(f.child_pin)) { say('孩子 PIN 要 6 位數字', true); return; }
+    var btn = this; btn.disabled = true;
+    post('devCreateFamily', { f: f }, function(e, d){
+      btn.disabled = false;
+      if (e || !d || !d.ok){ say((d && d.error) || '建立失敗', true); return; }
+      ['nfName','nfPin','ncName','ncPin','ncGrade','ncAvatar'].forEach(function(id){
+        document.getElementById(id).value = '';
+      });
+      say('已建立家庭 ' + d.family_id + '（孩子 ' + d.user_id + '）');
+      load();
+    });
+  });
+
+  /* ── 參數 ── */
+  var NUMKEYS = ['POINTS_PER_QUESTION','POINTS_PER_MINUTE','MAX_MINUTES_PER_DAY','EXTEND_MINUTES',
+                 'EXTEND_MULTIPLIER','SET_SIZE','SPAM_TRIES','SPAM_SECONDS','MIN_ITEMS_PER_SKILL',
+                 'MIN_SAMPLES','RETIRE_EASY_PCT','RETIRE_HARD_PCT'];
+  var CFG = null;
+  function loadCfg(){
+    post('getConfig', null, function(e, d){
+      if (e || !d || !d.ok){ cfgList.innerHTML = '<div class="empty">讀取失敗</div>'; return; }
+      CFG = d.result || d.config || {};
+      cfgList.innerHTML = NUMKEYS.map(function(k){
+        return '<div class="prow"><span class="k">' + esc(k) + '</span>' +
+          '<input id="cfg_' + esc(k) + '" inputmode="numeric" value="' + esc(CFG[k]) + '"></div>';
+      }).join('');
+    });
+  }
+  document.getElementById('btnSaveCfg').addEventListener('click', function(){
+    var btn = this; btn.disabled = true;
+    var keys = NUMKEYS.slice();
+    var done = 0, failed = 0;
+    (function next(){
+      if (!keys.length){
+        btn.disabled = false;
+        say(failed ? ('完成，但有 ' + failed + ' 項失敗') : '參數已儲存', !!failed);
+        loadCfg();
+        return;
+      }
+      var k = keys.shift();
+      var v = Number(document.getElementById('cfg_' + k).value);
+      if (isNaN(v)) { done++; return next(); }
+      post('devSetConfig', { key: k, value: v }, function(e, d){
+        if (e || !d || !d.ok) failed++;
+        next();
+      });
+    })();
+  });
+
+  /* ── tabs ── */
+  var tabBtns = document.querySelectorAll('.tabs button');
+  for (var t = 0; t < tabBtns.length; t++){
+    tabBtns[t].addEventListener('click', function(){
+      for (var i = 0; i < tabBtns.length; i++) tabBtns[i].className = '';
+      this.className = 'on';
+      var tab = this.getAttribute('data-tab');
+      document.getElementById('viewFam').style.display = tab === 'fam' ? '' : 'none';
+      document.getElementById('viewCfg').style.display = tab === 'cfg' ? '' : 'none';
+      if (tab === 'cfg' && !CFG) loadCfg();
+    });
+  }
+
+  document.getElementById('btnReload').addEventListener('click', function(){ load(); });
+
+  /* ── 啟動 ── */
+  try {
+    if (sessionStorage.getItem(SKEY) === '1'){ load(); }
+    else showLock();
+  } catch(e){ showLock(); }
+})();
+</script>
+</body>
+</html>

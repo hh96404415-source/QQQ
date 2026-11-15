@@ -134,14 +134,8 @@
           (rows || '<div class="paEmpty">還沒有孩子帳號</div>') +
         '</div>' +
         '<div class="paCard">' +
-          '<div class="paCardHead">新增孩子</div>' +
-          '<div class="paForm">' +
-            '<input class="paInput" id="paName" placeholder="名字（例：小明）" maxlength="20">' +
-            '<input class="paInput" id="paPin" placeholder="6 位數字 PIN" inputmode="numeric" maxlength="6">' +
-            '<input class="paInput short" id="paGrade" placeholder="年級 P2" maxlength="8">' +
-            '<button class="paBtn" id="paAdd">新增</button>' +
-          '</div>' +
-          '<div class="paHint">孩子 PIN 6 位</div>' +
+          '<div class="paCardHead">帳號說明</div>' +
+          '<div class="paHint">一個家庭對應一個孩子。要新增／更換孩子，請由開發者後台建立（家長頁不提供自行加學生，避免一個帳號養出多個孩子）。</div>' +
         '</div>' +
         '<div class="paCard">' +
           '<div class="paCardHead">家長 PIN（8 位）</div>' +
@@ -174,17 +168,6 @@
         });
       }
 
-      document.getElementById('paAdd').addEventListener('click', function () {
-        var name = document.getElementById('paName').value.trim();
-        var pin = document.getElementById('paPin').value.trim();
-        var grade = document.getElementById('paGrade').value.trim();
-        if (!name || !/^\d{6}$/.test(pin)) { setMsg('名字＋6 位數字 PIN 都要填', false); return; }
-        post('addUser', { family_id: FAMILY_ID, pin: pin, display_name: name, grade: grade }, function (e2, d2) {
-          if (e2 || !d2 || !d2.ok) { setMsg((d2 && d2.error) || '新增失敗', false); return; }
-          setMsg('已新增 ' + d2.display_name + '（PIN ' + d2.pin + '）');
-          renderMembers(host, setMsg);
-        });
-      });
       document.getElementById('paSetPin').addEventListener('click', function () {
         var oldp = document.getElementById('paOldPin').value.trim();
         var newp = document.getElementById('paNewPin').value.trim();
