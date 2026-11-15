@@ -33,6 +33,11 @@
          background:rgba(125,211,252,.10);white-space:nowrap}
   #toKid:hover{background:rgba(125,211,252,.18)}
   #toKid:active{transform:translateY(1px)}
+  #kidPick{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;padding:0 0 10px}
+  #kidPick:empty{display:none}
+  #kidPick button{font:inherit;font-size:13px;font-weight:900;padding:6px 13px;border-radius:999px;cursor:pointer;
+    background:rgba(255,255,255,.05);color:#cbd5e1;border:1px solid rgba(255,255,255,.14)}
+  #kidPick button.on{background:rgba(34,197,94,.18);color:#86efac;border-color:rgba(34,197,94,.55)}
 
   #wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:26px 22px 90px}
 
@@ -166,6 +171,7 @@
   </div>
   <a id="toKid" href="community.html">去小孩那一邊 →</a>
 </div>
+<div id="kidPick"></div>
 
 <div id="wrap">
   <section class="card">
@@ -220,38 +226,67 @@
 <script src="parent-admin.js"></script>
 
 <script>
+/* ── 家長入口：用「家庭家長 PIN」登入，回傳這個家庭的孩子名單 ──
+   不再依賴「這台裝置剛好有小孩登入」，也不在本機自設 PIN。 */
 (function(){
-  var PIN='dsh_parent_pin', OK='dsh_parent_ok', DAY=86400000;
+  var GAS_URL='https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec';
+  var TOKEN='IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
+  var KEY='dsh_parent_sess', DAY=86400000;
   var lock=document.getElementById('lock'), pad=document.getElementById('lockPad');
   var dots=[].slice.call(document.querySelectorAll('#lockDots i'));
   var err=document.getElementById('lockErr'), hint=document.getElementById('lockHint');
   var skip=document.getElementById('lockSkip');
-  var buf='', first='', mode='enter';
+  var buf='', busy=false;
 
-  function pin(){ return localStorage.getItem(PIN)||''; }
-  function need(){
-    var t=parseInt(localStorage.getItem(OK)||'0',10);
-    if(!pin()) return false;
-    return !t || (Date.now()-t) > 30*DAY;
+  window.PARENT_RESULT=null;
+  window.PARENT_ON_LOGIN=null;
+
+  function sess(){
+    try{
+      var o=JSON.parse(localStorage.getItem(KEY)||'null');
+      return (o&&o.id&&(Date.now()-(o.t||0))<30*DAY)?o:null;
+    }catch(e){ return null; }
   }
-  function paint(){
-    dots.forEach(function(d,i){ d.className = i<buf.length?'on':''; });
+  function saveSess(f){
+    try{ localStorage.setItem(KEY, JSON.stringify({id:f.id, name:f.name||'', t:Date.now()})); }catch(e){}
   }
-  function unlock(){
-    localStorage.setItem(OK,String(Date.now()));
-    lock.classList.remove('on');
-  }
+  function paint(){ dots.forEach(function(d,i){ d.className=i<buf.length?'on':''; }); }
   function show(){
-    mode = pin() ? 'enter' : 'setup';
-    hint.textContent = pin() ? '輸入家長 4 位 PIN' : '第一次使用：設定 4 位家長 PIN';
-    skip.style.display = pin() ? 'none' : 'block';
-    err.textContent=''; buf=''; first=''; paint();
+    hint.textContent='輸入這個家庭的家長 PIN（4 位）';
+    if(skip) skip.style.display='none';
+    err.textContent=''; buf=''; paint(); busy=false;
     lock.classList.add('on');
+  }
+  function post(body, cb){
+    fetch(GAS_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(Object.assign({token:TOKEN}, body)),
+      redirect:'follow'
+    }).then(function(r){ return r.json(); }).then(function(d){ cb(null,d); })
+      .catch(function(e){ cb(e,null); });
+  }
+  function done(){
+    if(busy) return;
+    busy=true; err.textContent=''; hint.textContent='驗證中…';
+    post({action:'parentLogin', pin:buf}, function(er,d){
+      if(er||!d||!d.ok){
+        busy=false; buf=''; paint();
+        hint.textContent='輸入這個家庭的家長 PIN（4 位）';
+        err.textContent=(d&&d.error)||(er&&String(er))||'PIN 不對';
+        return;
+      }
+      saveSess(d.family||{});
+      window.PARENT_RESULT=d;
+      lock.classList.remove('on');
+      if(window.PARENT_ON_LOGIN) window.PARENT_ON_LOGIN(d);
+    });
   }
   ['1','2','3','4','5','6','7','8','9','←','0',''].forEach(function(k){
     var b=document.createElement('button');
     b.textContent=k; b.disabled=(k==='');
     b.addEventListener('click',function(){
+      if(busy) return;
       if(k==='←'){ buf=buf.slice(0,-1); paint(); return; }
       if(buf.length>=4) return;
       buf+=k; paint();
@@ -259,19 +294,11 @@
     });
     pad.appendChild(b);
   });
-  function done(){
-    if(mode==='setup'){
-      if(!first){ first=buf; buf=''; paint(); hint.textContent='再打一次確認'; return; }
-      if(first!==buf){ err.textContent='兩次不一樣，再試一次'; mode='setup'; first=''; buf=''; paint(); hint.textContent='設定 4 位家長 PIN'; return; }
-      localStorage.setItem(PIN,buf); localStorage.setItem(OK,String(Date.now()));
-      lock.classList.remove('on');
-      return;
-    }
-    if(buf===pin()){ unlock(); }
-    else { err.textContent='PIN 不對'; buf=''; paint(); }
-  }
-  skip.addEventListener('click',function(){ lock.classList.remove('on'); });
-  if(need()) show();
+  if(skip) skip.addEventListener('click',function(){ lock.classList.remove('on'); });
+
+  var s=sess();
+  if(s){ window.PARENT_RESULT={ok:true, family:{id:s.id,name:s.name}, users:[]}; }
+  else show();
 })();
 </script>
 
@@ -741,14 +768,77 @@ function render(uid) {
       '數據有偏差就照講，唔會為咗好睇而修飾。';
 }
 
-/* 這部機只綁一位小朋友：名字沒有下拉、不能換人 */
-var whoNameEl = document.getElementById('whoName');
-var startUid = (window.Player && (window.Player.cur() || (window.Player.bound() && window.Player.bound().id))) || 'demo_a';
-if (whoNameEl) {
-  var pm = (window.Player && window.Player.meta) ? window.Player.meta() : null;
-  whoNameEl.textContent = pm && pm.id ? (pm.nick || pm.name) : '未登入';
+/* ── 家庭 → 孩子：家長用家庭 PIN 登入後，才知道要顯示哪個孩子 ── */
+var FAMILY_ID = 1;
+var KIDS = [];
+var KID = null;
+
+function currentUid(){
+  if (KID && KID.id) return String(KID.id);
+  if (window.Player) {
+    var u = Player.cur() || (Player.bound() && Player.bound().id);
+    if (u) return String(u);
+  }
+  return 'demo_a';
 }
-render(startUid);
+function paintWho(){
+  var el = document.getElementById('whoName');
+  if (!el) return;
+  el.textContent = KID ? (KID.nick || KID.name || '—') : '未登入';
+}
+function paintKids(){
+  var box = document.getElementById('kidPick');
+  if (!box) return;
+  box.innerHTML = '';
+  if (KIDS.length < 2) return;              /* 只有一個孩子就不用選 */
+  KIDS.forEach(function (u) {
+    var b = document.createElement('button');
+    b.textContent = (u.nick || u.name || '孩子') + (u.grade ? ' · ' + u.grade : '');
+    if (KID && String(KID.id) === String(u.id)) b.className = 'on';
+    b.addEventListener('click', function () { pickKid(u); });
+    box.appendChild(b);
+  });
+}
+function pickKid(u){
+  KID = u;
+  paintWho(); paintKids();
+  render(String(u.id));
+  renderTime();
+}
+function mountAdmin(){
+  if (!window.ParentAdmin) return;
+  window.ParentAdmin.mount(document.getElementById('adminMount'), FAMILY_ID);
+}
+function applyFamily(d){
+  if (!d || !d.ok) return;
+  var fam = d.family || {};
+  FAMILY_ID = Number(fam.id) || 1;
+  KIDS = d.users || [];
+  KID = KIDS[0] || null;
+  paintWho(); paintKids();
+  render(KID ? String(KID.id) : currentUid());
+  renderTime();
+  mountAdmin();
+  if (!KIDS.length && window.ParentAdmin && window.ParentAdmin.post) {
+    /* 舊 session 沒有名單：補抓一次 */
+    window.ParentAdmin.post('listUsers', { family_id: FAMILY_ID }, function (er, r) {
+      if (er || !r || !r.ok) return;
+      var act = (r.users || []).filter(function (u) {
+        return !(u.Active === false || String(u.Active).toUpperCase() === 'FALSE');
+      });
+      KIDS = act;
+      if (KIDS.length) pickKid(KIDS[0]);
+      paintKids();
+    });
+  }
+}
+
+paintWho();
+render(currentUid());
+renderTime();
+
+window.PARENT_ON_LOGIN = applyFamily;
+if (window.PARENT_RESULT && window.PARENT_RESULT.ok) applyFamily(window.PARENT_RESULT);
 
 /* 點標籤切換「真實紀錄 / 示範數據」 */
 var srcTagEl = document.getElementById('srcTag');
@@ -759,7 +849,7 @@ if (srcTagEl) srcTagEl.addEventListener('click', function () {
     if (!realCount()) { alert('呢位小朋友仲未有真實答題紀錄，去挑戰頁玩幾題先。'); return; }
     MODE = 'real';
   }
-  render(startUid);
+  render(currentUid());
 });
 
 /* E 娛樂時間（金幣 → 時間卷；以伺服器 myStatus 為準） */
@@ -772,7 +862,7 @@ function renderTime(){
   var el = document.getElementById('timeStats');
   var note = document.getElementById('timeNote');
   if (!el) return;
-  var uid = (window.Player && (window.Player.cur() || (window.Player.bound() && window.Player.bound().id))) || '';
+  var uid = currentUid();
   if (!/^\d+$/.test(String(uid)) || !window.ParentAdmin || !window.ParentAdmin.post) {
     el.innerHTML = '<div class="why">未綁定小朋友（或後端未連線），所以沒有金幣與時間卷資料。</div>';
     if (note) note.textContent = '綁定後這裡會顯示：金幣餘額、今日已換幾分鐘、正在使用的倒數。';
@@ -811,8 +901,8 @@ document.getElementById('capSave').addEventListener('click', function(){
 
 window.__report = { build: buildReport, rows: demoRows_, profile: DEMO_PROFILE };
 
-/* F 家庭管理面板（封印/成員/金幣/裝置） */
-if (window.ParentAdmin) {
+/* F 家庭管理面板：正常情況由 applyFamily() 用實際 family_id 掛載（見上） */
+if (window.ParentAdmin && !window.PARENT_RESULT) {
   window.ParentAdmin.mount(document.getElementById('adminMount'), 1);
 }
 </script>
