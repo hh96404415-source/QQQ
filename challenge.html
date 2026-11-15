@@ -530,6 +530,7 @@
 <script src="motion.js"></script>
 <script src="player.js"></script>
 <script src="time.js"></script>
+<script src="qb.js"></script>
 <script>
   /* 手寫板：先做基本 canvas 繪圖（自由畫），之後再研究算式格 */
   (function () {
@@ -1551,62 +1552,111 @@
         cb(err || new Error('連線失敗'));
       });
     }
-    /* 先把下一批題目抓到池子裡，玩家不會等 */
-    function qaFill() {
-      if (!qaOn() || qaPending || qaPool.length >= 2 || qaBad >= 3) return;
-      qaPending = true;
-      var lvl = unitById(curUnit).g || 1;     /* 年級當難度級別（綜合模式 g=0 → 用 1） */
-      qaPost({ action: 'get_questions', user_id: qaCfg.uid, level: lvl }, function (err, d) {
-        qaPending = false;
-        if (err || !d || !d.questions || !d.questions.length) {
-          qaBad++;
-          if (qaBad >= 3) { qaCfg.on = false; qaSave(); }
-          return;
-        }
-        qaBad = 0;
-        d.questions.forEach(function (qq) {
-          if (!qq || !qq.q_trad) return;
-          var opts = (qq.options || []).map(function (x) { return String(x); });
-          if (opts.length < 2) return;
-          qaPool.push({
-            type: 'remote',
-            remoteId: qq.id,
-            text: qq.q_trad,
-            answer: String(qq.answer),
-            options: opts,
-            subject: qq.subject || 'Math',
-            level: qq.level || lvl
-          });
+    /* ── 題庫：唯一來源＝雲端 Questions_AI ──
+       每個科目各自一個小池子，一次抓 12 題；池子少於 2 題就補。
+       本地生成器只在「示範帳號／完全沒連線」時當備援，正式帳號一律走雲端。 */
+    var Q_FETCH_N = 12;
+    var SUBJ_API = { en: 'English', zh: 'Chinese', math: 'Math' };
+    var qaBusy = { en: false, zh: false, math: false };
+    var qaFail = { en: 0, zh: 0, math: 0 };
+
+    function poolCount(subj) {
+      var n = 0;
+      for (var i = 0; i < qaPool.length; i++) if (qaPool[i].subjKey === subj) n++;
+      return n;
+    }
+    function qaLevel() {                      /* 難度＝目前選的單元年級（綜合 g=0 → 1） */
+      var u = unitById(curUnit);
+      return (u && u.g) || 1;
+    }
+    function pushRemote(list, subj) {
+      var have = {};
+      for (var i = 0; i < qaPool.length; i++) have[qaPool[i].remoteId] = 1;
+      list.forEach(function (qq) {
+        if (!qq || !qq.text || !qq.id || have[qq.id]) return;
+        var opts = (qq.options || []).map(function (x) { return String(x); });
+        if (opts.length < 2) return;
+        have[qq.id] = 1;
+        qaPool.push({
+          type: 'remote',
+          remoteId: qq.id,
+          subjKey: subj,
+          text: qq.text,
+          answer: String(qq.answer),
+          options: opts,
+          subject: qq.subject || SUBJ_API[subj],
+          skill: qq.skill || '',
+          level: qq.level || 0
         });
       });
     }
+
+    function qaFetch(subj, cb) {
+      /* 1) 本機題庫優先：Firebase 開場抓一次，之後抽題 0 延遲 */
+      if (window.QB && window.QB.ready()) {
+        var local = window.QB.pick(qaLevel(), SUBJ_API[subj], Q_FETCH_N);
+        if (local && local.length) {
+          pushRemote(local, subj);
+          qaFail[subj] = 0;
+          if (cb) cb(null);
+          return;
+        }
+      }
+      /* 2) 本機沒有 → 才問 GAS（舊路徑，備援） */
+      if (!qaOn()) { if (cb) cb(new Error('未連線題庫')); return; }
+      if (qaBusy[subj]) { if (cb) setTimeout(function () { qaFetch(subj, cb); }, 500); return; }
+      qaBusy[subj] = true;
+      qaPost({
+        action: 'get_questions', user_id: qaCfg.uid,
+        level: qaLevel(), subject: SUBJ_API[subj], n: Q_FETCH_N
+      }, function (err, d) {
+        qaBusy[subj] = false;
+        if (err || !d || !d.questions || !d.questions.length) {
+          qaFail[subj]++;
+          if (cb) cb(err || new Error('題庫沒有題目'));
+          return;
+        }
+        qaFail[subj] = 0;
+        pushRemote(d.questions.map(function (q) {
+          return { id: q.id, text: q.q_trad, options: q.options, answer: q.answer, subject: q.subject, skill: q.skill, level: q.level };
+        }), subj);
+        if (cb) cb(null);
+      });
+    }
+    function qaEnsure(subj) {
+      if (!qaOn() || qaBusy[subj] || poolCount(subj) >= 2) return;
+      qaFetch(subj);
+    }
+    function qaEnsureAll() { qaEnsure('en'); qaEnsure('zh'); qaEnsure('math'); }
+    function qaFill() { qaEnsureAll(); }          /* 舊名字，保留給題庫面板呼叫 */
+
     function qaTake() {
       var q = qaPool.shift() || null;
-      qaFill();
+      qaEnsureAll();
       return q;
     }
-    /* 只拿「指定科目」的遠端題；沒有就先回 null，讓本地題庫補這個科目 */
+    /* 只拿「指定科目」的題；沒有就先回 null（呼叫端會等雲端） */
     function qaTakeFor(subj) {
-      var want = subj === 'en' ? 'English' : (subj === 'zh' ? 'Chinese' : 'Math');
       for (var i = 0; i < qaPool.length; i++) {
-        if (String(qaPool[i].subject) === want) {
+        if (qaPool[i].subjKey === subj) {
           var q = qaPool.splice(i, 1)[0];
-          qaFill();
+          qaEnsureAll();
           return q;
         }
       }
-      qaFill();
+      qaEnsureAll();
       return null;
     }
     /* 測試鉤子 */
     window.__qa = {
       get cfg() { return qaCfg; },
       get pool() { return qaPool; },
-      get pending() { return qaPending; },
-      get bad() { return qaBad; },
+      get busy() { return qaBusy; },
+      get fail() { return qaFail; },
       get log() { return qaLog; },
       on: qaOn,
-      fill: qaFill
+      fill: qaFill,
+      fetch: qaFetch
     };
     /* 本地題的金幣：先加到畫面，再批次補進帳本（每 3 題一次） */
     var coinPending = 0;
@@ -1762,6 +1812,9 @@
     function makeQ(subj) {
       var rq = subj ? qaTakeFor(subj) : qaTake();
       if (rq) return rq;
+      /* 題庫只有一個（雲端）。連上了卻沒題 → 回 null，讓呼叫端去等／重試；
+         只有示範帳號或真的沒連線時，才用本地生成器墊檔 */
+      if (qaOn()) return null;
       var base = unitById(curUnit);
       var u;
       if (subj && subjOfUnit(base) !== subj) {
@@ -1797,12 +1850,12 @@
           }
         }
       }
-      return { text: r.text, answer: r.answer, options: opts };
+      return { type: 'local', text: r.text, answer: r.answer, options: opts };
     }
 
     /* 單元選擇面板 */
     function renderUnitList() {
-      var html = '';
+      var html = '<div style="font-size:12px;line-height:1.5;opacity:.72;margin:2px 2px 10px">選哪一個只決定<span style="font-weight:700">難度（年級）</span>；每一題會自動輪流出 <b>英文 → 中文 → 數學</b>，三科都會練到。</div>';
       /* 英文自己一區，排最前面（中文寫字是每 3 題自動出現，不列在這裡） */
       var mix = MATH_UNITS.filter(function (u) { return u.id === 'mix_all'; });
       if (mix.length) {
@@ -1957,7 +2010,7 @@
 
       document.getElementById('qaOff').addEventListener('click', function () {
         qaCfg.on = false; qaSave(); qaPool = []; qaLog = [];
-        say('已停用，回到本地題庫', true);
+        say('已停用（未連線時只會出示範題，正式孩子帳號請保持連線）', true);
       });
       paintQaState();
     })();
@@ -1968,16 +2021,10 @@
     var SUBJ_ORDER = ['en', 'zh', 'math'];
     var subjStep = 0;
     var zhSlot = 0;
-    function nextQ(){
-      qNum++;
-      qLogT0 = Date.now();
-      clearHanzi();
-      var slot = SUBJ_ORDER[subjStep % 3];
-      subjStep++;
-      var isHanzi = (slot === 'zh') && window.HWLV && window.HanziWriter && ((zhSlot++ % 2) === 1);
-      q = isHanzi ? makeHanziQ() : makeQ(slot);
-
-      if (isHanzi){
+    function paintQ() {
+      var isHanzi = !!(q && q.type === 'hanzi');
+      qText.onclick = null;
+      if (isHanzi) {
         optionsEl.style.display = 'none';
         qText.className = '';
         qText.textContent = '請寫出「' + q.ch + '」';
@@ -2003,9 +2050,46 @@
         hideHanzi();
         fb.textContent = '答對出招 · 答錯擋一擋';
       }
-      if (qMeta) qMeta.textContent = '第 ' + qNum + ' 題' + (q.type === 'hanzi' ? ' · 寫字' : '') + (q.type === 'remote' ? ' · 題庫' : '') + (streak ? ' · 連對 ' + streak : '');
+      if (qMeta) qMeta.textContent = '第 ' + qNum + ' 題' + (isHanzi ? ' · 寫字' : '') + (q && q.type === 'remote' ? ' · 題庫' : '') + (streak ? ' · 連對 ' + streak : '');
       qaT0 = Date.now();
       qT0 = Date.now();
+    }
+
+    /* 等雲端題目：題庫只有一個（Sheet），沒有題就等／重試，不偷偷用本地題 */
+    function waitQ(slot) {
+      q = null;
+      hideHanzi();
+      optionsEl.style.display = '';
+      opts.forEach(function (b) { b.style.display = 'none'; });
+      qText.className = '';
+      qText.textContent = '準備題目中…';
+      if (qMeta) qMeta.textContent = '第 ' + qNum + ' 題';
+      fb.textContent = '正在跟題庫拿題目';
+      var tries = 0;
+      (function attempt() {
+        qaFetch(slot, function () {
+          var got = makeQ(slot);
+          if (got) { q = got; paintQ(); qaEnsureAll(); return; }
+          tries++;
+          if (tries < 3) { setTimeout(attempt, 1200); return; }
+          qText.textContent = '連不上題庫';
+          fb.textContent = '檢查網絡後，點一下這裡重試';
+          qText.onclick = function () { qText.onclick = null; waitQ(slot); };
+        });
+      })();
+    }
+
+    function nextQ(){
+      qNum++;
+      qLogT0 = Date.now();
+      clearHanzi();
+      var slot = SUBJ_ORDER[subjStep % 3];
+      subjStep++;
+      var isHanzi = (slot === 'zh') && window.HWLV && window.HanziWriter && ((zhSlot++ % 2) === 1);
+      if (isHanzi) { q = makeHanziQ(); paintQ(); qaEnsureAll(); return; }
+      var got = makeQ(slot);
+      if (got) { q = got; paintQ(); qaEnsureAll(); return; }
+      waitQ(slot);
     }
 
     /* ── 中文題：田字格描紅（字表＝教育局《香港小學學習字詞表》，由淺到深） ── */
@@ -2424,6 +2508,9 @@
       qaSave();
     })();
 
+    /* 題庫本機化：先抓 Firebase 的題庫包（抓不到就自動退回 GAS） */
+    if (window.QB) QB.load();
+
     nextQ();
     qaFill();   /* 有連題庫就先把下一批題抓回來 */
     /* 金幣：頁面一進來先跟伺服器要餘額與每題金幣數 */
@@ -2701,6 +2788,8 @@
         a.push({
           t: Date.now(),
           u: (q && q.type === 'hanzi') ? 'hw' : curUnit,
+          k: (q && q.type === 'remote' && q.skill) ? q.skill : '',
+          s: (q && q.type === 'remote' && q.subject) ? q.subject : '',
           c: correct ? 1 : 0,
           ms: Math.min(120000, Date.now() - (qLogT0 || Date.now()))
         });
@@ -2714,6 +2803,7 @@
       roundQ.push({ ok: true, ms: Date.now() - (qLogT0 || Date.now()) });
       if (q && q.type === 'hanzi' && q.ch) hwMark(q.ch);
       if (q && q.type === 'remote') qaLogAnswer(q, true, String(q.answer), Date.now() - qaT0);
+      if (q && q.type === 'remote' && q.remoteId && window.QB) QB.markDone(q.remoteId);
       logAnswer(true);
       fb.textContent = '✅ 答對了！出招！ +1 ⭐';
       addStar();

@@ -565,7 +565,7 @@ function liveRows() {
   var raw = [];
   try { raw = JSON.parse(localStorage.getItem('dsh_ans_log') || '[]'); } catch (e) {}
   return raw.map(function (a) {
-    var skill = LIVE_SKILL[a.u] || 'M.ADD';
+    var skill = a.k || LIVE_SKILL[a.u] || 'M.ADD';
     return {
       ts: a.t, skill: skill, subj: (skill.charAt(0) === 'C' ? 'Chinese' : 'Math'),
       first: a.c === 1, tries: a.c === 1 ? 1 : 2,
