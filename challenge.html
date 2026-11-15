@@ -1163,6 +1163,37 @@
     ['我在___裡洗澡。', '浴室', ['廚房', '客廳', '睡房']],
     ['上課要舉手___。', '發言', ['睡覺', '聊天', '走動']]
   ];
+  /* 中文：標點符號（句子 / 正確結尾標點） */
+  var ZH_BIAODIAN = [
+    ['我喜歡吃蘋果', '。'], ['我們去公園玩', '。'], ['媽媽在煮飯', '。'],
+    ['小鳥在天上飛', '。'], ['弟弟在畫畫', '。'], ['我有一本書', '。'],
+    ['今天星期一', '。'], ['老師在黑板上寫字', '。'],
+    ['你叫什麼名字', '？'], ['這是你的書嗎', '？'], ['他為什麼哭', '？'],
+    ['你幾歲了', '？'], ['你要去哪裡', '？'], ['你會不會游泳', '？'],
+    ['明天要上學嗎', '？'], ['這朵花是誰的', '？'],
+    ['真漂亮啊', '！'], ['好痛啊', '！'], ['太棒了', '！'],
+    ['快跑啊', '！'], ['多麼可愛呀', '！'], ['加油', '！'],
+    ['生日快樂', '！'], ['新年快樂', '！']
+  ];
+  /* 中文：排詞成句（詞依正確順序排列） */
+  var ZH_ZAOJU = [
+    ['我', '喜歡', '吃', '蘋果'],
+    ['媽媽', '在', '煮飯'],
+    ['弟弟', '在', '畫畫'],
+    ['我們', '去', '公園', '玩'],
+    ['小鳥', '在', '天上', '飛'],
+    ['姐姐', '在', '看書'],
+    ['爸爸', '去', '上班'],
+    ['妹妹', '在', '唱歌'],
+    ['哥哥', '在', '踢球'],
+    ['爺爺', '在', '種花'],
+    ['今天', '天氣', '很', '好'],
+    ['我們', '一起', '去', '學校'],
+    ['小貓', '在', '捉', '老鼠'],
+    ['太陽', '從', '東方', '升起'],
+    ['我', '和', '媽媽', '去', '買菜'],
+    ['小狗', '在', '門口', '叫']
+  ];
   /* 英文：顏色 / 數字 / 單複數 / 介詞 */
   var EN_COLOR = [
     ['🍎', 'red'], ['🌙', 'yellow'], ['🌊', 'blue'], ['🌿', 'green'],
@@ -1390,6 +1421,37 @@
       var opts = [ans];
       while (opts.length < 4 && pool.length) opts.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
       return { text: w[0] + ' 一 __ ' + w[1], options: shuffle(opts), answer: ans };
+    }
+  });
+
+  /* 中文：標點符號（選正確的句子結尾標點） */
+  MATH_UNITS.push({
+    id: 'c1_biaodian', subj: 'zh', g: 1, name: '標點符號',
+    gen: function () {
+      var w = pickOne(ZH_BIAODIAN);
+      var ans = w[1];
+      var pool = ['。', '？', '！', '，', '、'].filter(function (c) { return c !== ans; });
+      var opts = [ans];
+      while (opts.length < 4 && pool.length) opts.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      return { text: '「' + w[0] + '」最後要加哪個標點？', options: shuffle(opts), answer: ans };
+    }
+  });
+
+  /* 中文：排詞成句（把打亂的詞排成通順的句子） */
+  MATH_UNITS.push({
+    id: 'c2_zaoju', subj: 'zh', g: 2, name: '排詞成句',
+    gen: function () {
+      var s = pickOne(ZH_ZAOJU);
+      var ans = s.join('');
+      var shown = s.slice();
+      while (shown.join('') === ans) shown = shuffle(s.slice());
+      var wrong = [], guard = 0;
+      while (wrong.length < 3 && guard++ < 100) {
+        var w = shuffle(s.slice());
+        var wj = w.join('');
+        if (wj !== ans && wrong.indexOf(wj) < 0) wrong.push(wj);
+      }
+      return { text: '把詞排成一句通順的話：' + shown.join('／'), options: shuffle([ans].concat(wrong)), answer: ans };
     }
   });
 
