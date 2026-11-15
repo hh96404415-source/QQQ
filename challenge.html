@@ -76,6 +76,12 @@
   #stageClear .scStars{font-size:clamp(24px,3.6vmin,38px);margin-top:6px;letter-spacing:.2em;
     animation:scPop 1.1s ease-in-out infinite alternate}
   #stageClear .scSub{margin-top:8px;font-size:15px;font-weight:800;color:#cbd5e1}
+  #stageClear .scEarn{margin-top:10px;font-size:clamp(18px,2.6vmin,26px);font-weight:900;color:#fdba74}
+  #stageClear .scNext{margin-top:16px;appearance:none;cursor:pointer;font-family:inherit;
+    font-size:17px;font-weight:900;color:#0b1220;padding:11px 26px;border-radius:999px;border:0;
+    background:linear-gradient(180deg,#fde047,#f59e0b);box-shadow:0 8px 22px rgba(245,158,11,.55);
+    transition:transform .12s}
+  #stageClear .scNext:active{transform:scale(.95)}
   @keyframes scPop{from{transform:scale(1);opacity:.85}to{transform:scale(1.09);opacity:1}}
 
   /* 戰利品計分板：孩子一眼看到「為了什麼而戰」 */
@@ -460,7 +466,9 @@
       <div class="scKicker">CLEAR</div>
       <div class="scTitle">第 <span id="scNum">1</span> 關 通過！</div>
       <div class="scStars">⭐ ⭐ ⭐</div>
+      <div class="scEarn" id="scEarn">本關 +0 金幣</div>
       <div class="scSub">怪物會越來越強 · 繼續加油</div>
+      <button type="button" class="scNext" id="scNext">繼續冒險 ▶</button>
     </div>
   </div>
 
@@ -798,6 +806,8 @@
     }
     /* 打贏一隻怪另外送幾顆（星星不值錢，重點是「贏了」那一下） */
     var WIN_STARS = 2;
+    /* 這一關累積賺到的金幣（結算卡要顯示「我剛剛賺了多少」） */
+    var stageCoins = 0;
 
     /* ── 音效：答對/答錯當下就響，不等動畫 ── */
     var AC = null;
@@ -2303,11 +2313,23 @@
       paintStage();
       var el = document.getElementById('stageClear');
       var n = document.getElementById('scNum');
+      var earnEl = document.getElementById('scEarn');
       if (n) n.textContent = stage - 1;
+      if (earnEl) earnEl.textContent = '本關 +' + stageCoins + ' 金幣';
       if (el) {
         el.classList.add('on');
+        /* 結算卡可以自己關：孩子等不及 3.4 秒就點「繼續冒險」 */
+        var closeIt = function () { el.classList.remove('on'); };
+        var nb = document.getElementById('scNext');
+        if (nb) {
+          nb.onclick = function (ev) { ev.stopPropagation(); closeIt(); };
+        }
+        el.onclick = closeIt;
         setTimeout(function () { el.classList.remove('on'); }, 3400);
       }
+      /* 金幣爆出來、飛進計分板：讓「這一關賺到什麼」看得見 */
+      coinBurst(stageCoins || COINS_PER_Q * 9);
+      stageCoins = 0;
       if (window.Juice) {
         window.Juice.fx('level');
         window.Juice.confetti(30, { x: window.innerWidth / 2, y: window.innerHeight * 0.44 });
@@ -2317,6 +2339,16 @@
       /* 每 3 關＝一章：再加一層更強的儀式（C1） */
       var done = stage - 1;
       if (done % 3 === 0) setTimeout(function () { chapterClear(done / 3); }, 1500);
+    }
+
+    /* 過關／過章的金幣爆量：從畫面中央噴一堆金幣飛進計分板 */
+    function coinBurst(total) {
+      var ar = arenaEl ? arenaEl.getBoundingClientRect() : null;
+      if (!ar) return;
+      var cx = ar.width / 2, cy = ar.height * 0.46;
+      var n = Math.max(4, Math.min(12, Math.round((total || 25) / 25)));
+      coinFly(cx, cy, n);
+      setTimeout(function () { coinFly(cx + 40, cy - 20, Math.max(2, n - 4)); }, 180);
     }
 
     /* 過章：紫金框 + 額外 180 秒 / 3 顆星 */
@@ -2333,6 +2365,7 @@
       coinPending += BONUS_COIN;
       flushLocalCoins();
       paintScoreTime();
+      coinBurst(BONUS_COIN);
       if (el) {
         el.classList.add('on');
         setTimeout(function () { el.classList.remove('on'); }, 3800);
@@ -2919,6 +2952,7 @@
       /* 金幣：每題 +COINS_PER_Q（本地題也算，不再看題庫連線有沒有開）
          遠端題由 complete_set 入帳；本地題累積 3 題用 earnBatch 補一次，省 GAS 配額 */
       coins += COINS_PER_Q;
+      stageCoins += COINS_PER_Q;
       rewardPop('+1⭐　+' + COINS_PER_Q + ' 金幣');
       if (!q || q.type !== 'remote') {
         coinPending += COINS_PER_Q;
