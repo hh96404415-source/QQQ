@@ -117,6 +117,17 @@
       <div id="cfgList"></div>
       <div style="margin-top:12px"><button class="btn" id="btnSaveCfg">儲存全部改動</button></div>
     </div>
+    <div class="card">
+      <div class="fhead">
+        <span class="fname">📚 題庫同步（Firebase）</span>
+        <span class="meta">把 Sheet 的題目打包寫進 Firebase；小朋友的平板只讀 Firebase，所以出題 0 延遲</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn" id="btnFbSync">⬆ 立即同步題庫</button>
+        <span id="fbSyncInfo" style="color:#94a3b8;font-size:12px">尚未同步</span>
+      </div>
+      <pre id="fbSyncLog" style="margin:10px 0 0;max-height:220px;overflow:auto;background:#0b1220;border:1px solid #1e293b;border-radius:10px;padding:10px;font-size:12px;color:#cbd5e1;white-space:pre-wrap"></pre>
+    </div>
   </div>
 </div>
 
@@ -515,6 +526,36 @@
       });
     })();
   });
+
+  /* ── 題庫同步（Sheet → Firebase）── */
+  (function(){
+    var btn = document.getElementById('btnFbSync');
+    var info = document.getElementById('fbSyncInfo');
+    var logEl = document.getElementById('fbSyncLog');
+    function showInfo(){
+      post('fbStatus', {}, function(e, d){
+        if (e || !d) { info.textContent = '狀態讀取失敗'; return; }
+        if (d.meta && d.meta.version){
+          info.textContent = '版本 ' + d.meta.version + '｜共 ' + (d.meta.count||0) + ' 題（最後同步 ' + new Date(d.meta.updated).toLocaleString('zh-HK') + '）';
+        } else {
+          info.textContent = 'Firebase 還沒有題庫，按右邊同步';
+        }
+      });
+    }
+    btn.addEventListener('click', function(){
+      btn.disabled = true; logEl.textContent = '同步中…（約 10–20 秒）';
+      post('fbSync', {}, function(e, d){
+        btn.disabled = false;
+        if (e || !d || !d.ok){
+          logEl.textContent = '同步失敗：' + (e ? (e.message || e) : (d && d.error) || '未知錯誤') + (d && d.log ? '\n' + d.log.join('\n') : '');
+          return;
+        }
+        logEl.textContent = '版本 ' + d.version + '｜共 ' + d.total + ' 題\n' + (d.log || []).join('\n');
+        showInfo();
+      });
+    });
+    showInfo();
+  })();
 
   /* ── 封印清單 ── */
   var blkFam = document.getElementById('blkFam');
