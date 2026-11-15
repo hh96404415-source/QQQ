@@ -762,27 +762,51 @@ if (srcTagEl) srcTagEl.addEventListener('click', function () {
   render(startUid);
 });
 
-/* E 娛樂時間（時間代幣） */
+/* E 娛樂時間（金幣 → 時間卷；以伺服器 myStatus 為準） */
+function mmss(sec){
+  sec = Math.max(0, Math.floor(sec || 0));
+  var m = Math.floor(sec / 60), s = sec % 60;
+  return (m > 9 ? m : '0' + m) + ':' + (s > 9 ? s : '0' + s);
+}
 function renderTime(){
-  var s = window.Time ? window.Time.stats() : null;
-  if (!s) { document.getElementById('timeStats').innerHTML = '<div class="why">時間代幣未載入。</div>'; return; }
-  document.getElementById('timeStats').innerHTML =
-    '<div class="stat"><div class="k">今日已賺</div><div class="v">' + s.earned + ' <small>秒</small></div></div>' +
-    '<div class="stat"><div class="k">今日已用</div><div class="v">' + s.used + ' <small>秒</small></div></div>' +
-    '<div class="stat"><div class="k">剩餘可用</div><div class="v">' + s.balance + ' <small>/ ' + s.capSec + ' 秒</small></div></div>';
-  document.getElementById('capInput').value = s.cap;
-  document.getElementById('timeNote').textContent =
-    '規則：答對一題賺 ' + s.secPerAnswer + ' 秒娛樂；每日最多 ' + s.cap + ' 分鐘。' +
-    '連對、答得快還會有隨機秒數禮物。娛樂時間可以換星星（' + s.starCost + ' 秒 = 1 顆），但星星換不回時間。' +
-    '改上限只影響今日之後的結算。';
+  var el = document.getElementById('timeStats');
+  var note = document.getElementById('timeNote');
+  if (!el) return;
+  var uid = (window.Player && (window.Player.cur() || (window.Player.bound() && window.Player.bound().id))) || '';
+  if (!/^\d+$/.test(String(uid)) || !window.ParentAdmin || !window.ParentAdmin.post) {
+    el.innerHTML = '<div class="why">未綁定小朋友（或後端未連線），所以沒有金幣與時間卷資料。</div>';
+    if (note) note.textContent = '綁定後這裡會顯示：金幣餘額、今日已換幾分鐘、正在使用的倒數。';
+    return;
+  }
+  el.innerHTML = '<div class="why">讀取中…</div>';
+  window.ParentAdmin.post('myStatus', { user_id: uid }, function (err, d) {
+    if (err || !d || !d.ok) {
+      el.innerHTML = '<div class="why">讀取失敗：' + esc(err || (d && d.error) || '未知錯誤') + '</div>';
+      return;
+    }
+    var st = d.session || {};
+    var free = (st.mode === 'free' && (st.remaining_sec || 0) > 0);
+    el.innerHTML =
+      '<div class="stat"><div class="k">金幣餘額</div><div class="v">' + (d.coins || 0) + ' <small>枚</small></div></div>' +
+      '<div class="stat"><div class="k">今日已換</div><div class="v">' + (d.today_minutes || 0) + ' <small>/ ' + (d.today_cap || 0) + ' 分鐘</small></div></div>' +
+      '<div class="stat"><div class="k">' + (free ? '正在使用' : '目前狀態') + '</div><div class="v">' +
+        (free ? mmss(st.remaining_sec) : '🔒 學習模式') + '</div></div>';
+    document.getElementById('capInput').value = d.today_cap || '';
+    if (note) note.textContent =
+      '規則：答對一題賺 ' + 25 + ' 金幣（難題更多）。5 金幣 = 1 分鐘娛樂，孩子自己用金幣換時間卷：'
+      + '15 分鐘 75 金幣、30 分鐘 150 金幣、60 分鐘 300 金幣；換了即刻開始計時，沒有存券。'
+      + '每日上限 ' + (d.today_cap || 0) + ' 分鐘。星星只負責進化，不能換回時間。';
+  });
 }
 renderTime();
 document.getElementById('capSave').addEventListener('click', function(){
-  if (!window.Time) return;
   var v = parseInt(document.getElementById('capInput').value, 10);
   if (!(v >= 0)) { alert('請輸入 0 或更大的整數分鐘'); return; }
-  window.Time.setCap(v);
-  renderTime();
+  if (!window.ParentAdmin || !window.ParentAdmin.post) { alert('後端未連線，暫時改不了。'); return; }
+  window.ParentAdmin.post('setConfig', { key: 'MAX_MINUTES_PER_DAY', value: v }, function (err, d) {
+    if (err || !d || !d.ok) { alert('儲存失敗：' + (err || (d && d.error) || '未知錯誤')); return; }
+    renderTime();
+  });
 });
 
 window.__report = { build: buildReport, rows: demoRows_, profile: DEMO_PROFILE };

@@ -417,5 +417,5 @@
     document.head.appendChild(s);
   }
 
-  window.ParentAdmin = { mount: mount };
+  window.ParentAdmin = { mount: mount, post: post };
 })();
