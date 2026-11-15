@@ -205,12 +205,19 @@
     </div>
     <div class="honest" id="timeNote"></div>
   </section>
+
+  <section class="card" id="adminCard">
+    <div class="kicker">F · 家庭管理</div>
+    <h2>封印 · 成員 · 金幣 · 裝置</h2>
+    <div id="adminMount"></div>
+  </section>
 </div>
 
 <div id="foot">示範模式 · 歷史數據為模擬生成；你在小孩那邊做的題會即時計入</div>
 
 <script src="player.js"></script>
 <script src="time.js"></script>
+<script src="parent-admin.js"></script>
 
 <script>
 (function(){
@@ -779,6 +786,11 @@ document.getElementById('capSave').addEventListener('click', function(){
 });
 
 window.__report = { build: buildReport, rows: demoRows_, profile: DEMO_PROFILE };
+
+/* F 家庭管理面板（封印/成員/金幣/裝置） */
+if (window.ParentAdmin) {
+  window.ParentAdmin.mount(document.getElementById('adminMount'), 1);
+}
 </script>
 </body>
 </html>

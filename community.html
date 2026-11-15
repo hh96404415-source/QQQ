@@ -661,6 +661,7 @@
 <script src="motion.js"></script>
 <script src="player.js"></script>
 <script src="time.js"></script>
+<script src="wallet.js"></script>
 <script>
 (function(){
   'use strict';
@@ -2377,6 +2378,17 @@
     tc.style.top = '82px';
     tc.style.left = '10px';
     tc.style.zIndex = '31';
+  }
+
+  /* 金幣錢包＋時間卷商店＋倒數：貼在娛樂時間下面 */
+  if (window.Wallet && farmArea) {
+    var wc = window.Wallet.mount(farmArea);
+    if (wc) {
+      wc.style.position = 'absolute';
+      wc.style.top = '112px';
+      wc.style.left = '10px';
+      wc.style.zIndex = '31';
+    }
   }
 
   /* 一進來，寵物先跟你打招呼（一天只說得成一次，所以用 force） */
