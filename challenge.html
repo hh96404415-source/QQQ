@@ -89,6 +89,8 @@
   #scoreBoard .sbNum{font-size:38px;font-weight:900;color:#fde047;line-height:1;
     -webkit-text-stroke:1px #7c2d12;paint-order:stroke fill}
   #scoreBoard .sb.time .sbNum{color:#6ee7b7;-webkit-text-stroke:1px #064e3b}
+  #scoreBoard .sb.coin{border-color:rgba(251,146,60,.6);box-shadow:inset 0 0 24px rgba(251,146,60,.16)}
+  #scoreBoard .sb.coin .sbNum{color:#fdba74;-webkit-text-stroke:1px #7c2d12}
   #scoreBoard .sbUnit{font-size:15px;font-weight:900;color:#94a3b8}
   #scoreBoard .sbNum.pop{animation:sbPop .55s cubic-bezier(.2,.9,.3,1.6)}
   @keyframes sbPop{0%{transform:scale(1)}42%{transform:scale(1.45)}100%{transform:scale(1)}}
@@ -412,7 +414,7 @@
     <div id="padPane">
       <div id="scoreBoard">
         <div class="sb star"><span class="sbIcon">⭐</span><span class="sbNum" id="sbStars">0</span></div>
-        <div class="sb time"><span class="sbIcon">⏱</span><span class="sbNum" id="sbTime">0</span><span class="sbUnit">秒</span></div>
+        <div class="sb coin"><span class="sbIcon">💰</span><span class="sbNum" id="sbCoins">0</span><span class="sbUnit">金幣</span></div>
       </div>
       <div id="padHead">
         <b>✍️ 手寫板</b>
@@ -676,7 +678,9 @@
     var hpGhostEl = document.getElementById('hpGhost');
     var starEl = document.getElementById('stars');
     var sbStarsEl = document.getElementById('sbStars');
-    var sbTimeEl = document.getElementById('sbTime');
+    var sbCoinsEl = document.getElementById('sbCoins');
+    var coins = 0;
+    var COINS_PER_Q = 25;
     var rewardEl = document.getElementById('reward');
     var unitBtn = document.getElementById('unitBtn');
     var unitMask = document.getElementById('unitMask');
@@ -724,11 +728,10 @@
       if (window.Juice) window.Juice.fx('coin');
     }
     function paintScoreTime(){
-      if (!sbTimeEl) return;
-      var sec = (window.Time && window.Time.balance) ? window.Time.balance() : 0;
-      sbTimeEl.textContent = sec;
-      sbTimeEl.classList.remove('pop'); void sbTimeEl.offsetWidth; sbTimeEl.classList.add('pop');
-      setTimeout(function(){ sbTimeEl.classList.remove('pop'); }, 600);
+      if (!sbCoinsEl) return;
+      sbCoinsEl.textContent = coins;
+      sbCoinsEl.classList.remove('pop'); void sbCoinsEl.offsetWidth; sbCoinsEl.classList.add('pop');
+      setTimeout(function(){ sbCoinsEl.classList.remove('pop'); }, 600);
     }
     /* 天空帶：獎勵字與絕招大字都彈在這個高度（約競技場 23.5% 處），
        對齊各自角色的水平中心，不壓在角色身上 */
@@ -1595,7 +1598,11 @@
       qaLog.push({ q_id: q.remoteId, correct: !!correct, tries: 1, elapsed_ms: ms || 0, choice_path: choice || '' });
       if (qaLog.length < 3) return;
       var batch = qaLog.splice(0, 3);
-      qaPost({ action: 'complete_set', user_id: qaCfg.uid, pin: qaCfg.pin || '', answers: batch }, function () {});
+      qaPost({ action: 'complete_set', user_id: qaCfg.uid, pin: qaCfg.pin || '', answers: batch }, function (err, d) {
+        if (err || !d || !d.ok) return;
+        /* 以伺服器餘額為準（批次每題 +POINTS_PER_QUESTION） */
+        if (typeof d.coins === 'number') { coins = d.coins; paintScoreTime(); }
+      });
     }
 
     /* 難度高的時候，把「a + b = ?」改寫成「a + __ = c」，數字不變但要想反過來 */
@@ -2133,12 +2140,13 @@
       var el = document.getElementById('chapClear');
       var num = document.getElementById('chapNum');
       var gift = document.getElementById('chapGift');
-      var BONUS_SEC = 180, BONUS_STAR = 3;
+      var BONUS_COIN = 100, BONUS_STAR = 3;
       if (num) num.textContent = ch;
-      if (gift) gift.textContent = '獎勵：+' + BONUS_SEC + ' 秒 · +' + BONUS_STAR + ' 顆星';
+      if (gift) gift.textContent = '獎勵：+' + BONUS_COIN + ' 金幣 · +' + BONUS_STAR + ' 顆星';
       addStar(BONUS_STAR);
-      if (window.Time && window.Time.earn) window.Time.earn(BONUS_SEC);
-      if (window.SESSION) { }   /* 章節獎勵不計入回社區的收成，避免重複 */
+      if (qaOn()) qaPost({ action: 'earnCoins', user_id: qaCfg.uid, n: BONUS_COIN, source: 'chapter' }, function (err, d) {
+        if (!err && d && typeof d.coins === 'number') { coins = d.coins; paintScoreTime(); }
+      });
       paintScoreTime();
       if (el) {
         el.classList.add('on');
@@ -2335,6 +2343,19 @@
 
     nextQ();
     qaFill();   /* 有連題庫就先把下一批題抓回來 */
+    /* 金幣：頁面一進來先跟伺服器要餘額與每題金幣數 */
+    (function () {
+      if (!qaOn()) return;
+      qaPost({ action: 'myStatus', user_id: qaCfg.uid }, function (err, d) {
+        if (err || !d || !d.ok) return;
+        if (typeof d.coins === 'number') { coins = d.coins; paintScoreTime(); }
+      });
+      qaPost({ action: 'getConfig' }, function (err, d) {
+        if (err || !d || !d.result) return;
+        var v = parseInt(d.result.POINTS_PER_QUESTION, 10);
+        if (v > 0) COINS_PER_Q = v;
+      });
+    })();
     /* 回社區前把這一趟的收成記下來，讓社區頁演「帶回家」那一段 */
     (function () {
       var back = document.getElementById('backBtn');
@@ -2362,7 +2383,7 @@
     })();
     if (window.SND) { window.SND.mount(document.getElementById('topbar')); window.SND.bgm('fear.mp3', 0.30, { start: 0.3 }); }
     if (window.Player) window.Player.mount(document.getElementById('topbar'));
-    if (window.Time) window.Time.mount(document.getElementById('topbar'));
+    /* Time chip 已移除：金幣顯示在右側計分板 */
     setTimeout(function () {
       var h = new Date().getHours();
       petSay(h >= 20 || h < 6 ? 'night' : 'greet', { force: true });
@@ -2613,19 +2634,14 @@
       logAnswer(true);
       fb.textContent = '✅ 答對了！出招！ +1 ⭐';
       addStar();
-      var earnSec = (window.Time && window.Time.secPerAnswer) ? window.Time.secPerAnswer() : 300;
-      if (window.Time) { window.Time.earn(earnSec); SESSION.m += earnSec; }
-      paintScoreTime();
-      rewardPop('+1⭐　+' + earnSec + ' 秒');
-      /* 隨機秒數禮物：連對、答得快，中獎率高一點 */
-      if (window.Time && window.Time.gift) {
-        var g = window.Time.gift({ streak: streak + 1, ms: Date.now() - qT0 });
-        if (g) {
-          SESSION.m += g.sec;
-          paintScoreTime();
-          setTimeout(function () { giftPop('🎁 ' + g.label + '　+' + g.sec + ' 秒'); }, 620);
-        }
+      /* 金幣：每題 +COINS_PER_Q；伺服器 complete_set 也會加同一筆，這裡先即時顯示 */
+      if (qaOn()) {
+        coins += COINS_PER_Q;
+        rewardPop('+1⭐　+' + COINS_PER_Q + ' 金幣');
+      } else {
+        rewardPop('+1⭐');
       }
+      paintScoreTime();
       streak++;
       setCombo();
       sfxRight();
