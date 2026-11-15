@@ -2511,8 +2511,18 @@
     /* 題庫本機化：先抓 Firebase 的題庫包（抓不到就自動退回 GAS） */
     if (window.QB) QB.load();
 
-    nextQ();
-    qaFill();   /* 有連題庫就先把下一批題抓回來 */
+    /* 先等本機題庫（Firebase）就緒再出第一題 → 連第一題都不用等 GAS；
+       Firebase 慢或掛掉就 2.5 秒後照舊走（退回 GAS），不讓孩子卡住 */
+    (function boot() {
+      var started = false;
+      function start() { if (started) return; started = true; nextQ(); qaFill(); }
+      if (window.QB) {
+        QB.load(function () { start(); });
+        setTimeout(start, 2500);
+      } else {
+        start();
+      }
+    })();
     /* 金幣：頁面一進來先跟伺服器要餘額與每題金幣數 */
     (function () {
       if (!qaOn()) return;
