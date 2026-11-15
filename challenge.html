@@ -2508,8 +2508,16 @@
       qaSave();
     })();
 
-    /* 題庫本機化：先抓 Firebase 的題庫包（抓不到就自動退回 GAS） */
-    if (window.QB) QB.load();
+    /* 題庫本機化：先抓 Firebase 的題庫包（抓不到就自動退回 GAS）
+       同時把「答對過」清單從雲端載進來（換裝置也接得上） */
+    if (window.QB) {
+      var _qbUid = (function () {
+        var b = (window.Player && window.Player.bound) ? window.Player.bound() : null;
+        return (b && b.id) ? String(b.id) : '';
+      })();
+      if (_qbUid && /^\d+$/.test(_qbUid)) QB.setUser(_qbUid);
+      QB.load();
+    }
 
     /* 先等本機題庫（Firebase）就緒再出第一題 → 連第一題都不用等 GAS；
        Firebase 慢或掛掉就 2.5 秒後照舊走（退回 GAS），不讓孩子卡住 */
