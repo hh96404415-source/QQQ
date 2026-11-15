@@ -91,8 +91,8 @@
       linear-gradient(#1e293b,#0f172a)}
   #gamePane.open{transform:none}
   #gamePane:not(.open){pointer-events:none}
-  #bookBtn{position:absolute;top:10px;right:136px;z-index:31;display:flex;align-items:center;
-    justify-content:center;width:34px;height:34px;border-radius:12px;font-size:17px;
+  #bookBtn{position:absolute;top:10px;right:184px;z-index:31;display:flex;align-items:center;
+    justify-content:center;width:46px;height:46px;border-radius:14px;font-size:24px;
     background:rgba(15,23,42,.72);border:1px solid rgba(255,255,255,.16);cursor:pointer;
     transition:background .2s,transform .12s}
   #bookBtn:hover{background:rgba(30,41,59,.95);transform:translateY(-1px)}
@@ -122,7 +122,7 @@
   .gmsg.win{color:#4ade80}
   .pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
     border-radius:999px;padding:6px 12px;color:#fff;font-weight:800;font-size:16px}
-  #btnStar{background:linear-gradient(#f59e0b,#d97706);color:#1e1b4b;border:none;
+  #btnStar{display:none;background:linear-gradient(#f59e0b,#d97706);color:#1e1b4b;border:none;
     border-radius:999px;padding:8px 14px;font-weight:900;font-size:14px;cursor:pointer;
     box-shadow:0 3px 0 #92400e;font-family:inherit}
   #btnStar:active{transform:translateY(2px);box-shadow:0 1px 0 #92400e}
@@ -277,9 +277,9 @@
   #farmStars{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:6px;
     background:rgba(15,23,42,.78);border:1px solid rgba(255,255,255,.15);border-radius:999px;
     padding:5px 12px;font-size:14px;font-weight:900;color:#fbbf24;z-index:8}
-  #homeBtn{position:absolute;top:10px;right:52px;z-index:31;display:flex;align-items:center;
-    justify-content:center;width:34px;height:34px;border-radius:11px;text-decoration:none;
-    background:rgba(15,23,42,.72);border:1px solid rgba(255,255,255,.18);font-size:16px;line-height:1;
+  #homeBtn{position:absolute;top:10px;right:68px;z-index:31;display:flex;align-items:center;
+    justify-content:center;width:46px;height:46px;border-radius:14px;text-decoration:none;
+    background:rgba(15,23,42,.72);border:1px solid rgba(255,255,255,.18);font-size:24px;line-height:1;
     transition:transform .12s,background .12s}
   #homeBtn:hover{background:rgba(30,41,59,.95);transform:translateY(-1px)}
   #homeBtn:active{transform:scale(.94)}
@@ -457,8 +457,8 @@
     filter:drop-shadow(0 3px 10px rgba(0,0,0,.65))}
 
   /* ── 星星商店 ── */
-  #shopBtn{position:absolute;top:10px;right:94px;z-index:31;display:flex;align-items:center;
-    justify-content:center;width:34px;height:34px;border-radius:12px;font-size:17px;
+  #shopBtn{position:absolute;top:10px;right:126px;z-index:31;display:flex;align-items:center;
+    justify-content:center;width:46px;height:46px;border-radius:14px;font-size:24px;
     background:rgba(15,23,42,.72);border:1px solid rgba(255,255,255,.16);
     text-decoration:none;cursor:pointer;transition:background .2s,transform .12s}
   #shopBtn:hover{background:rgba(30,41,59,.95);transform:translateY(-1px)}
@@ -2342,7 +2342,7 @@
 
   /* 音效開關：貼在農場右上角 */
   if (window.SND) {
-    window.SND.mount(farmArea, 'position:absolute;top:10px;right:10px;z-index:30');
+    window.SND.mount(farmArea, 'position:absolute;top:10px;right:10px;z-index:30;width:46px;height:46px;font-size:22px;border-radius:14px');
     window.SND.bgm('prontera.mp3', 0.28, { start: 6.4 });
   }
 
@@ -2371,21 +2371,14 @@
     if (wc) { wc.style.position = 'absolute'; wc.style.top = '52px'; wc.style.left = '10px'; wc.style.zIndex = '31'; wc.classList.add('alignLeft'); }
   }
 
-  /* 娛樂時間：貼在農場左上角（人物下面） */
-  if (window.Time && farmArea) {
-    var tc = window.Time.mount(farmArea);
-    tc.style.position = 'absolute';
-    tc.style.top = '82px';
-    tc.style.left = '10px';
-    tc.style.zIndex = '31';
-  }
+  /* 舊「答題秒數」chip 已停用：娛樂時間改由下方 Wallet（伺服器倒數）顯示 */
 
   /* 金幣錢包＋時間卷商店＋倒數：貼在娛樂時間下面 */
   if (window.Wallet && farmArea) {
     var wc = window.Wallet.mount(farmArea);
     if (wc) {
       wc.style.position = 'absolute';
-      wc.style.top = '112px';
+      wc.style.top = '82px';
       wc.style.left = '10px';
       wc.style.zIndex = '31';
     }
