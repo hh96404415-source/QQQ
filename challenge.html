@@ -1514,6 +1514,9 @@
     })();
     /* 舊的預設 token 已經換掉：留著會一直 401，直接換成新的 */
     if (qaCfg && qaCfg.token === 'CHANGE_ME_TO_A_RANDOM_LONG_STRING') qaCfg.token = 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
+    /* 家裡那一套後端的預設值（家長不用手動填，孩子登入就自動接上） */
+    var QA_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec';
+    var QA_TOKEN_DEFAULT = 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
     var qaPool = [];          /* 已取回、還沒出的題 */
     var qaPending = false;
     var qaLog = [];           /* 待回傳的作答（湊滿 3 題送 complete_set） */
@@ -1552,7 +1555,7 @@
     function qaFill() {
       if (!qaOn() || qaPending || qaPool.length >= 2 || qaBad >= 3) return;
       qaPending = true;
-      var lvl = unitById(curUnit).g;          /* 年級當難度級別 */
+      var lvl = unitById(curUnit).g || 1;     /* 年級當難度級別（綜合模式 g=0 → 用 1） */
       qaPost({ action: 'get_questions', user_id: qaCfg.uid, level: lvl }, function (err, d) {
         qaPending = false;
         if (err || !d || !d.questions || !d.questions.length) {
@@ -1582,6 +1585,19 @@
       qaFill();
       return q;
     }
+    /* 只拿「指定科目」的遠端題；沒有就先回 null，讓本地題庫補這個科目 */
+    function qaTakeFor(subj) {
+      var want = subj === 'en' ? 'English' : (subj === 'zh' ? 'Chinese' : 'Math');
+      for (var i = 0; i < qaPool.length; i++) {
+        if (String(qaPool[i].subject) === want) {
+          var q = qaPool.splice(i, 1)[0];
+          qaFill();
+          return q;
+        }
+      }
+      qaFill();
+      return null;
+    }
     /* 測試鉤子 */
     window.__qa = {
       get cfg() { return qaCfg; },
@@ -1592,6 +1608,18 @@
       on: qaOn,
       fill: qaFill
     };
+    /* 本地題的金幣：先加到畫面，再批次補進帳本（每 3 題一次） */
+    var coinPending = 0;
+    function flushLocalCoins() {
+      if (!qaOn() || coinPending <= 0) return;
+      var n = coinPending;
+      coinPending = 0;
+      qaPost({ action: 'earnBatch', user_id: qaCfg.uid, n: n, source: 'quiz-local' }, function (err, d) {
+        if (err || !d || !d.ok) { coinPending += n; return; }
+        if (typeof d.coins === 'number') { coins = d.coins; paintScoreTime(); }
+      });
+    }
+
     /* 作答時記一筆；滿 3 題回傳，換星星／上網時間 */
     function qaLogAnswer(q, correct, choice, ms) {
       if (!q || q.type !== 'remote' || !qaOn()) return;
@@ -1600,8 +1628,8 @@
       var batch = qaLog.splice(0, 3);
       qaPost({ action: 'complete_set', user_id: qaCfg.uid, pin: qaCfg.pin || '', answers: batch }, function (err, d) {
         if (err || !d || !d.ok) return;
-        /* 以伺服器餘額為準（批次每題 +POINTS_PER_QUESTION） */
-        if (typeof d.coins === 'number') { coins = d.coins; paintScoreTime(); }
+        /* 以伺服器餘額為準（批次每題 +POINTS_PER_QUESTION）；未補帳的本地金幣要加回去，畫面才不會倒退 */
+        if (typeof d.coins === 'number') { coins = d.coins + coinPending; paintScoreTime(); }
       });
     }
 
@@ -1710,10 +1738,38 @@
 
     /* 最近出過的題目（避免同一個單元一直重複同一題） */
     var recentQ = [];
-    function makeQ() {
-      var rq = qaTake();
+
+    /* 三科比例制：每一題都指定一個科目（en / zh / math）
+       - 選了單一單元時：該科目的那一格就用他選的單元（單元選擇仍然有效）
+       - 另外兩科：從同年級的單元抽，保證三科都會出現
+       - 選「綜合」時：三格各自從該科目抽 */
+    function subjOfUnit(u) {
+      if (!u) return 'math';
+      if (u.id === 'mix_all') return null;
+      return u.subj || 'math';
+    }
+    function unitOfSubject(subj, g) {
+      var pool = MATH_UNITS.filter(function (u) {
+        return u.id !== 'mix_all' && (u.subj || 'math') === subj && (!g || u.g === g);
+      });
+      if (!pool.length) {
+        pool = MATH_UNITS.filter(function (u) { return u.id !== 'mix_all' && (u.subj || 'math') === subj; });
+      }
+      if (!pool.length) return unitById(curUnit);
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    function makeQ(subj) {
+      var rq = subj ? qaTakeFor(subj) : qaTake();
       if (rq) return rq;
-      var u = unitById(curUnit);
+      var base = unitById(curUnit);
+      var u;
+      if (subj && subjOfUnit(base) !== subj) {
+        u = unitOfSubject(subj, base ? base.g : 0);
+      } else {
+        u = base;
+      }
+      if (!u) u = unitById(curUnit);
       var r = harden(u.gen(), u);
       for (var t = 0; t < 6; t++) {
         if (recentQ.indexOf(r.text) < 0) break;
@@ -1846,17 +1902,22 @@
       });
       mask.addEventListener('click', function (e) { if (e.target === mask) mask.classList.remove('show'); });
 
-      /* 家用一鍵連線：把已知的 Web App 網址與預設 token 填好並直接啟用 */
+      /* 家用一鍵連線：把已知的 Web App 網址與預設 token 填好並直接啟用
+         孩子 ID 不再寫死（以前是 'kid01'，會把作答記到不存在的帳號），改成目前登入的孩子 */
       var QA_HOME = {
-        url: 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec',
-        token: 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC',
-        uid: 'kid01',
+        url: QA_URL_DEFAULT,
+        token: QA_TOKEN_DEFAULT,
+        uid: '',
         pin: ''
       };
+      function qaHomeUid() {
+        var b = (window.Player && window.Player.bound) ? window.Player.bound() : null;
+        return (b && b.id) ? String(b.id) : '';
+      }
       document.getElementById('qaAuto').addEventListener('click', function () {
         elUrl.value = QA_HOME.url;
         if (!elTok.value) elTok.value = QA_HOME.token;
-        if (!elUid.value) elUid.value = QA_HOME.uid;
+        if (!elUid.value) elUid.value = qaHomeUid();
         readInputs();
         qaCfg.on = true; qaBad = 0; qaPool = []; qaLog = [];
         qaSave();
@@ -1902,13 +1963,19 @@
     })();
 
     var qT0 = 0;
+    /* 三科輪替：英 → 中 → 數（每一題換一科，三科必然都會出現）
+       寫字題算在「中文」那一格裡，每 2 次中文格出 1 次，不再額外插隊 */
+    var SUBJ_ORDER = ['en', 'zh', 'math'];
+    var subjStep = 0;
+    var zhSlot = 0;
     function nextQ(){
       qNum++;
       qLogT0 = Date.now();
       clearHanzi();
-      /* 每 3 題一題中文寫字；字表＝教育局第一學習階段（分級載入） */
-      var isHanzi = (qNum % 3 === 0) && window.HWLV && window.HanziWriter;
-      q = isHanzi ? makeHanziQ() : makeQ();
+      var slot = SUBJ_ORDER[subjStep % 3];
+      subjStep++;
+      var isHanzi = (slot === 'zh') && window.HWLV && window.HanziWriter && ((zhSlot++ % 2) === 1);
+      q = isHanzi ? makeHanziQ() : makeQ(slot);
 
       if (isHanzi){
         optionsEl.style.display = 'none';
@@ -2144,9 +2211,10 @@
       if (num) num.textContent = ch;
       if (gift) gift.textContent = '獎勵：+' + BONUS_COIN + ' 金幣 · +' + BONUS_STAR + ' 顆星';
       addStar(BONUS_STAR);
-      if (qaOn()) qaPost({ action: 'earnCoins', user_id: qaCfg.uid, n: BONUS_COIN, source: 'chapter' }, function (err, d) {
-        if (!err && d && typeof d.coins === 'number') { coins = d.coins; paintScoreTime(); }
-      });
+      /* 章節獎金走同一條入帳路徑：畫面先加，再由 flushLocalCoins 補進帳本 */
+      coins += BONUS_COIN;
+      coinPending += BONUS_COIN;
+      flushLocalCoins();
       paintScoreTime();
       if (el) {
         el.classList.add('on');
@@ -2340,6 +2408,21 @@
       var t = window.PetSay.speak(key, petInfo.s, opts);
       if (t) window.PetSay.bubble(petImg, t, opts && opts.ms ? opts.ms : undefined);
     }
+
+    /* 題庫連線自動化：孩子登入後直接把 uid 綁到他的 user_id 並啟用，
+       不用家長去題庫面板按「一鍵連線」（以前寫死 kid01，作答會記到不存在的帳號） */
+    (function autoQa() {
+      var b = (window.Player && window.Player.bound) ? window.Player.bound() : null;
+      var uid = (b && b.id) ? String(b.id) : '';
+      if (!/^\d+$/.test(uid)) return;                 /* 示範帳號／未登入：維持離線題庫 */
+      if (qaCfg.on && String(qaCfg.uid) === uid) return;
+      qaCfg.url = qaCfg.url || QA_URL_DEFAULT;
+      qaCfg.token = qaCfg.token || QA_TOKEN_DEFAULT;
+      qaCfg.uid = uid;
+      qaCfg.on = true;
+      qaBad = 0;
+      qaSave();
+    })();
 
     nextQ();
     qaFill();   /* 有連題庫就先把下一批題抓回來 */
@@ -2634,12 +2717,13 @@
       logAnswer(true);
       fb.textContent = '✅ 答對了！出招！ +1 ⭐';
       addStar();
-      /* 金幣：每題 +COINS_PER_Q；伺服器 complete_set 也會加同一筆，這裡先即時顯示 */
-      if (qaOn()) {
-        coins += COINS_PER_Q;
-        rewardPop('+1⭐　+' + COINS_PER_Q + ' 金幣');
-      } else {
-        rewardPop('+1⭐');
+      /* 金幣：每題 +COINS_PER_Q（本地題也算，不再看題庫連線有沒有開）
+         遠端題由 complete_set 入帳；本地題累積 3 題用 earnBatch 補一次，省 GAS 配額 */
+      coins += COINS_PER_Q;
+      rewardPop('+1⭐　+' + COINS_PER_Q + ' 金幣');
+      if (!q || q.type !== 'remote') {
+        coinPending += COINS_PER_Q;
+        if (coinPending >= COINS_PER_Q * 3) flushLocalCoins();
       }
       paintScoreTime();
       streak++;
@@ -2664,6 +2748,7 @@
         mark(cur.m.k, cur.s);
         recordWin();
         SESSION.w++;
+        flushLocalCoins();          /* 打贏先結清本地題的金幣 */
         addStar(WIN_STARS);
         rewardPop('🎉 +' + WIN_STARS + ' ⭐');
         fb.textContent = '🎉 打贏了！' + cur.m.n[cur.s - 1] + ' 已收錄圖鑑 · +' + WIN_STARS + '⭐ 回家可以進化';
