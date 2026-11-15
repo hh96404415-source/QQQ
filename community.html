@@ -474,6 +474,7 @@
     background:linear-gradient(180deg,rgba(251,191,36,.16),rgba(251,191,36,0));border-bottom:1px solid rgba(255,255,255,.08)}
   #shopHead h2{font-size:22px;font-weight:900;color:#fbbf24;margin:0}
   #shopStars{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:17px;font-weight:900;color:#fde047}
+  #shopCoins{display:flex;align-items:center;gap:5px;font-size:15px;font-weight:900;color:#fbbf24}
   #shopClose{border:none;border-radius:10px;background:rgba(255,255,255,.1);color:#e2e8f0;
     font-size:14px;font-weight:800;padding:7px 13px;cursor:pointer}
   #shopTabs{display:flex;gap:8px;padding:10px 18px 0}
@@ -606,13 +607,15 @@
 <div id="shop">
   <div id="shopPanel">
     <div id="shopHead">
-      <h2>🛒 星星商店</h2>
+      <h2>🛒 商店</h2>
       <div id="shopStars">⭐ <span id="shopStarN">0</span></div>
+      <div id="shopCoins">💰 <span id="shopCoinN">—</span></div>
       <button id="shopClose">關閉</button>
     </div>
     <div id="shopTabs">
       <button id="tabEgg" class="on">🥚 寵物蛋</button>
       <button id="tabFac">🏗 建設</button>
+      <button id="tabTicket">⏱ 時間卷</button>
     </div>
     <div id="shopBody">
       <div id="shopGrid"></div>
@@ -1096,10 +1099,15 @@
     if (!shopEl) return;
     shopTab = tab || 'egg';
     shopEl.classList.add('on');
-    document.getElementById('tabEgg').classList.toggle('on', shopTab === 'egg');
-    document.getElementById('tabFac').classList.toggle('on', shopTab === 'fac');
+    shopSyncTabs();
     shopRender(focusId);
     sfxTap();
+  }
+  function shopSyncTabs() {
+    ['egg', 'fac', 'ticket'].forEach(function (k) {
+      var el = document.getElementById('tab' + k.charAt(0).toUpperCase() + k.slice(1));
+      if (el) el.classList.toggle('on', shopTab === k);
+    });
   }
   function shopClose() {
     if (shopEl) shopEl.classList.remove('on');
@@ -1108,9 +1116,83 @@
     var n = document.getElementById('shopStarN');
     if (n) n.textContent = stars;
   }
+  /* 金幣只在「時間卷」頁需要，抓到就快取，避免每次重畫都打後端 */
+  var shopCoins = null;
+  function shopPaintCoins() {
+    var n = document.getElementById('shopCoinN');
+    if (!n) return;
+    if (!window.Wallet || !Wallet.isReal()) { n.textContent = '—'; return; }
+    if (shopCoins != null) n.textContent = String(shopCoins);
+    window.Wallet.status(function (err, st) {
+      if (err || !st) return;
+      shopCoins = (st.coins == null ? 0 : st.coins);
+      n.textContent = String(shopCoins);
+      if (shopTab === 'ticket') shopRenderTicket();
+    });
+  }
+  /* ── ⏱ 時間卷（金幣換時間）：換了立刻開始倒數 ── */
+  function shopRenderTicket() {
+    var tip = document.getElementById('shopTip');
+    if (!shopGrid) return;
+    if (!window.Wallet || !Wallet.isReal()) {
+      shopGrid.innerHTML = '<div class="shopCard own" style="grid-column:1/-1">' +
+        '<div class="nm">先登入孩子帳號</div><div class="sub">金幣與時間卷要登入後才有</div></div>';
+      if (tip) tip.textContent = '登入後：答題賺金幣 → 在這裡用金幣換時間卷。';
+      return;
+    }
+    var face = window.Wallet.FACE || [15, 30, 60];
+    var per = window.Wallet.COIN_PER_MIN || 5;
+    var coins = shopCoins;
+    face.forEach(function (m) {
+      var cost = m * per;
+      var poor = (coins != null && coins < cost);
+      var card = document.createElement('div');
+      card.className = 'shopCard' + (poor ? ' poor' : '');
+      var ico = document.createElement('div');
+      ico.className = 'ico';
+      ico.textContent = '⏱';
+      ico.style.fontSize = '40px';
+      card.appendChild(ico);
+      var nm = document.createElement('div');
+      nm.className = 'nm';
+      nm.textContent = m + ' 分鐘';
+      card.appendChild(nm);
+      var sub = document.createElement('div');
+      sub.className = 'sub';
+      sub.textContent = cost + ' 金幣';
+      card.appendChild(sub);
+      var b = document.createElement('button');
+      b.textContent = poor ? '金幣不足' : '兌換';
+      b.disabled = poor;
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        b.disabled = true;
+        b.textContent = '兌換中…';
+        window.Wallet.redeem(m, function (err, d) {
+          if (err || !d || !d.ok) {
+            b.disabled = false;
+            b.textContent = '兌換';
+            if (tip) tip.textContent = '❌ ' + ((d && d.error) || err || '兌換失敗');
+            return;
+          }
+          shopCoins = (d.coins == null ? 0 : d.coins);
+          if (tip) tip.textContent = '✅ 換到 ' + d.minutes + ' 分鐘！已經開始倒數，左上角看得到。';
+          window.Wallet.refresh();
+          shopRender();
+          if (window.Juice) { try { window.Juice.fx('unlock'); } catch (er) {} }
+        });
+      });
+      card.appendChild(b);
+      shopGrid.appendChild(card);
+    });
+    if (tip) tip.textContent = '金幣是答題賺回來的。換了立刻開始倒數，用完自動回到學習模式（不能存起來以後用）。';
+  }
   function shopRender(focusId) {
     if (!shopGrid) return;
     shopPaintStars();
+    if (shopTab === 'ticket') shopPaintCoins();
+    var tip0 = document.getElementById('shopTip');
+    if (tip0) tip0.textContent = '星星答題就會有：答對 1 顆、打贏一隻 2 顆、玩完一輪再加。';
     shopGrid.innerHTML = '';
     if (shopTab === 'egg') {
       SPECIES.forEach(function (sp, si) {
@@ -1143,6 +1225,8 @@
         card.appendChild(b);
         shopGrid.appendChild(card);
       });
+    } else if (shopTab === 'ticket') {
+      shopRenderTicket();
     } else {
       FAC.forEach(function (f) {
         var lv = facState[f.id] || 0;
@@ -1250,20 +1334,13 @@
   (function shopWire() {
     var btn = document.getElementById('shopBtn');
     var close = document.getElementById('shopClose');
-    var te = document.getElementById('tabEgg');
-    var tf = document.getElementById('tabFac');
+    ['egg', 'fac', 'ticket'].forEach(function (k) {
+      var el = document.getElementById('tab' + k.charAt(0).toUpperCase() + k.slice(1));
+      if (!el) return;
+      el.addEventListener('click', function () { shopTab = k; shopSyncTabs(); shopRender(); });
+    });
     if (btn) btn.addEventListener('click', function (e) { e.stopPropagation(); shopOpenShop('egg'); });
     if (close) close.addEventListener('click', shopClose);
-    if (te) te.addEventListener('click', function () {
-      shopTab = 'egg';
-      te.classList.add('on'); tf.classList.remove('on');
-      shopRender();
-    });
-    if (tf) tf.addEventListener('click', function () {
-      shopTab = 'fac';
-      tf.classList.add('on'); te.classList.remove('on');
-      shopRender();
-    });
     if (shopEl) shopEl.addEventListener('click', function (e) {
       if (e.target === shopEl) shopClose();
     });
@@ -1287,6 +1364,24 @@
           pets[j].growth = [0, 10, 30, 70, 120][pets[j].stage] || 10;
         }
       }
+    }
+    /* ── 新手禮（只給一次）：一隻蛋 + 一隻已經孵好的 1 級夥伴 + 100 星星 ──
+       原因：蛋（0 級）不能上戰場，孩子如果两只都是蛋，就卡住沒法答題賺金幣。
+       所以第二隻直接是「剛孵出來的幼獸」，孩子一進來就有夥伴可以帶去挑戰。 */
+    var newbieDone = false;
+    try { newbieDone = localStorage.getItem('dsh_newbie_gift') === '1'; } catch(e){}
+    if (!newbieDone){
+      if (!saved){
+        pets[1].stage = 1;
+        pets[1].growth = FORMS[1].next;
+        stars += 100;
+        try { localStorage.setItem('dsh_newbie_guide', '1'); } catch(e){}
+      }
+      try {
+        saveStars();
+        if (starEl) starEl.textContent = stars;
+        localStorage.setItem('dsh_newbie_gift', '1');
+      } catch(e){}
     }
     pets[0].img.src = formImg(pets[0], pets[0].stage);
     pets[1].img.src = formImg(pets[1], pets[1].stage);
@@ -1741,32 +1836,39 @@
     paintProgress(p);
     pAvatar.src = formOf(p).img;
     pAvatar.style.filter = p.state==='sad'?'grayscale(.8) brightness(.75)':'';
-    /* 星星夠把進度餵滿 → 餵食鍵變成「進化鍵」，直接去挑戰高難度 */
-    var canEvolve = (p.stage < 4) && (stars >= Math.max(0, FORMS[p.stage].next - p.growth));
+    /* 蛋（0 級）：面板只留「餵星星」＋「放出」；不能玩、不能挑戰、不能拿去換星星 */
+    var isEgg = (p.stage === 0);
+    /* 星星夠把進度餵滿 → 餵食鍵變成「進化鍵」，直接去挑戰高難度
+       （蛋不走這條：蛋要能「餵星星餵到孵化」，不能因為星星多就被推進戰場） */
+    var canEvolve = (p.stage > 0) && (p.stage < 4) && (stars >= Math.max(0, FORMS[p.stage].next - p.growth));
     evolveMode = canEvolve;
     btnFeed.classList.toggle('evolve', canEvolve);
     if (canEvolve){
       btnFeed.disabled = false;
-      btnFeed.textContent = p.stage === 0 ? '⚡ 孵化挑戰！'
-        : (p.won[p.stage] ? '⚡ 進化！' : '⚡ 進化挑戰！');
+      btnFeed.textContent = (p.won[p.stage] ? '⚡ 進化！' : '⚡ 進化挑戰！');
     } else {
       btnFeed.disabled = stars < 1;
-      btnFeed.textContent = (p.stage===0)
-        ? '🥚 '+p.growth+'/'+HATCH_AT
+      btnFeed.textContent = isEgg
+        ? '⭐ 餵星星 (' + p.growth + '/' + HATCH_AT + ')'
         : '🍖 1⭐';
     }
-    if (p.stage === 0){
-      btnGame.textContent = '🥚 先餵食孵化';
+    if (isEgg){
+      btnGame.classList.add('hidden');
       btnGame.disabled = true;
     } else {
+      btnGame.classList.remove('hidden');
       btnGame.textContent = '🎮 和我玩';
       btnGame.disabled = false;
     }
-    btnPlay.classList.toggle('hidden', p.state!=='bored');
-    btnComfort.classList.toggle('hidden', p.state!=='sad');
-    if (p.stage >= 1 && !p.inFarm){
+    /* 蛋不能上戰場（0 級連怪都打不動）；但也沒有「先餵食孵化」的灰鍵來吵牠 */
+    btnQuiz.classList.toggle('hidden', isEgg);
+    btnPlay.classList.toggle('hidden', isEgg || p.state!=='bored');
+    btnComfort.classList.toggle('hidden', isEgg || p.state!=='sad');
+    if (!p.inFarm){
       btnToggle.classList.remove('hidden');
-      btnToggle.textContent = '🏡 放入農場 '+farmCount()+'/'+FARM_MAX;
+      btnToggle.textContent = isEgg
+        ? '🏡 放出到農場 ' + farmCount() + '/' + FARM_MAX
+        : '🏡 放入農場 ' + farmCount() + '/' + FARM_MAX;
       btnToggle.disabled = farmCount() >= FARM_MAX;
     } else if (p.inFarm){
       btnToggle.classList.remove('hidden');
@@ -1775,16 +1877,8 @@
     } else {
       btnToggle.classList.add('hidden');
     }
-    /* 時間換星星：有 ≥5 分鐘娛樂時間才給入口（單向，星星換不回時間） */
-    if (window.Time && btnTrade){
-      var bal = window.Time.balance();
-      if (bal >= window.Time.starCost()){
-        btnTrade.classList.remove('hidden');
-        btnTrade.disabled = false;
-      } else {
-        btnTrade.classList.add('hidden');
-      }
-    }
+    /* 舊「時間換星星」已停用：星星只從答題賺，不能拿時間換 */
+    if (btnTrade) btnTrade.classList.add('hidden');
     positionPanel();
   }
   function positionPanel(){
@@ -1938,6 +2032,12 @@
   btnQuiz.addEventListener('click', function(){
     if (active === null) return;
     var p = pets[active];
+    /* 蛋不能上戰場：先餵星星把牠孵出來 */
+    if (p.stage === 0){
+      sfxWrong();
+      cheer(p, '先餵星星把我孵出來！', 2200);
+      return;
+    }
     sel = active; renderPetBar();
     sfxTap();
     /* 收起面板，寵物往左衝（去戰場） */
@@ -2383,6 +2483,42 @@
       wc.style.zIndex = '31';
     }
   }
+
+  /* 新手引導：送完 2 顆蛋的第一次，帶孩子點一輪（只出現一次） */
+  (function newbieGuide(){
+    var on = false;
+    try { on = localStorage.getItem('dsh_newbie_guide') === '1'; } catch(e){}
+    if (!on || picking) return;
+    try { localStorage.removeItem('dsh_newbie_guide'); } catch(e){}
+    var tips = [
+      '👇 下面有兩隻夥伴，點一隻看看',
+      '⭐ 星星可以餵牠，餵滿 10 顆就孵化了！',
+      '⚔️ 孵出來就按「挑戰」，答對就賺金幣 💰',
+      '🛒 金幣拿去商店換「時間卷」⏱ 就可以玩了'
+    ];
+    var box = document.createElement('div');
+    box.id = 'nbGuide';
+    box.style.cssText = 'position:absolute;left:50%;bottom:118px;transform:translateX(-50%);z-index:45;' +
+      'max-width:84%;padding:12px 18px;border-radius:16px;text-align:center;font-size:15px;font-weight:900;' +
+      'line-height:1.5;color:#fef3c7;background:rgba(15,23,42,.94);border:2px solid rgba(251,191,36,.72);' +
+      'box-shadow:0 10px 30px rgba(0,0,0,.45);pointer-events:none;transition:opacity .3s';
+    farmArea.appendChild(box);
+    var i = 0;
+    function next(){
+      if (i >= tips.length){
+        box.style.opacity = '0';
+        setTimeout(function(){ if (box.parentNode) box.parentNode.removeChild(box); }, 400);
+        return;
+      }
+      box.textContent = tips[i++];
+      box.style.opacity = '1';
+      var k = i - 1;
+      if (k === 3) { var sb = document.getElementById('shopBtn'); if (sb) { sb.style.transform = 'scale(1.25)'; setTimeout(function(){ sb.style.transform = ''; }, 1600); } }
+      if (k === 0) { var c0 = petBarEl.children[0]; if (c0) { c0.style.transform = 'translateY(-6px) scale(1.12)'; setTimeout(function(){ c0.style.transform = ''; }, 1600); } }
+      setTimeout(next, 2800);
+    }
+    setTimeout(next, 1500);
+  })();
 
   /* 一進來，寵物先跟你打招呼（一天只說得成一次，所以用 force） */
   setTimeout(function(){
