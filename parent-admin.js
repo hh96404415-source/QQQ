@@ -141,6 +141,16 @@
             '<input class="paInput short" id="paGrade" placeholder="年級 P2" maxlength="8">' +
             '<button class="paBtn" id="paAdd">新增</button>' +
           '</div>' +
+          '<div class="paHint">孩子 PIN 6 位</div>' +
+        '</div>' +
+        '<div class="paCard">' +
+          '<div class="paCardHead">家長 PIN（8 位）</div>' +
+          '<div class="paForm">' +
+            '<input class="paInput" id="paOldPin" placeholder="舊家長 PIN（8 位）" inputmode="numeric" maxlength="8">' +
+            '<input class="paInput" id="paNewPin" placeholder="新家長 PIN（8 位）" inputmode="numeric" maxlength="8">' +
+            '<button class="paBtn" id="paSetPin">更改</button>' +
+          '</div>' +
+          '<div class="paHint">孩子 6 位、家長 8 位：長度不同就不會撞，別的家長也不會按錯進到你們家。</div>' +
         '</div>';
 
       // 綁定列按鈕
@@ -173,6 +183,19 @@
           if (e2 || !d2 || !d2.ok) { setMsg((d2 && d2.error) || '新增失敗', false); return; }
           setMsg('已新增 ' + d2.display_name + '（PIN ' + d2.pin + '）');
           renderMembers(host, setMsg);
+        });
+      });
+      document.getElementById('paSetPin').addEventListener('click', function () {
+        var oldp = document.getElementById('paOldPin').value.trim();
+        var newp = document.getElementById('paNewPin').value.trim();
+        if (!/^\d{8}$/.test(oldp) || !/^\d{8}$/.test(newp)) { setMsg('舊、新 PIN 都要 8 位數字', false); return; }
+        var btn = this;
+        btn.disabled = true;
+        post('setParentPin', { family_id: FAMILY_ID, old_pin: oldp, new_pin: newp }, function (e2, d2) {
+          btn.disabled = false;
+          if (e2 || !d2 || !d2.ok) { setMsg((d2 && d2.error) || '更改失敗', false); return; }
+          setMsg('家長 PIN 已更新，下次登入請用新 PIN');
+          try { localStorage.removeItem('dsh_parent_sess'); } catch (e) {}
         });
       });
     });
@@ -395,6 +418,7 @@
       '  border:1px solid rgba(255,255,255,.15);background:rgba(15,23,42,.8);color:#e2e8f0;min-width:120px}',
       '.paInput.short{min-width:0;width:96px}',
       '.paNote{margin-top:12px;font-size:12.5px;color:#64748b;line-height:1.7}',
+      '.paHint{margin-top:6px;font-size:12px;color:#64748b;line-height:1.6}',
       '.paEmpty{font-size:13.5px;color:#64748b;padding:8px 0}',
       '.paLoading{font-size:13.5px;color:#64748b;padding:10px 0}',
       '.paErr{font-size:13.5px;color:#fca5a5;padding:10px 0}',
