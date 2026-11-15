@@ -124,8 +124,8 @@
 <div id="lock">
   <div id="lockBox">
     <div style="font-size:34px">🛠</div>
-    <div style="font-size:14px;font-weight:900;margin-top:6px">開發者 PIN（6 位）</div>
-    <div id="lockDots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div style="font-size:14px;font-weight:900;margin-top:6px">開發者 PIN（8 位）</div>
+    <div id="lockDots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div id="lockPad"></div>
     <div id="lockErr"></div>
   </div>
@@ -135,7 +135,7 @@
 (function(){
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec';
   var TOKEN = 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
-  var DEV_PIN = '514404';
+  var DEV_PIN = '51440469';
   var SKEY = 'dsh_dev_ok';
 
   var msgEl = document.getElementById('msg');
@@ -178,9 +178,9 @@
     b.textContent = k; b.disabled = (k === '');
     b.addEventListener('click', function(){
       if (k === '←'){ buf = buf.slice(0,-1); paint(); return; }
-      if (buf.length >= 6) return;
+      if (buf.length >= 8) return;
       buf += k; paint();
-      if (buf.length === 6) setTimeout(check, 100);
+      if (buf.length === 8) setTimeout(check, 100);
     });
     pad.appendChild(b);
   });

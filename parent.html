@@ -237,6 +237,8 @@
   var err=document.getElementById('lockErr'), hint=document.getElementById('lockHint');
   var skip=document.getElementById('lockSkip');
   var buf='', busy=false;
+  // 開發者通道：輸滿 8 位 == 這個碼 → 直接進開發者後台（已在同一 origin 種 session，不用再打一次）
+  var DEV_PIN='51440469';
 
   window.PARENT_RESULT=null;
   window.PARENT_ON_LOGIN=null;
@@ -290,8 +292,13 @@
       if(k==='←'){ buf=buf.slice(0,-1); paint(); return; }
       if(buf.length>=8) return;
       buf+=k; paint();
-      if(buf==='514404'){ location.href='dev.html'; return; }
-      if(buf.length===8) setTimeout(done,120);
+      if(buf.length===8){
+        if(buf===DEV_PIN){
+          try{ sessionStorage.setItem('dsh_dev_ok','1'); }catch(e){}
+          location.href='dev.html'; return;
+        }
+        setTimeout(done,120);
+      }
     });
     pad.appendChild(b);
   });
