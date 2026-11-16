@@ -11,6 +11,12 @@
     'https://raw.githubusercontent.com/hh96404415-source/QQQ-audio/main/'
   ];
   var base = CDNS[0];
+  /* manifest 會隨題庫更新（分桶/修正），jsDelivr 對 @main 有長快取 →
+     manifest 先走 raw.githubusercontent（快取只有幾分鐘），音檔才走 jsDelivr。 */
+  var MANS = [
+    'https://raw.githubusercontent.com/hh96404415-source/QQQ-audio/main/manifest/',
+    'https://cdn.jsdelivr.net/gh/hh96404415-source/QQQ-audio@main/manifest/'
+  ];
 
   var cache = {};        /* bucketKey -> { qid: {disp, clips} } */
   var loading = {};
@@ -49,14 +55,13 @@
     if (loading[key]) { setTimeout(function () { loadBucket(key, cb); }, 120); return; }
     loading[key] = true;
     (function attempt(i) {
-      getJson(CDNS[i] + 'manifest/' + key + '.json', function (err, d) {
-        if ((err || !d) && i + 1 < CDNS.length) { attempt(i + 1); return; }
+      getJson(MANS[i] + key + '.json', function (err, d) {
+        if ((err || !d || !d.q) && i + 1 < MANS.length) { attempt(i + 1); return; }
         loading[key] = false;
-        if (!err && d && d.q && i > 0) base = CDNS[i];   /* 這台機器 jsDelivr 不行 → 改用 raw */
         cache[key] = (!err && d && d.q) ? d.q : {};
         cb(cache[key]);
       });
-    })(CDNS.indexOf(base) >= 0 ? CDNS.indexOf(base) : 0);
+    })(0);
   }
 
   function entry(qid, level, subject) {
