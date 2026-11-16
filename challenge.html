@@ -161,6 +161,19 @@
     box-shadow:0 0 10px rgba(251,191,36,.75)}
   #qPips.boss i{border-color:#f87171}
   #qPips.boss i.on{background:#f87171;border-color:#fca5a5;box-shadow:0 0 10px rgba(248,113,113,.8)}
+  #qRow{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}
+  #qRow #qText{margin-bottom:0}
+  #qSay{flex:0 0 auto;width:42px;height:42px;border-radius:13px;border:1.5px solid rgba(148,163,184,.5);
+    background:rgba(148,163,184,.16);color:#e2e8f0;font-size:20px;line-height:1;cursor:pointer;
+    display:none;transition:transform .12s, background .15s, border-color .15s}
+  #qSay.on{display:block}
+  #qSay:active{transform:scale(.92)}
+  #qSay.playing{background:rgba(251,191,36,.28);border-color:rgba(251,191,36,.8);box-shadow:0 0 14px rgba(251,191,36,.45)}
+  #qText span{transition:color .08s}
+  #qText span.on{color:#fde047;text-shadow:0 0 12px rgba(253,224,71,.75)}
+  #qText span.done{color:#94a3b8}
+  .opt.qsaying{background:rgba(251,191,36,.22)!important;border-color:rgba(251,191,36,.85)!important;color:#fde68a!important;
+    box-shadow:0 0 0 2px rgba(251,191,36,.35) inset}
   #qText{font-size:26px;font-weight:900;color:#f8fafc;text-align:center;margin-bottom:10px}
   #qText.long{font-size:19px;line-height:1.6;max-width:580px;letter-spacing:.01em}
   #qText.xlong{font-size:16.5px;line-height:1.65;max-width:600px}
@@ -413,7 +426,10 @@
           <button id="unitBtn">一年級 · 10 以內加法 ▾</button>
           <div id="qMeta">第 1 題</div>
           <div id="qPips"><i></i><i></i><i></i></div>
-          <div id="qText">3 + 5 = ?</div>
+          <div id="qRow">
+            <div id="qText">3 + 5 = ?</div>
+            <button id="qSay" title="讀一次題目" aria-label="朗讀題目">🔊</button>
+          </div>
           <div id="options">
             <button class="opt">6</button>
             <button class="opt">7</button>
@@ -548,6 +564,7 @@
 <script src="player.js"></script>
 <script src="time.js"></script>
 <script src="qb.js"></script>
+<script src="qa-audio.js"></script>
 <script>
   /* 手寫板：先做基本 canvas 繪圖（自由畫），之後再研究算式格 */
   (function () {
@@ -671,6 +688,8 @@
     }
 
     var qText = document.getElementById('qText');
+    var qSay = document.getElementById('qSay');
+    if (qSay) qSay.onclick = function () { if (window.QAudio) QAudio.play(); };
     var qMeta = document.getElementById('qMeta');
     var qPipsEl = document.getElementById('qPips');
     var qaStateEl = document.getElementById('qaState');
@@ -2067,6 +2086,7 @@
     function paintQ() {
       var isHanzi = !!(q && q.type === 'hanzi');
       qText.onclick = null;
+      if (window.QAudio) { QAudio.stop(); QAudio.unmount(); }
       if (isHanzi) {
         optionsEl.style.display = 'none';
         qText.className = '';
@@ -2094,6 +2114,16 @@
         fb.textContent = '答對出招 · 答錯擋一擋';
       }
       if (qMeta) qMeta.textContent = '第 ' + qNum + ' 題' + (isHanzi ? ' · 寫字' : '') + (q && q.type === 'remote' ? ' · 題庫' : '') + (streak ? ' · 連對 ' + streak : '');
+      /* 題目語音：只有題庫題有預錄音檔（本地生成題沒有），沒有就收起朗讀鈕 */
+      if (window.QAudio) {
+        if (isHanzi && q && q.ch) {
+          QAudio.mount({ qid: q.ch, level: 1, subject: 'Hanzi', plain: true, qEl: qText, opts: [], btn: qSay });
+        } else if (q && q.type === 'remote' && q.remoteId) {
+          QAudio.mount({ qid: q.remoteId, level: q.level, subject: q.subject, qEl: qText, opts: opts, btn: qSay });
+        } else {
+          QAudio.unmount();
+        }
+      }
       qaT0 = Date.now();
       qT0 = Date.now();
     }
