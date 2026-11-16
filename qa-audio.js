@@ -11,11 +11,11 @@
     'https://raw.githubusercontent.com/hh96404415-source/QQQ-audio/main/'
   ];
   var base = CDNS[0];
-  /* manifest 會隨題庫更新（分桶/修正），jsDelivr 對 @main 有長快取 →
-     manifest 先走 raw.githubusercontent（快取只有幾分鐘），音檔才走 jsDelivr。 */
+  /* manifest 會隨題庫更新（分桶／修正）；CDN 對固定路徑有長快取，
+     所以用「版本化目錄」manifest/v2/ —— 改版時只改這裡的 v2→v3，快取自動失效。 */
   var MANS = [
-    'https://raw.githubusercontent.com/hh96404415-source/QQQ-audio/main/manifest/',
-    'https://cdn.jsdelivr.net/gh/hh96404415-source/QQQ-audio@main/manifest/'
+    'https://raw.githubusercontent.com/hh96404415-source/QQQ-audio/main/manifest/v2/',
+    'https://cdn.jsdelivr.net/gh/hh96404415-source/QQQ-audio@main/manifest/v2/'
   ];
 
   var cache = {};        /* bucketKey -> { qid: {disp, clips} } */
