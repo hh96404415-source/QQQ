@@ -76,15 +76,13 @@
   }
 
   /* 把題目文字改成 span（用伺服器切好的 disp，索引才對得上時間碼） */
-  function buildSpans(e) {
+  /* disp 的尾部會接上「選項」的 token（英文題才有），長度＝選項數；
+     其他科目沒有接，所以 optStart = disp.length */
+  function buildSpans(e, optCount, subject) {
     var disp = e.disp || [];
     var optStart = disp.length;
-    for (var i = 0; i < e.clips.length; i++) {
-      if (e.clips[i].lang === 'en' && e.clips[i].marks && e.clips[i].marks.length) {
-        var m = e.clips[i].marks, mn = disp.length;
-        for (var k = 0; k < m.length; k++) if (m[k][2] < mn) mn = m[k][2];
-        optStart = mn;
-      }
+    if (String(subject) === 'English' && optCount > 0) {
+      optStart = Math.max(0, disp.length - optCount);
     }
     return { disp: disp, optStart: optStart };
   }
@@ -162,7 +160,7 @@
         if (o.btn) { o.btn.style.display = ''; o.btn.classList.add('on'); }
         return;
       }
-      var info = buildSpans(e);
+      var info = buildSpans(e, (o.opts || []).length, o.subject);
       var html = '';
       for (var i = 0; i < info.disp.length; i++) {
         if (i >= info.optStart) break;
