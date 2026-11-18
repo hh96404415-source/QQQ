@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: 靜態檢查（語法／資源／守門／音檔覆蓋）
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: JS 語法檢查（每支共享 js）
+        run: |
+          set -e
+          n=0
+          for f in *.js; do
+            node --check "$f"
+            n=$((n+1))
+          done
+          echo "OK: $n 支 js"
+
+      - name: HTML 引用的本機資源都存在
+        run: python3 .github/scripts/check_assets.py
+
+      - name: 回歸守門（不該出現／必須存在）
+        run: python3 .github/scripts/check_guards.py
+
+      - name: 音檔覆蓋率（題庫 ↔ manifest）
+        run: python3 .github/scripts/audio_coverage.py
+
+  smoke:
+    name: 線上煙霧測試（Pages＋GAS）
+    needs: static
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 等 Pages 生效並驗證
+        run: python3 .github/scripts/smoke.py
