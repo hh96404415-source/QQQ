@@ -23,6 +23,11 @@
   /* 前景草坡：底部一條模糊深綠，製造前後層次 */
   #farmArea::after{content:'';position:absolute;left:0;right:0;bottom:0;height:13%;pointer-events:none;z-index:5;
     background:linear-gradient(0deg, rgba(14,38,16,.62) 0%, rgba(16,44,18,.28) 55%, rgba(20,50,20,0) 100%)}
+  /* 時段色調：早／黃昏／夜，蓋一層漸層＋淡淡光暈，讓同一張桌布一天有三種表情 */
+  #skyTint{position:absolute;inset:0;pointer-events:none;z-index:0;mix-blend-mode:multiply;
+    transition:opacity 1.6s ease;opacity:0}
+  #skyGlow{position:absolute;inset:0;pointer-events:none;z-index:0;mix-blend-mode:screen;
+    transition:opacity 1.6s ease;opacity:0}
   .cloud{position:absolute;background:#fff;border-radius:50%;opacity:.9}
   .tree{position:absolute;font-size:clamp(36px,7vmin,60px);filter:drop-shadow(0 4px 2px rgba(0,0,0,.15));pointer-events:none}
   .pond{position:absolute;border-radius:50%;background:radial-gradient(#7dd3fc,#38bdf8);opacity:.8;pointer-events:none}
@@ -35,7 +40,7 @@
     background:radial-gradient(circle,#fef9c3 0%,#fde047 45%,transparent 72%);
     box-shadow:0 0 12px 4px rgba(253,224,71,.5);animation:firefly 6s ease-in-out infinite;opacity:.2}
   @keyframes firefly{0%,100%{opacity:.12;transform:translate(0,0)}50%{opacity:.85;transform:translate(8px,-14px)}}
-  .pet{position:absolute;width:clamp(84px,16vmin,132px);height:clamp(84px,16vmin,132px);
+  .pet{position:absolute;width:clamp(96px,18vmin,160px);height:clamp(96px,18vmin,160px);
     cursor:pointer;transition:filter .2s;will-change:transform,left,top;transform-origin:center bottom}
   .pet::before{content:'';position:absolute;left:50%;bottom:-3px;transform:translateX(-50%);
     width:64%;height:12px;border-radius:50%;background:rgba(0,0,0,.25);filter:blur(3px);z-index:0}
@@ -56,6 +61,14 @@
   /* 蛋：還沒孵出來，會輕輕左右搖晃（像要破殼一樣） */
   .pet.egg img{animation:eggWobble 2.6s ease-in-out infinite}
   @keyframes eggWobble{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
+  /* 進化倒數：常駐在寵物頭上的小進度 chip（差幾顆星就進化，製造「差一點」的懸念） */
+  .pet .evolchip{position:absolute;left:50%;top:-22px;transform:translateX(-50%);z-index:8;
+    font-size:11px;font-weight:900;color:#7c2d12;background:linear-gradient(180deg,#fef3c7,#fde68a);
+    padding:2px 8px;border-radius:999px;border:1px solid rgba(146,64,14,.4);white-space:nowrap;
+    box-shadow:0 3px 8px rgba(0,0,0,.22);pointer-events:none}
+  .pet .evolchip.ready{background:linear-gradient(180deg,#fde047,#f59e0b);color:#3b1d03;
+    animation:evolPulse 1s ease-in-out infinite}
+  @keyframes evolPulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.12)}}
   .pet .bubble{position:absolute;top:-6px;left:50%;transform:translate(-50%,-100%) scale(.86);
     font-size:15px;line-height:1.45;font-weight:800;color:#1e293b;background:#fff;
     padding:7px 12px;border-radius:14px;max-width:200px;width:max-content;text-align:center;
@@ -158,6 +171,11 @@
     border:2px dashed rgba(255,236,170,.55);
     background:radial-gradient(circle at 50% 36%,rgba(150,113,55,.5),rgba(104,130,54,.36) 68%,rgba(56,88,30,.18));
     box-shadow:0 7px 16px rgba(0,0,0,.22),inset 0 1px 6px rgba(255,255,214,.22)}
+  /* 空地：一朵小花＋小木牌，讓「還沒蓋」也好看、也暗示「點它就能建」 */
+  .fac.empty::before{content:'🌼';position:absolute;left:52%;top:-8px;font-size:15px;
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.2));transform:translateX(-50%) rotate(-8deg);pointer-events:none}
+  .fac.empty .fico::after{content:'🪧';position:absolute;left:50%;top:58%;font-size:14px;transform:translateX(-50%);
+    opacity:.85;pointer-events:none}
   .fac.pop{animation:facPop .5s ease-out}
   @keyframes facPop{0%{transform:translate(-50%,-100%) scale(1)}40%{transform:translate(-50%,-100%) scale(1.28)}100%{transform:translate(-50%,-100%) scale(1)}}
 
@@ -877,6 +895,30 @@
     /* 背景圖已有云/樹/花/草地，不再疊 emoji 貼圖；只留底部柵欄 */
     var fence=document.createElement('div'); fence.className='fence';
     farmArea.appendChild(fence);
+    /* 時段色調層：早→黃昏→夜，同一張桌布一天三種表情 */
+    var tint=document.createElement('div'); tint.id='skyTint'; farmArea.appendChild(tint);
+    var glow=document.createElement('div'); glow.id='skyGlow'; farmArea.appendChild(glow);
+    function paintSky(){
+      var h = new Date().getHours();
+      var t=0, g=0;               /* tint 疊暗、glow 疊亮 */
+      if (h>=5 && h<9){           /* 清晨：微暖光 */
+        tint = .10; g = .10;
+      } else if (h>=9 && h<16){   /* 白天：原色 */
+        tint = 0; g = 0;
+      } else if (h>=16 && h<19){  /* 黃昏：橘金 */
+        tint = .16; g = .12;
+      } else {                    /* 夜晚：藍暗，暖光火堆 */
+        tint = .42; g = .06;
+      }
+      tint.style.opacity = String(tint);
+      tint.style.background = 'linear-gradient(180deg, rgba(30,41,80,'+(h>=16&&h<19?'.25':'.55')+') 0%, rgba(20,20,50,'+(h>=16&&h<19?'.1':'.5')+') 60%, rgba(10,10,30,'+(h>=16&&h<19?'.12':'.55')+') 100%)';
+      glow.style.opacity = String(g);
+      glow.style.background = (h>=16&&h<19)
+        ? 'radial-gradient(ellipse 90% 70% at 50% 90%, rgba(255,150,60,.35), transparent 60%)'
+        : 'radial-gradient(ellipse 90% 70% at 50% 88%, rgba(120,160,255,.18), transparent 60%)';
+    }
+    paintSky();
+    setInterval(paintSky, 60000);
   })();
 
   /* 寵物 */
@@ -888,6 +930,8 @@
     el.appendChild(img);
     var bubble = document.createElement('div'); bubble.className='bubble';
     el.appendChild(bubble);
+    var chip = document.createElement('div'); chip.className='evolchip';
+    el.appendChild(chip);
     var p = {
       id:i, name:NAMES[i], species: i % SPECIES.length, stage:0, growth:0,
       won:{},                       // key = stage，該階段是否贏過
@@ -895,7 +939,7 @@
       inFarm:false, owned:false,
       x:0, y:0, tx:0, ty:0, wait:0, face:1, nextBlink:0, idleTalk: 12000 + Math.random()*15000,
       hue: i*54,
-      el:el, img:img, bubble:bubble
+      el:el, img:img, bubble:bubble, chip:chip
     };
     img.src = formImg(p, 0);
     el.addEventListener('click', function(){
@@ -959,7 +1003,7 @@
     if (!facLayer) return;
     facLayer.innerHTML = '';
     facEls = {};
-    FAC.forEach(function (f) {
+    FAC.forEach(function (f, idx) {
       var lv = facState[f.id];
       var d = document.createElement('div');
       d.className = 'fac' + (lv ? '' : ' empty');
@@ -994,6 +1038,13 @@
       });
       facLayer.appendChild(d);
       facEls[f.id] = d;
+      /* 建築進場：已蓋好的按順序「長」出來（load 時也播一次） */
+      if (lv) {
+        (function (dd, ms) {
+          setTimeout(function () { dd.classList.add('pop'); }, ms);
+          setTimeout(function () { dd.classList.remove('pop'); }, ms + 560);
+        })(d, idx * 90);
+      }
     });
   }
   function openFac(id) {
@@ -1950,6 +2001,30 @@
     p.el.style.top = p.y+'px';
   }
 
+  /* 進化倒數 chip：頭上常駐「再 X 顆星進化」，製造差一點的懸念 */
+  function paintEvolChip(p){
+    if (!p.chip) return;
+    var f = formOf(p);
+    if (!p.owned || p.stage >= 4){
+      p.chip.style.display = 'none';
+      return;
+    }
+    var next = f.next;
+    if (next === Infinity){
+      p.chip.style.display = 'none';
+      return;
+    }
+    var remain = Math.max(0, next - p.growth);
+    p.chip.style.display = '';
+    if (remain <= 0){
+      p.chip.textContent = p.won[p.stage] ? '✨ 進化！' : '⚔️ 去贏一局';
+      p.chip.classList.add('ready');
+    } else {
+      p.chip.textContent = '⭐ 再 ' + remain + ' 進化';
+      p.chip.classList.remove('ready');
+    }
+  }
+
   function updateVisual(p){
     var f = formOf(p);
     p.img.src = f.img;
@@ -1960,6 +2035,7 @@
     p.el.classList.toggle('egg', p.stage===0);
     var excited = (f.next!==Infinity) && (p.growth >= f.next*0.8) && p.state!=='sad';
     p.el.classList.toggle('excited', excited);
+    paintEvolChip(p);
     p.el.style.display = p.inFarm ? '' : 'none';
   }
 

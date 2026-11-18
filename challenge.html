@@ -175,6 +175,8 @@
   .opt.qsaying{background:rgba(251,191,36,.22)!important;border-color:rgba(251,191,36,.85)!important;color:#fde68a!important;
     box-shadow:0 0 0 2px rgba(251,191,36,.35) inset}
   #qText{font-size:26px;font-weight:900;color:#f8fafc;text-align:center;margin-bottom:10px}
+  #qText.lucky{color:#fbbf24;text-shadow:0 0 16px rgba(251,191,36,.55)}
+  #quizCard.luckyGlow{border-color:rgba(251,191,36,.75);box-shadow:0 0 22px rgba(251,191,36,.28)}
   #qText.long{font-size:19px;line-height:1.6;max-width:580px;letter-spacing:.01em}
   #qText.xlong{font-size:16.5px;line-height:1.65;max-width:600px}
   #options{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
@@ -736,6 +738,7 @@
     var q = null;
     var qNum = 0, streak = 0;
     var wrongCount = 0;               /* 這一題答錯幾次（≥2 次就沒獎勵，但可一直答到對） */
+    var lucky = false;                /* 這一題是不是幸運題（8% 機率，答對金幣 ×2） */
     /* ── 難度旋鈕（不顯示給小孩）── */
     var RAMP_KEY = 'dsh_ramp';
     var ramp = 0, badRounds = 0;
@@ -2110,6 +2113,8 @@
       if (isHanzi) {
         optionsEl.style.display = 'none';
         qText.className = '';
+        lucky = false;   /* 寫字題不算幸運題 */
+        var _qc0 = document.getElementById('quizCard'); if (_qc0) _qc0.classList.remove('luckyGlow');
         qText.textContent = '請寫出「' + q.ch + '」';
         fb.textContent = '在右邊田字格照著灰線寫';
         showHanziWhenReady(q);
@@ -2137,9 +2142,12 @@
         else optionsEl.classList.remove('wide');
         optionsEl.style.gridTemplateColumns = 'repeat(' + (_wide ? 2 : Math.max(2, Math.min(opts.length, q.options.length))) + ',1fr)';
         hideHanzi();
-        fb.textContent = '答對出招 · 答錯擋一擋';
+        lucky = Math.random() < 0.08;   /* 幸運題：金幣 ×2，題目卡亮金邊 */
+        qText.classList.toggle('lucky', lucky);
+        var _qc = document.getElementById('quizCard'); if (_qc) _qc.classList.toggle('luckyGlow', lucky);
+        fb.textContent = lucky ? '🍀 幸運題！答對金幣 ×2' : '答對出招 · 答錯擋一擋';
       }
-      if (qMeta) qMeta.textContent = '第 ' + qNum + ' 題' + (isHanzi ? ' · 寫字' : '') + (q && q.type === 'remote' ? ' · 題庫' : '') + (streak ? ' · 連對 ' + streak : '');
+      if (qMeta) qMeta.textContent = '第 ' + qNum + ' 題' + (isHanzi ? ' · 寫字' : '') + (q && q.type === 'remote' ? ' · 題庫' : '') + (lucky ? ' · 🍀幸運' : '') + (streak ? ' · 連對 ' + streak : '');
       /* 題目語音：只有題庫題有預錄音檔（本地生成題沒有），沒有就收起朗讀鈕 */
       if (window.QAudio) {
         if (isHanzi && q && q.ch) {
@@ -3019,7 +3027,10 @@
       } else {
         fb.textContent = '✅ 答對了！出招！ +1 ⭐';
         addStar();
-        /* 暴擊：正常 +COINS_PER_Q；暴擊 ×2、會心 ×4，全加進 coinPending（本地顯示與 earnBatch 一起入帳）
+        /* 掉寶：15% 額外掉 1 顆星（星星走存檔，真的入帳） */
+        var loot = Math.random() < 0.15;
+        if (loot) addStar(1);
+        /* 暴擊：正常 +COINS_PER_Q；暴擊 ×2、會心 ×4，幸運題再 ×2，全加進 coinPending（本地顯示與 earnBatch 一起入帳）
            遠端題由 complete_set 入帳；本地題累積 3 題用 earnBatch 補一次，省 GAS 配額 */
         var roll = Math.random();
         var earn = COINS_PER_Q;
@@ -3027,11 +3038,16 @@
         var isCrit = !isEpic && roll < CRIT.epicChance + CRIT.chance;
         if (isEpic) earn = Math.round(COINS_PER_Q * CRIT.epicMult);
         else if (isCrit) earn = Math.round(COINS_PER_Q * CRIT.mult);
+        if (lucky) earn *= 2;
         coins += earn;
         stageCoins += earn;
-        if (isEpic) rewardPop('💥 會心一擊！ +' + earn + ' 金幣');
-        else if (isCrit) rewardPop('⚡ 暴擊！ +' + earn + ' 金幣');
-        else rewardPop('+1⭐　+' + earn + ' 金幣');
+        var _pop;
+        if (isEpic) _pop = '💥 會心一擊！ +' + earn + ' 金幣';
+        else if (isCrit) _pop = '⚡ 暴擊！ +' + earn + ' 金幣';
+        else if (lucky) _pop = '🍀 幸運題 ×2！ +' + earn + ' 金幣';
+        else _pop = '+1⭐　+' + earn + ' 金幣';
+        if (loot) _pop += '  🎁掉寶 +1⭐';
+        rewardPop(_pop);
         if (!q || q.type !== 'remote') {
           coinPending += earn;
           if (coinPending >= COINS_PER_Q * 3) flushLocalCoins();
