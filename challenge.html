@@ -263,6 +263,8 @@
   .dexCell .nm{font-size:11px;color:#94a3b8}
   .dexCell.got .nm{color:#fbbf24;font-weight:800}
   .dexCell .st{font-size:10px;color:#64748b}
+  .dexCell.shiny{border-color:rgba(251,191,36,.7);box-shadow:0 0 12px rgba(251,191,36,.35)}
+  .dexCell.shiny .st{color:#fbbf24;font-weight:800}
   #dexClose,#unitClose{float:right;appearance:none;border:none;background:#334155;color:#e2e8f0;border-radius:8px;
     padding:4px 10px;cursor:pointer;font-family:inherit}
 
@@ -488,7 +490,7 @@
       <div class="scTitle">第 <span id="scNum">1</span> 關 通過！</div>
       <div class="scStars">⭐ ⭐ ⭐</div>
       <div class="scEarn" id="scEarn">本關 +0 金幣</div>
-      <div class="scSub">怪物會越來越強 · 繼續加油</div>
+      <div class="scSub" id="scTease">怪物會越來越強 · 繼續加油</div>
       <button type="button" class="scNext" id="scNext">繼續冒險 ▶</button>
     </div>
   </div>
@@ -677,9 +679,12 @@
     var dex = {};
     try { dex = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { dex = {}; }
     function got(k, s) { return !!(dex[k] && dex[k][s - 1]); }
-    function mark(k, s) {
-      if (!dex[k]) dex[k] = [false, false];
-      dex[k][s - 1] = true;
+    function isShiny(k, s) { return !!(dex[k] && dex[k][s - 1] === 2); }
+    function mark(k, s, shiny) {
+      if (!dex[k]) dex[k] = [0, 0];
+      var v = dex[k][s - 1] || 0;
+      if (shiny) dex[k][s - 1] = 2;
+      else if (v !== 2) dex[k][s - 1] = 1;
       try { localStorage.setItem(KEY, JSON.stringify(dex)); } catch (e) {}
     }
 
@@ -2388,6 +2393,12 @@
       var earnEl = document.getElementById('scEarn');
       if (n) n.textContent = stage - 1;
       if (earnEl) earnEl.textContent = '本關 +' + stageCoins + ' 金幣';
+      /* 尾題懸念：Boss 倒數，讓孩子想「再一關就到 Boss」而不肯停 */
+      var teaseEl = document.getElementById('scTease');
+      var toBoss = 3 - (done % 3);
+      if (teaseEl) teaseEl.textContent = (toBoss === 1)
+        ? '👑 下一關就是 BOSS！撐住！'
+        : ('👑 還 ' + toBoss + ' 關就到 BOSS！');
       if (el) {
         el.classList.add('on');
         /* 結算卡可以自己關：孩子等不及 3.4 秒就點「繼續冒險」 */
@@ -2552,23 +2563,32 @@
       /* 上一隻被打死的動畫有 fill:forwards，不取消的話新怪會停在透明 */
       if (monImg.getAnimations) monImg.getAnimations().forEach(function (a) { a.cancel(); });
       monImg.src = 'monsters/' + m.k + '/0' + s + '.webp';
-      /* 異色＝稀有的驚喜，只有首領才有機會，且只輕輕偏色（不要把角色染成別的東西） */
-      var hue = (isBoss && Math.random() < 0.45) ? HUES[Math.floor(Math.random() * HUES.length)] : 0;
-      monImg.style.filter = hue ? 'hue-rotate(' + hue + 'deg) saturate(1.18) brightness(1.04)' : '';
+      /* 異色＝1% 的稀有驚喜（任何怪都可能有），打贏記進圖鑑；首領另有 45% 輕微偏色當視覺變化 */
+      var isShiny = Math.random() < 0.01;
+      var hue = 0;
+      if (!isShiny && isBoss && Math.random() < 0.45) hue = HUES[Math.floor(Math.random() * HUES.length)];
+      monImg.style.filter = isShiny
+        ? 'saturate(1.3) brightness(1.12) drop-shadow(0 0 16px rgba(251,191,36,.85))'
+        : (hue ? 'hue-rotate(' + hue + 'deg) saturate(1.18) brightness(1.04)' : '');
       monImg.style.display = '';
       monImg.classList.toggle('boss', s === 2);
-      monTag.textContent = (s === 2 ? '👑 BOSS · ' : '') + m.n[s - 1] + (hue ? '（異色）' : '');
+      monTag.textContent = (s === 2 ? '👑 BOSS · ' : '') + m.n[s - 1] + (isShiny ? ' ✨異色' : '');
+      cur.shiny = isShiny;
       hpPct = 100;
       hp.style.width = '100%';
       setGhost(100);
       /* 怪物登場：從右邊跳進來 */
       monImg.classList.remove('enter'); void monImg.offsetWidth; monImg.classList.add('enter');
       setTimeout(function () { monImg.classList.remove('enter'); }, 700);
-      /* 首領登場的儀式：暗一下、鼓聲、橫幅 */
-      if (isBoss && window.Juice) {
+      /* 首領／異色登場的儀式：暗一下、鼓聲、橫幅 */
+      if (isShiny && window.Juice) {
+        window.Juice.fx('boss');
+        window.Juice.flash('rgba(251,191,36,.55)', 180);
+        window.Juice.banner('✨ 異色怪物 出現！', { ms: 1800, target: arenaEl });
+      } else if (isBoss && window.Juice) {
         window.Juice.fx('boss');
         window.Juice.flash('rgba(120,20,10,.55)', 140);
-        window.Juice.banner((hue ? '👑 異色首領' : '👑 BOSS') + ' 出現！', { ms: 1500, target: arenaEl });
+        window.Juice.banner('👑 BOSS 出現！', { ms: 1500, target: arenaEl });
       } else if (window.Juice && battles > 1) {
         window.Juice.fx('tap');
       }
@@ -2586,6 +2606,10 @@
           img.alt = m.n[s - 1];
           var nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = m.n[s - 1];
           var st = document.createElement('div'); st.className = 'st'; st.textContent = (s === 2 ? '首領' : '幼體');
+          if (isShiny(m.k, s)) {
+            d.classList.add('shiny');
+            st.textContent += ' · ✨異色';
+          }
           d.appendChild(img); d.appendChild(nm); d.appendChild(st);
           g.appendChild(d);
         });
@@ -3030,7 +3054,13 @@
         /* 掉寶：15% 額外掉 1 顆星（星星走存檔，真的入帳） */
         var loot = Math.random() < 0.15;
         if (loot) addStar(1);
-        /* 暴擊：正常 +COINS_PER_Q；暴擊 ×2、會心 ×4，幸運題再 ×2，全加進 coinPending（本地顯示與 earnBatch 一起入帳）
+        /* 每日首戰：當天第一次答對，金幣 ×2（跨日自動重來） */
+        var _d = new Date();
+        var _today = _d.getFullYear() + '-' + ('0' + (_d.getMonth() + 1)).slice(-2) + '-' + ('0' + _d.getDate()).slice(-2);
+        var isFirstWin = false;
+        try { isFirstWin = localStorage.getItem('dsh_first_win') !== _today; } catch (e) {}
+        if (isFirstWin) { try { localStorage.setItem('dsh_first_win', _today); } catch (e) {} }
+        /* 暴擊：正常 +COINS_PER_Q；暴擊 ×2、會心 ×4，幸運題／每日首戰再各 ×2，全加進 coinPending（本地顯示與 earnBatch 一起入帳）
            遠端題由 complete_set 入帳；本地題累積 3 題用 earnBatch 補一次，省 GAS 配額 */
         var roll = Math.random();
         var earn = COINS_PER_Q;
@@ -3039,6 +3069,7 @@
         if (isEpic) earn = Math.round(COINS_PER_Q * CRIT.epicMult);
         else if (isCrit) earn = Math.round(COINS_PER_Q * CRIT.mult);
         if (lucky) earn *= 2;
+        if (isFirstWin) earn *= 2;
         coins += earn;
         stageCoins += earn;
         var _pop;
@@ -3046,6 +3077,7 @@
         else if (isCrit) _pop = '⚡ 暴擊！ +' + earn + ' 金幣';
         else if (lucky) _pop = '🍀 幸運題 ×2！ +' + earn + ' 金幣';
         else _pop = '+1⭐　+' + earn + ' 金幣';
+        if (isFirstWin) _pop = '🌅 今日首戰 ×2！ ' + _pop;
         if (loot) _pop += '  🎁掉寶 +1⭐';
         rewardPop(_pop);
         if (!q || q.type !== 'remote') {
@@ -3074,7 +3106,7 @@
 
       if (hitsOnCur >= 3 && cur) {
         /* ===== 絕招收尾：躍起凌空下劈 + 9999 爆擊 ===== */
-        mark(cur.m.k, cur.s);
+        mark(cur.m.k, cur.s, cur.shiny);
         recordWin();
         SESSION.w++;
         flushLocalCoins();          /* 打贏先結清本地題的金幣 */
