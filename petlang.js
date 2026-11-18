@@ -104,7 +104,7 @@
   };
 
   /* 這幾種情境會叫名字（太常叫會膩） */
-  var NAME_KEYS = { greet: 1, night: 1, win: 1, evolve: 1, hatch: 1 };
+  var NAME_KEYS = { greet: 1, night: 1, win: 1, evolve: 1, hatch: 1, correct: 1, combo: 1 };
   var EMOJI = {
     greet: '👋', hungry: '🍖', bored: '🎾', sad: '😢', happy: '😊', fed: '🍚',
     correct: '✨', wrong: '🤍', combo: '🔥', win: '🏆', lose: '💪', draw: '🤝',

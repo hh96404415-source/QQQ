@@ -44,6 +44,9 @@
   .pet img.hop{animation:petHop .85s cubic-bezier(.25,1.5,.5,1)}
   .pet.excited{filter:drop-shadow(0 0 10px #fff6a0) brightness(1.08);animation:pulse .9s infinite}
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  /* 眨眼：偶爾快速眨一下，看起來是活的（暫時蓋掉呼吸動畫 0.17s 後恢復） */
+  .pet img.blink{animation:petBlink .17s ease-in-out}
+  @keyframes petBlink{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.88)}}
   .pet .bubble{position:absolute;top:-6px;left:50%;transform:translate(-50%,-100%) scale(.86);
     font-size:15px;line-height:1.45;font-weight:800;color:#1e293b;background:#fff;
     padding:7px 12px;border-radius:14px;max-width:200px;width:max-content;text-align:center;
@@ -877,7 +880,7 @@
       won:{},                       // key = stage，該階段是否贏過
       state:'idle', needTimer: 4000+Math.random()*8000, needAge:0,
       inFarm:false, owned:false,
-      x:0, y:0, tx:0, ty:0, wait:0,
+      x:0, y:0, tx:0, ty:0, wait:0, face:1, nextBlink:0,
       hue: i*54,
       el:el, img:img, bubble:bubble
     };
@@ -2082,6 +2085,15 @@
       var p=pets[i];
       if (!p.inFarm) continue;
 
+      /* 眨眼：每 3–6 秒快速眨一下，看起來是活的 */
+      if (!p.nextBlink || now >= p.nextBlink){
+        p.nextBlink = now + 3000 + Math.random()*3000;
+        if (p.img && !p.img.classList.contains('blink')){
+          p.img.classList.add('blink');
+          (function(im){ setTimeout(function(){ im.classList.remove('blink'); }, 170); })(p.img);
+        }
+      }
+
       if (p.state==='idle'){
         p.needTimer -= dt;
         if (p.needTimer<=0){
@@ -2121,17 +2133,26 @@
         var speed=0.06*dt;
         p.x += dx/dist*Math.min(speed,dist);
         p.y += dy/dist*Math.min(speed,dist);
+        /* 記住朝向：往左走就水平翻轉 */
+        p.face = (dx < 0) ? -1 : 1;
       }
       p.el.style.left = p.x+'px';
       p.el.style.top = p.y+'px';
       p.el.style.zIndex = Math.round(p.y*10);
       var yPct = p.y / fh * 100;
       var t = Math.max(0, Math.min(1, (yPct - 68) / 20));
-      p.el.style.transform = 'scale(' + ((0.82 + 0.18 * t) * (STAGE_GROW[p.stage] || 1)).toFixed(3) + ')';
+      var sc = (0.82 + 0.18 * t) * (STAGE_GROW[p.stage] || 1);
+      p.el.style.transform = 'scale(' + sc.toFixed(3) + ')' + ((p.face < 0) ? ' scaleX(-1)' : '');
       var hueStr = (p.stage === 0 && p.hue) ? 'hue-rotate('+p.hue+'deg) ' : '';
+      /* 情緒姿勢：難過變灰、肚子餓褪色、無聊微微偏色（每幀套，避免被景深濾鏡蓋掉） */
+      var moodStr = '';
+      if (p.state === 'sad') moodStr = ' grayscale(.85) brightness(.8)';
+      else if (p.state === 'hungry') moodStr = ' saturate(.78)';
+      else if (p.state === 'bored') moodStr = ' hue-rotate(-8deg)';
       p.img.style.filter = hueStr
         + 'saturate(' + (0.92 + 0.13 * t).toFixed(2) + ')'
         + ' brightness(' + (1.04 - 0.05 * t).toFixed(2) + ')'
+        + moodStr
         + ' drop-shadow(0 4px 4px rgba(0,0,0,.18))';
     }
     requestAnimationFrame(tick);
