@@ -735,6 +735,7 @@
     try { stage = Math.max(1, parseInt(localStorage.getItem(STAGE_KEY) || '1', 10) || 1); } catch (e) {}
     var q = null;
     var qNum = 0, streak = 0;
+    var wrongCount = 0;               /* 這一題答錯幾次（≥2 次就沒獎勵，但可一直答到對） */
     /* ── 難度旋鈕（不顯示給小孩）── */
     var RAMP_KEY = 'dsh_ramp';
     var ramp = 0, badRounds = 0;
@@ -1751,9 +1752,9 @@
     }
 
     /* 作答時記一筆；滿 3 題回傳，換星星／上網時間 */
-    function qaLogAnswer(q, correct, choice, ms) {
+    function qaLogAnswer(q, correct, choice, ms, tries) {
       if (!q || q.type !== 'remote' || !qaOn()) return;
-      qaLog.push({ q_id: q.remoteId, correct: !!correct, tries: 1, elapsed_ms: ms || 0, choice_path: choice || '' });
+      qaLog.push({ q_id: q.remoteId, correct: !!correct, tries: tries || 1, elapsed_ms: ms || 0, choice_path: choice || '' });
       if (qaLog.length < 3) return;
       var batch = qaLog.splice(0, 3);
       qaPost({ action: 'complete_set', user_id: qaCfg.uid, pin: qaCfg.pin || '', answers: batch }, function (err, d) {
@@ -2103,6 +2104,7 @@
     var zhSlot = 0;
     function paintQ() {
       var isHanzi = !!(q && q.type === 'hanzi');
+      wrongCount = 0;   /* 新題目重置答錯計數 */
       qText.onclick = null;
       if (window.QAudio) { QAudio.stop(); QAudio.unmount(); }
       if (isHanzi) {
@@ -3007,28 +3009,33 @@
     function attack(btn) {
       if (btn) btn.classList.add('correct');
       roundQ.push({ ok: true, ms: Date.now() - (qLogT0 || Date.now()) });
+      var noReward = wrongCount >= 2;   /* 答錯 2 次：答對也不給星星/金幣，但一樣出招打怪、不卡進度 */
       if (q && q.type === 'hanzi' && q.ch) hwMark(q.ch);
-      if (q && q.type === 'remote') qaLogAnswer(q, true, String(q.answer), Date.now() - qaT0);
+      if (q && q.type === 'remote') qaLogAnswer(q, true, String(q.answer), Date.now() - qaT0, wrongCount + 1);
       if (q && q.type === 'remote' && q.remoteId && window.QB) QB.markDone(q.remoteId);
       logAnswer(true);
-      fb.textContent = '✅ 答對了！出招！ +1 ⭐';
-      addStar();
-      /* 暴擊：正常 +COINS_PER_Q；暴擊 ×2、會心 ×4，全加進 coinPending（本地顯示與 earnBatch 一起入帳）
-         遠端題由 complete_set 入帳；本地題累積 3 題用 earnBatch 補一次，省 GAS 配額 */
-      var roll = Math.random();
-      var earn = COINS_PER_Q;
-      var isEpic = roll < CRIT.epicChance;
-      var isCrit = !isEpic && roll < CRIT.epicChance + CRIT.chance;
-      if (isEpic) earn = Math.round(COINS_PER_Q * CRIT.epicMult);
-      else if (isCrit) earn = Math.round(COINS_PER_Q * CRIT.mult);
-      coins += earn;
-      stageCoins += earn;
-      if (isEpic) rewardPop('💥 會心一擊！ +' + earn + ' 金幣');
-      else if (isCrit) rewardPop('⚡ 暴擊！ +' + earn + ' 金幣');
-      else rewardPop('+1⭐　+' + earn + ' 金幣');
-      if (!q || q.type !== 'remote') {
-        coinPending += earn;
-        if (coinPending >= COINS_PER_Q * 3) flushLocalCoins();
+      if (noReward) {
+        fb.textContent = '✅ 答對了！但答錯 2 次，這題沒有獎勵';
+      } else {
+        fb.textContent = '✅ 答對了！出招！ +1 ⭐';
+        addStar();
+        /* 暴擊：正常 +COINS_PER_Q；暴擊 ×2、會心 ×4，全加進 coinPending（本地顯示與 earnBatch 一起入帳）
+           遠端題由 complete_set 入帳；本地題累積 3 題用 earnBatch 補一次，省 GAS 配額 */
+        var roll = Math.random();
+        var earn = COINS_PER_Q;
+        var isEpic = roll < CRIT.epicChance;
+        var isCrit = !isEpic && roll < CRIT.epicChance + CRIT.chance;
+        if (isEpic) earn = Math.round(COINS_PER_Q * CRIT.epicMult);
+        else if (isCrit) earn = Math.round(COINS_PER_Q * CRIT.mult);
+        coins += earn;
+        stageCoins += earn;
+        if (isEpic) rewardPop('💥 會心一擊！ +' + earn + ' 金幣');
+        else if (isCrit) rewardPop('⚡ 暴擊！ +' + earn + ' 金幣');
+        else rewardPop('+1⭐　+' + earn + ' 金幣');
+        if (!q || q.type !== 'remote') {
+          coinPending += earn;
+          if (coinPending >= COINS_PER_Q * 3) flushLocalCoins();
+        }
       }
       paintScoreTime();
       streak++;
@@ -3102,6 +3109,7 @@
     /* 答錯 */
     function missed(btn) {
       if (btn) btn.classList.add('wrong');
+      wrongCount++;
       roundQ.push({ ok: false, ms: Date.now() - (qLogT0 || Date.now()) });
       logAnswer(false);
       if (q && q.type === 'remote') {
@@ -3114,11 +3122,12 @@
         window.Juice.flash('rgba(190,30,30,.16)', 110);
         window.Juice.fx('hit');
       }
+      /* 告訴正確答案＋要記住；答錯不扣血、不換題，孩子可以繼續點到答對為止 */
       for (var k = 0; k < q.options.length; k++) {
         if (q.options[k] === q.answer && opts[k]) opts[k].classList.add('reveal');
       }
-      fb.textContent = '❌ 答錯了，答案是 ' + q.answer;
-      /* 答錯不一定每題都講，講了也不能是責備 */
+      var noReward = wrongCount >= 2;
+      fb.textContent = '❌ 答案是 ' + q.answer + '，要記住喔！' + (noReward ? '（答錯 2 次了，這題沒獎勵）' : '再試一次');
       if (Math.random() < 0.55) petSay('wrong', { gap: 4000 });
       if (monImg && monImg.animate) {
         monsterRush();
@@ -3132,10 +3141,10 @@
       }
       var pt2 = arenaPoint(petImg);
       setTimeout(function () { burst(pt2.x, pt2.y, '#fca5a5', 8); }, 260);
+      /* 重新開放選項，讓孩子繼續答同一題（不扣血、不換題） */
       setTimeout(function () {
-        if (hpPct === 0) return;   /* 打贏了 → 交給 pick() 換怪 */
-        nextQ();
-      }, 1150);
+        opts.forEach(function (x) { x.disabled = false; });
+      }, 320);
     }
 
     try {
