@@ -47,6 +47,9 @@
   /* 眨眼：偶爾快速眨一下，看起來是活的（暫時蓋掉呼吸動畫 0.17s 後恢復） */
   .pet img.blink{animation:petBlink .17s ease-in-out}
   @keyframes petBlink{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.88)}}
+  /* 蛋：還沒孵出來，會輕輕左右搖晃（像要破殼一樣） */
+  .pet.egg img{animation:eggWobble 2.6s ease-in-out infinite}
+  @keyframes eggWobble{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
   .pet .bubble{position:absolute;top:-6px;left:50%;transform:translate(-50%,-100%) scale(.86);
     font-size:15px;line-height:1.45;font-weight:800;color:#1e293b;background:#fff;
     padding:7px 12px;border-radius:14px;max-width:200px;width:max-content;text-align:center;
@@ -324,6 +327,8 @@
     display:grid;place-items:center}
   #ceremony .cgImg{width:100%;height:100%;object-fit:contain;
     filter:drop-shadow(0 0 36px rgba(251,191,36,.9));transform:scale(.86)}
+  #ceremony .cgCrack{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    font-size:clamp(40px,9vmin,72px);pointer-events:none;opacity:0}
   #ceremony .cgRing{position:absolute;inset:-10%;border:3px solid rgba(251,191,36,.55);
     border-radius:50%;opacity:0;transform:scale(.55)}
   #ceremony .cgRing.r2{inset:-24%;border-color:rgba(147,197,253,.35)}
@@ -632,16 +637,16 @@
 (function(){
   'use strict';
   var SPECIES = [
-    {id:'fire_dragon',    name:'火龍',   names:['火苗蛋','火苗龍','火尾龍','焰牙龍','熾天龍']},
-    {id:'bamboo_panda',   name:'竹熊貓', names:['竹筍蛋','竹葉熊','竹棍熊','竹林熊','碧竹武聖']},
-    {id:'water_whale',    name:'水鯨',   names:['水滴蛋','泡泡鯨','浪花鯨','深海鯨','滄海鯨皇']},
-    {id:'thunder_cat',    name:'雷獸',   names:['電紋蛋','電光鼠','雷尾狐','紫電豹','雷霆獸王']},
-    {id:'star_unicorn',   name:'星空獸', names:['星塵蛋','星角獸','星翼獸','星輝龍','星河神獸']},
-    {id:'forest_deer',    name:'森鹿',   names:['嫩芽蛋','嫩芽鹿','綠葉鹿','花冠鹿','森羅鹿王']},
-    {id:'fire_lion',      name:'火獅',   names:['火紋蛋','火苗獅','火鬃獅','烈焰獅','焚天獅皇']},
-    {id:'sea_turtle',     name:'海龜',   names:['海泡蛋','海泡龜','珊瑚龜','礁岩龜','滄海龜神']},
-    {id:'pegasus',        name:'天馬',   names:['羽翼蛋','小翼馬','羽翼馬','天翔馬','聖光飛馬']},
-    {id:'galaxy_panther', name:'星豹',   names:['星斑蛋','星斑貓','星尾貓','星紋豹','星河豹王']}
+    {id:'fire_dragon',    name:'火龍',   glow:'#f97316', names:['火苗蛋','火苗龍','火尾龍','焰牙龍','熾天龍']},
+    {id:'bamboo_panda',   name:'竹熊貓', glow:'#84cc16', names:['竹筍蛋','竹葉熊','竹棍熊','竹林熊','碧竹武聖']},
+    {id:'water_whale',    name:'水鯨',   glow:'#38bdf8', names:['水滴蛋','泡泡鯨','浪花鯨','深海鯨','滄海鯨皇']},
+    {id:'thunder_cat',    name:'雷獸',   glow:'#a855f7', names:['電紋蛋','電光鼠','雷尾狐','紫電豹','雷霆獸王']},
+    {id:'star_unicorn',   name:'星空獸', glow:'#e879f9', names:['星塵蛋','星角獸','星翼獸','星輝龍','星河神獸']},
+    {id:'forest_deer',    name:'森鹿',   glow:'#22c55e', names:['嫩芽蛋','嫩芽鹿','綠葉鹿','花冠鹿','森羅鹿王']},
+    {id:'fire_lion',      name:'火獅',   glow:'#f59e0b', names:['火紋蛋','火苗獅','火鬃獅','烈焰獅','焚天獅皇']},
+    {id:'sea_turtle',     name:'海龜',   glow:'#14b8a6', names:['海泡蛋','海泡龜','珊瑚龜','礁岩龜','滄海龜神']},
+    {id:'pegasus',        name:'天馬',   glow:'#7dd3fc', names:['羽翼蛋','小翼馬','羽翼馬','天翔馬','聖光飛馬']},
+    {id:'galaxy_panther', name:'星豹',   glow:'#818cf8', names:['星斑蛋','星斑貓','星尾貓','星紋豹','星河豹王']}
   ];
   var STAGE_NAMES = ['蛋','幼獸','成獸','龍','金龍'];
   var FORMS = [
@@ -880,7 +885,7 @@
       won:{},                       // key = stage，該階段是否贏過
       state:'idle', needTimer: 4000+Math.random()*8000, needAge:0,
       inFarm:false, owned:false,
-      x:0, y:0, tx:0, ty:0, wait:0, face:1, nextBlink:0,
+      x:0, y:0, tx:0, ty:0, wait:0, face:1, nextBlink:0, idleTalk: 12000 + Math.random()*15000,
       hue: i*54,
       el:el, img:img, bubble:bubble
     };
@@ -1599,6 +1604,14 @@
 
   var ceremonyBusy = false;
 
+  /* 把物種的主色 hex 轉成 rgba（進化光依物種上色用） */
+  function glowRgba(hex, a){
+    var m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+    if (!m) return 'rgba(251,191,36,' + a + ')';
+    var n = parseInt(m[1], 16);
+    return 'rgba(' + ((n>>16)&255) + ',' + ((n>>8)&255) + ',' + (n&255) + ',' + a + ')';
+  }
+
   function ceremonyConfetti(){
     var emo = ['🎉','⭐','✨','🎊','🌟'];
     for (var k = 0; k < 34; k++){
@@ -1629,9 +1642,11 @@
 
     var to = Math.max(0, Math.min(4, from + 1));
     var isHatch = (from === 0);
+    var gHex = (SPECIES[p.species] && SPECIES[p.species].glow) || '#fbbf24';
     var img = el.querySelector('.cgImg');
     var rings = el.querySelectorAll('.cgRing');
     var flash = el.querySelector('.cgFlash');
+    var crack = el.querySelector('.cgCrack');
     var title = el.querySelector('.cgTitle');
     var sub = el.querySelector('.cgSub');
     var timers = [];
@@ -1658,13 +1673,33 @@
     sub.textContent = '';
     el.classList.add('on');
 
-    /* 1) 醞釀：身體發光、抖一下、光環轉出來 */
+    /* 0) 孵化專屬：裂殼前奏——蛋猛抖一下、裂痕一閃（進化沒有這一步） */
+    if (isHatch){
+      if (img.animate){
+        img.animate([
+          { transform: 'rotate(0deg) scale(1)' },
+          { transform: 'rotate(-6deg) scale(1.04)' },
+          { transform: 'rotate(6deg) scale(1.06)' },
+          { transform: 'rotate(-4deg) scale(1.02)' },
+          { transform: 'rotate(0deg) scale(1)' }
+        ], { duration: 720, easing: 'ease-in-out' });
+      }
+      if (crack && crack.animate){
+        crack.animate([
+          { opacity: 0, transform: 'translate(-50%,-50%) scale(.3)' },
+          { opacity: 1, transform: 'translate(-50%,-50%) scale(1.35)', offset: .42 },
+          { opacity: 0, transform: 'translate(-50%,-50%) scale(1.9)' }
+        ], { duration: 760, easing: 'ease-out' });
+      }
+    }
+
+    /* 1) 醞釀：身體發光（依物種上色）、抖一下、光環轉出來 */
     if (img.animate){
       img.animate([
-        { transform: 'scale(.86) rotate(0deg)', filter: 'drop-shadow(0 0 18px rgba(251,191,36,.45)) brightness(1)' },
-        { transform: 'scale(.92) rotate(-3deg)', filter: 'drop-shadow(0 0 44px rgba(251,191,36,.9)) brightness(1.3)', offset: .45 },
-        { transform: 'scale(.88) rotate(3deg)', filter: 'drop-shadow(0 0 44px rgba(251,191,36,.9)) brightness(1.3)', offset: .6 },
-        { transform: 'scale(1.04) rotate(0deg)', filter: 'drop-shadow(0 0 64px rgba(253,224,71,1)) brightness(1.75)' }
+        { transform: 'scale(.86) rotate(0deg)', filter: 'drop-shadow(0 0 18px ' + glowRgba(gHex,.45) + ') brightness(1)' },
+        { transform: 'scale(.92) rotate(-3deg)', filter: 'drop-shadow(0 0 44px ' + glowRgba(gHex,.9) + ') brightness(1.3)', offset: .45 },
+        { transform: 'scale(.88) rotate(3deg)', filter: 'drop-shadow(0 0 44px ' + glowRgba(gHex,.9) + ') brightness(1.3)', offset: .6 },
+        { transform: 'scale(1.04) rotate(0deg)', filter: 'drop-shadow(0 0 64px ' + glowRgba(gHex,1) + ') brightness(1.75)' }
       ], { duration: 1150, easing: 'ease-in', fill: 'forwards' });
     }
     [].forEach.call(rings, function(r, i){
@@ -1695,8 +1730,8 @@
       if (img.animate){
         img.animate([
           { transform: 'scale(.35)', opacity: 0, filter: 'drop-shadow(0 0 70px rgba(255,255,255,1)) brightness(2.2)' },
-          { transform: 'scale(1.24)', opacity: 1, filter: 'drop-shadow(0 0 60px rgba(253,224,71,1)) brightness(1.5)', offset: .55 },
-          { transform: 'scale(1)', opacity: 1, filter: 'drop-shadow(0 0 34px rgba(251,191,36,.8)) brightness(1)' }
+          { transform: 'scale(1.24)', opacity: 1, filter: 'drop-shadow(0 0 60px ' + glowRgba(gHex,1) + ') brightness(1.5)', offset: .55 },
+          { transform: 'scale(1)', opacity: 1, filter: 'drop-shadow(0 0 34px ' + glowRgba(gHex,.8) + ') brightness(1)' }
         ], { duration: 860, easing: 'cubic-bezier(.2,.9,.3,1.3)', fill: 'forwards' });
       }
       ceremonyConfetti();
@@ -1764,10 +1799,11 @@
   }
 
   function moodText(p){
-    if (p.state==='hungry') return '🍖 肚子餓了';
-    if (p.state==='bored')  return '🎾 想跟你玩';
-    if (p.state==='sad')    return '😢 有點難過';
-    return '😊 很開心';
+    var E = (window.PetSay && window.PetSay.emoji) ? window.PetSay.emoji : function(){ return ''; };
+    if (p.state==='hungry') return (E('hungry')||'🍖') + ' 肚子餓了';
+    if (p.state==='bored')  return (E('bored')||'🎾') + ' 想跟你玩';
+    if (p.state==='sad')    return (E('sad')||'😢') + ' 有點難過';
+    return (E('happy')||'😊') + ' 很開心';
   }
 
   /* 記住「現在的孩子王」，挑戰頁會用同一隻出場（階段升級後要跟著更新） */
@@ -1913,6 +1949,7 @@
     if (p.stage === 0 && p.hue) fl.push('hue-rotate('+p.hue+'deg)');
     p.img.style.filter = fl.join(' ');
     p.el.classList.toggle('sad', p.state==='sad');
+    p.el.classList.toggle('egg', p.stage===0);
     var excited = (f.next!==Infinity) && (p.growth >= f.next*0.8) && p.state!=='sad';
     p.el.classList.toggle('excited', excited);
     p.el.style.display = p.inFarm ? '' : 'none';
@@ -2085,8 +2122,8 @@
       var p=pets[i];
       if (!p.inFarm) continue;
 
-      /* 眨眼：每 3–6 秒快速眨一下，看起來是活的 */
-      if (!p.nextBlink || now >= p.nextBlink){
+      /* 眨眼：每 3–6 秒快速眨一下（蛋還沒長眼睛，不眨） */
+      if (p.stage > 0 && (!p.nextBlink || now >= p.nextBlink)){
         p.nextBlink = now + 3000 + Math.random()*3000;
         if (p.img && !p.img.classList.contains('blink')){
           p.img.classList.add('blink');
@@ -2104,6 +2141,13 @@
           updateVisual(p);
           if (p.id===active) refreshPanel();
           renderPetBar();
+        } else {
+          /* 閒置碎碎唸：偶爾自言自語，讓牠像真的陪在旁邊（蛋不說話） */
+          p.idleTalk -= dt;
+          if (p.idleTalk <= 0){
+            p.idleTalk = 25000 + Math.random()*20000;
+            if (p.stage > 0) cheer(p, petLine(p, 'idle'));
+          }
         }
       } else if (p.state==='hungry'||p.state==='bored'){
         p.needAge += dt;
@@ -2671,6 +2715,7 @@
     <div class="cgRing"></div>
     <div class="cgRing r2"></div>
     <img class="cgImg" alt="">
+    <div class="cgCrack">💥</div>
   </div>
   <div class="cgTitle"></div>
   <div class="cgSub"></div>
