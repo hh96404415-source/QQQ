@@ -121,18 +121,7 @@
   </section>
 </div>
 
-<footer>
-  <button id="logOpen" type="button">登入紀錄</button>
-</footer>
-
-<div id="logMask" class="hidden">
-  <div id="logBox">
-    <button class="x" id="logClose" type="button">關閉</button>
-    <h3>登入紀錄</h3>
-    <p>這部機什麼時候、用哪個密碼登入過。要換人：長按首頁的「三 問」3 秒。</p>
-    <div id="logRows"></div>
-  </div>
-</div>
+<footer></footer>
 
 <div id="ubMask" class="hidden">
   <div id="ubBox">
@@ -270,6 +259,7 @@
     if (busy) return;
     if (buf.length !== 6) { errEl.textContent = '要 6 位數字'; return; }
     busy = true;
+    netFail = false;
     errEl.textContent = '正在核對…';
     keySub.textContent = '第一次會慢一點，之後就自動進來了';
 
@@ -283,24 +273,23 @@
       shake();
       buf = ''; paint();
       var msg;
-      if (r && r.error === 'token 錯誤') {
-        msg = '連上了，但 token 不對。請家長在 GAS 把 CONFIG.TOKEN 改成跟網頁一樣。';
-      } else if (r && /未知 action/.test(r.error)) {
-        msg = '名冊還沒開通：GAS 那個部署還是舊版（' + gasHost() + '）。' +
-              '要「管理部署 → 編輯 → 版本選新版本 → 部署」，網址才不會變。';
+      if (r && r.error === '帳號已停用') {
+        msg = '這個帳號休息了，請找大人。';
       } else if (r && r.error) {
-        msg = r.error;
+        msg = '數字不對，再試一次。';
       } else {
         msg = '核對不到，再試一次。';
       }
-      errEl.innerHTML = msg + '<br>' + demoLink();
+      errEl.textContent = msg;
+      if (demoLink()) { errEl.insertAdjacentHTML('beforeend', '<br>' + demoLink()); }
     }).catch(function () {
       busy = false;
       netFail = true;
       failCount++;
       shake();
       buf = ''; paint();
-      errEl.innerHTML = '連不上名冊（網絡或 GAS 沒開）。<br>' + demoLink();
+      errEl.textContent = '連不上，檢查一下有沒有網絡。';
+      if (demoLink()) errEl.insertAdjacentHTML('beforeend', '<br>' + demoLink());
     });
   }
 
@@ -374,36 +363,9 @@
         ubErr.textContent = '這不是這位小朋友的密碼。';
       }
     }).catch(function () {
-      /* 連不上就接受本機已有的綁定（避免被鎖在外面） */
-      Player.unbind();
-      location.reload();
+      /* 連不上就不能核對密碼，不能解除綁定（否則斷網就能繞過 PIN 換人） */
+      ubErr.textContent = '連不上，無法核對。';
     });
-  });
-
-  /* ── 登入紀錄 ────────────────────────────────────────────── */
-  var logMask = document.getElementById('logMask');
-  document.getElementById('logOpen').addEventListener('click', function () {
-    var rows = [];
-    try { rows = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch (e) {}
-    var box = document.getElementById('logRows');
-    if (!rows.length) {
-      box.innerHTML = '<div class="empty">還沒有紀錄。登入一次就會出現在這裡。</div>';
-    } else {
-      box.innerHTML = rows.slice(-20).reverse().map(function (r) {
-        var d = new Date(r.t);
-        var hh = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
-        return '<div class="row"><b>' + (r.name || r.id) + '</b>' +
-          '<i>' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hh + '</i>' +
-          '<i>' + ago(r.t) + '</i></div>';
-      }).join('');
-    }
-    logMask.classList.remove('hidden');
-  });
-  document.getElementById('logClose').addEventListener('click', function () {
-    logMask.classList.add('hidden');
-  });
-  logMask.addEventListener('click', function (e) {
-    if (e.target === logMask) logMask.classList.add('hidden');
   });
 })();
 </script>

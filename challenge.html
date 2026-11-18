@@ -178,6 +178,8 @@
   #qText.long{font-size:19px;line-height:1.6;max-width:580px;letter-spacing:.01em}
   #qText.xlong{font-size:16.5px;line-height:1.65;max-width:600px}
   #options{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  #options.wide{grid-template-columns:repeat(2,1fr);gap:8px}
+  #options.wide .opt{font-size:17px;padding:11px 8px;line-height:1.35}
   .opt{appearance:none;border:none;border-radius:14px;padding:14px 8px;font-size:22px;font-weight:900;
     color:#0b1220;background:#e2e8f0;cursor:pointer;transition:transform .12s,background .2s;font-family:inherit}
   .opt:active{transform:scale(.95)}
@@ -446,6 +448,7 @@
       <div id="scoreBoard">
         <div class="sb star"><span class="sbIcon">⭐</span><span class="sbNum" id="sbStars">0</span></div>
         <div class="sb coin"><span class="sbIcon">💰</span><span class="sbNum" id="sbCoins">0</span><span class="sbUnit">金幣</span></div>
+        <div class="sb time"><span class="sbIcon">⏱</span><span class="sbNum" id="sbTime">—</span><span class="sbUnit">遊玩</span></div>
       </div>
       <div id="padHead">
         <b>✍️ 手寫板</b>
@@ -718,6 +721,8 @@
     var sbCoinsEl = document.getElementById('sbCoins');
     var coins = 0;
     var COINS_PER_Q = 25;
+    /* 答對暴擊：正常 +25；暴擊 15% ×2 = +50；會心 3% ×4 = +100。只動本地顯示與 coinPending，不碰後端記帳 */
+    var CRIT = { chance: .15, mult: 2, epicChance: .03, epicMult: 4 };
     var rewardEl = document.getElementById('reward');
     var unitBtn = document.getElementById('unitBtn');
     var unitMask = document.getElementById('unitMask');
@@ -765,6 +770,19 @@
       if (window.Juice) window.Juice.fx('coin');
     }
     var coinShown = 0, coinTween = null;
+    var sbTimeEl = document.getElementById('sbTime');
+    var playLeftSec = 0;   /* 剩下的遊玩秒數（0＝沒換時間卷） */
+    function fmtMin(sec) {
+      if (!sec || sec <= 0) return '—';
+      var m = Math.floor(sec / 60);
+      if (m >= 60) return Math.floor(m / 60) + 'h';
+      return m + 'm';
+    }
+    function paintPlayTime() {
+      if (!sbTimeEl) return;
+      sbTimeEl.textContent = fmtMin(playLeftSec);
+      sbTimeEl.title = playLeftSec > 0 ? ('剩 ' + playLeftSec + ' 秒') : '換時間卷就能玩';
+    }
     function paintScoreTime(){
       if (!sbCoinsEl) return;
       var target = coins, from = coinShown;
@@ -2109,7 +2127,13 @@
           b.classList.remove('correct','wrong','reveal');
           b.disabled = false;
         });
-        optionsEl.style.gridTemplateColumns = 'repeat(' + Math.max(2, Math.min(opts.length, q.options.length)) + ',1fr)';
+        /* 排詞成句／長答案：任一選項 ≥5 字就降成 2 欄、縮字，避免溢出 */
+        var maxOptLen = 0;
+        for (var _oi = 0; _oi < q.options.length; _oi++) maxOptLen = Math.max(maxOptLen, String(q.options[_oi]).length);
+        var _wide = maxOptLen >= 5;
+        if (_wide) optionsEl.classList.add('wide');
+        else optionsEl.classList.remove('wide');
+        optionsEl.style.gridTemplateColumns = 'repeat(' + (_wide ? 2 : Math.max(2, Math.min(opts.length, q.options.length))) + ',1fr)';
         hideHanzi();
         fb.textContent = '答對出招 · 答錯擋一擋';
       }
@@ -2341,6 +2365,14 @@
       stage++;
       try { localStorage.setItem(STAGE_KEY, String(stage)); } catch (e) {}
       paintStage();
+      var done = stage - 1;
+      /* 每 3 關＝一章：只放章節儀式（紫金框＋獎勵），不放過關儀式，
+         避免兩張暗場疊加、金幣爆兩次、過章高潮被打斷 */
+      if (done % 3 === 0) {
+        chapterClear(done / 3);
+        stageCoins = 0;
+        return;
+      }
       var el = document.getElementById('stageClear');
       var n = document.getElementById('scNum');
       var earnEl = document.getElementById('scEarn');
@@ -2366,9 +2398,6 @@
         window.Juice.flash('rgba(255,240,180,.5)', 220);
       }
       sfxLevel();
-      /* 每 3 關＝一章：再加一層更強的儀式（C1） */
-      var done = stage - 1;
-      if (done % 3 === 0) setTimeout(function () { chapterClear(done / 3); }, 1500);
     }
 
     /* 過關／過章的金幣爆量：從畫面中央噴一堆金幣飛進計分板 */
@@ -2409,20 +2438,22 @@
       sfxLevel();
     }
 
-    /* 測試鉤子（不影響正常流程） */
-    window.__dbg = {
-      clear: function () { stageClear(); },
-      chap: function (n) { chapterClear(n || 1); }
-    };
+    /* 測試鉤子（只對開發者帳號生效，不影響正常流程） */
+    if (window.Player && window.Player.isDev && window.Player.isDev()) {
+      window.__dbg = {
+        clear: function () { stageClear(); },
+        chap: function (n) { chapterClear(n || 1); }
+      };
 
-    window.__ramp = {
-      get: function () { return ramp; },
-      len: function () { return roundQ.length; },
-      set: function (v) {
-        ramp = Math.max(0, Math.min(1, Number(v) || 0));
-        try { localStorage.setItem(RAMP_KEY, ramp.toFixed(3)); } catch (e) {}
-      }
-    };
+      window.__ramp = {
+        get: function () { return ramp; },
+        len: function () { return roundQ.length; },
+        set: function (v) {
+          ramp = Math.max(0, Math.min(1, Number(v) || 0));
+          try { localStorage.setItem(RAMP_KEY, ramp.toFixed(3)); } catch (e) {}
+        }
+      };
+    }
 
     function paintStage() {
       var t = document.getElementById('stageNow');
@@ -2633,6 +2664,9 @@
       qaPost({ action: 'myStatus', user_id: qaCfg.uid }, function (err, d) {
         if (err || !d || !d.ok) return;
         if (typeof d.coins === 'number') { coins = d.coins; paintScoreTime(); }
+        var ss = d.session || {};
+        playLeftSec = (ss.mode === 'free' && ss.remaining_sec > 0) ? ss.remaining_sec : 0;
+        paintPlayTime();
       });
       qaPost({ action: 'getConfig' }, function (err, d) {
         if (err || !d || !d.result) return;
@@ -2979,13 +3013,21 @@
       logAnswer(true);
       fb.textContent = '✅ 答對了！出招！ +1 ⭐';
       addStar();
-      /* 金幣：每題 +COINS_PER_Q（本地題也算，不再看題庫連線有沒有開）
+      /* 暴擊：正常 +COINS_PER_Q；暴擊 ×2、會心 ×4，全加進 coinPending（本地顯示與 earnBatch 一起入帳）
          遠端題由 complete_set 入帳；本地題累積 3 題用 earnBatch 補一次，省 GAS 配額 */
-      coins += COINS_PER_Q;
-      stageCoins += COINS_PER_Q;
-      rewardPop('+1⭐　+' + COINS_PER_Q + ' 金幣');
+      var roll = Math.random();
+      var earn = COINS_PER_Q;
+      var isEpic = roll < CRIT.epicChance;
+      var isCrit = !isEpic && roll < CRIT.epicChance + CRIT.chance;
+      if (isEpic) earn = Math.round(COINS_PER_Q * CRIT.epicMult);
+      else if (isCrit) earn = Math.round(COINS_PER_Q * CRIT.mult);
+      coins += earn;
+      stageCoins += earn;
+      if (isEpic) rewardPop('💥 會心一擊！ +' + earn + ' 金幣');
+      else if (isCrit) rewardPop('⚡ 暴擊！ +' + earn + ' 金幣');
+      else rewardPop('+1⭐　+' + earn + ' 金幣');
       if (!q || q.type !== 'remote') {
-        coinPending += COINS_PER_Q;
+        coinPending += earn;
         if (coinPending >= COINS_PER_Q * 3) flushLocalCoins();
       }
       paintScoreTime();
@@ -3134,12 +3176,14 @@
       }
     };
 
-    /* 測試鉤子：window.__q 看當前題目（驗證答對會加時間用） */
-    window.__q = {
-      text: function () { return q ? q.text : null; },
-      answer: function () { return q ? q.answer : null; },
-      type: function () { return q ? q.type : null; }
-    };
+    /* 測試鉤子：window.__q 看當前題目（只對開發者帳號生效，避免孩子 F12 看答案） */
+    if (window.Player && window.Player.isDev && window.Player.isDev()) {
+      window.__q = {
+        text: function () { return q ? q.text : null; },
+        answer: function () { return q ? q.answer : null; },
+        type: function () { return q ? q.type : null; }
+      };
+    }
 
     /* ===== 進化挑戰：?evolve=1 ===== */
     var evoMode = false;

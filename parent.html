@@ -908,11 +908,6 @@ document.getElementById('capSave').addEventListener('click', function(){
 });
 
 window.__report = { build: buildReport, rows: demoRows_, profile: DEMO_PROFILE };
-
-/* F 家庭管理面板：正常情況由 applyFamily() 用實際 family_id 掛載（見上） */
-if (window.ParentAdmin && !window.PARENT_RESULT) {
-  window.ParentAdmin.mount(document.getElementById('adminMount'), 1);
-}
 </script>
 </body>
 </html>

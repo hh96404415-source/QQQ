@@ -309,30 +309,6 @@
     box-shadow:0 4px 0 #b91c1c, 0 8px 14px rgba(0,0,0,.3)}
   #hbCount{background:rgba(15,23,42,.72);color:#fbbf24;border:1px solid rgba(251,191,36,.35);
     border-radius:999px;padding:3px 12px;font-weight:900}
-  .hbNote{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
-    font-size:12px;font-weight:800;color:#cbd5e1;
-    background:rgba(15,23,42,.72);border:1px solid rgba(255,255,255,.12);
-    border-radius:12px;padding:11px 8px;cursor:pointer}
-  .hbNote:active{transform:scale(.99)}
-  .hbSet{font-size:11px;font-weight:900;color:#93c5fd;border:1px solid rgba(147,197,253,.5);
-    border-radius:999px;padding:2px 9px}
-
-  /* 家長設定（小名） */
-  #kidMask{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;
-    background:rgba(2,6,23,.8);padding:16px}
-  #kidMask.hidden{display:none}
-  #kidPanel{width:min(420px,94vw);background:linear-gradient(160deg,#16213a,#0b1220);
-    border:2px solid rgba(147,197,253,.3);border-radius:20px;padding:18px}
-  #kidPanel h3{margin:0 0 6px;font-size:16px;color:#93c5fd}
-  #kidPanel p{margin:0 0 12px;font-size:12px;line-height:1.6;color:#94a3b8}
-  #kidName{width:100%;box-sizing:border-box;font-family:inherit;font-size:15px;color:#e2e8f0;
-    background:rgba(2,6,23,.65);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:10px 12px}
-  #kidName:focus{outline:none;border-color:#60a5fa}
-  #kidBtns{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
-  #kidBtns button{appearance:none;font-family:inherit;cursor:pointer;border-radius:999px;
-    padding:9px 16px;font-size:13px;font-weight:900;color:#e2e8f0;
-    background:rgba(30,41,59,.95);border:1px solid rgba(255,255,255,.14)}
-  #kidSave{background:rgba(96,165,250,.25);border-color:#60a5fa;color:#dbeafe}
 
   /* ── 進化／孵化的儀式（全螢幕） ── */
   #ceremony{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
@@ -566,7 +542,6 @@
       <label class="hbBtn" for="hbFile">📷 上傳照片</label>
       <input id="hbFile" type="file" accept="image/*" multiple hidden>
       <button id="hbClear" class="hbBtn">🗑 清空</button>
-      <div class="hbNote" id="hbNote">🔒 家長設定<span class="hbSet">名字</span></div>
     </div>
   </div>
 </div>
@@ -587,21 +562,6 @@
   <button id="btnToggle" class="hidden">🏡 放入農場</button>
   <button id="btnTrade" class="hidden">⏱ 換 1 顆星（花 300 秒）</button>
 </div>
-
-<!-- 家長設定：孩子的小名（必須放在主 script 之前，腳本才抓得到） -->
-<div id="kidMask" class="hidden">
-  <div id="kidPanel">
-    <h3>🔒 家長設定</h3>
-    <p>填孩子的名字（或小名），寵物會在迎接、道晚安、贏的時候叫他的名字。<br>
-      留空就取消。只存在這台裝置上。</p>
-    <input id="kidName" maxlength="8" placeholder="例如：阿寶">
-    <div id="kidBtns">
-      <button id="kidCancel">取消</button>
-      <button id="kidSave">儲存</button>
-    </div>
-  </div>
-</div>
-
 
 <!-- 星星商店 -->
 <div id="shop">
@@ -1931,7 +1891,7 @@
     p._bubbleT = setTimeout(function(){ p.el.classList.remove('show-bubble'); }, hold);
   }
 
-  /* 給頁面上其他區塊（家長設定）叫農場裡的寵物說話用 */
+  /* 給頁面上其他區塊叫農場裡的寵物說話用 */
   window.__petCheer = function (text) { if (pets[0]) cheer(pets[0], text); };
 
   function placeInFarm(p){
@@ -2470,6 +2430,11 @@
     window.Player.mount(farmArea);
     var wc = document.getElementById('whoChip');
     if (wc) { wc.style.position = 'absolute'; wc.style.top = '52px'; wc.style.left = '10px'; wc.style.zIndex = '31'; wc.classList.add('alignLeft'); }
+    /* 孩子的名字從登入來，寵物迎接／道晚安／贏的時候會叫 */
+    try {
+      var _p = window.Player.bound();
+      if (_p && _p.name && _p.name !== '未登入' && window.PetSay) window.PetSay.setKidName(_p.name);
+    } catch (e) {}
   }
 
   /* 舊「答題秒數」chip 已停用：娛樂時間改由下方 Wallet（伺服器倒數）顯示 */
@@ -2529,8 +2494,10 @@
     cheer(lead, petLine(lead, (h>=20||h<6) ? 'night' : 'greet', { force:true }), 4200);
   }, 900);
 
-  /* 測試鉤子：?autopanel=1 自動打開第一隻面板（驗證 popup 定位用） */
+  /* 測試鉤子：只對開發者帳號生效（?autopanel/?autotest/?autoplay/?autolevel/?autohatch/?autowin） */
   try {
+    var _isDev = window.Player && window.Player.isDev && window.Player.isDev();
+    if (!_isDev) throw 0;
     if (new URLSearchParams(location.search).get('autopanel') === '1'){
       setTimeout(function(){
         if (pets[0].inFarm){ pets[0].y = Math.round(farmArea.clientHeight * 0.72); }
@@ -2673,45 +2640,6 @@
   });
 
   render();
-})();
-
-/* ── 家長設定：孩子的名字（給寵物叫） ── */
-(function () {
-  window.__kidInit = 1;
-  var note = document.getElementById('hbNote');
-  var mask = document.getElementById('kidMask');
-  var input = document.getElementById('kidName');
-  if (!note || !mask || !input) return;
-  function open() {
-    input.value = (window.PetSay && window.PetSay.kidName) ? window.PetSay.kidName() : '';
-    mask.classList.remove('hidden');
-    setTimeout(function () { input.focus(); }, 60);
-  }
-  function close() { mask.classList.add('hidden'); }
-  note.addEventListener('click', open);
-  document.getElementById('kidCancel').addEventListener('click', close);
-  mask.addEventListener('click', function (e) { if (e.target === mask) close(); });
-  document.getElementById('kidSave').addEventListener('click', function () {
-    if (window.PetSay) window.PetSay.setKidName(input.value);
-    close();
-    /* 立刻叫一次，讓家長聽見效果 */
-    try {
-      var st = 1;
-      var raw = localStorage.getItem('dsh_pet');
-      if (raw) { var o = JSON.parse(raw); if (o && typeof o.s === 'number') st = o.s; }
-      var img = document.querySelector('#farmArea .pet img');
-      if (window.PetSay && st > 0) {
-        var t = window.PetSay.speak('greet', st, { force: true });
-        if (t) {
-          if (window.__petCheer) window.__petCheer(t);
-          else if (img) window.PetSay.bubble(img, t);
-        }
-      }
-    } catch (e) {}
-  });
-  input.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') document.getElementById('kidSave').click();
-  });
 })();
 </script>
 

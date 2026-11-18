@@ -57,8 +57,9 @@
 
   /* ── 主入口：把管理面板灌進 host ────────────────────────────── */
   function mount(host, familyId) {
-    if (!host || document.getElementById('paRoot')) return null;
+    if (!host) return null;
     FAMILY_ID = Number(familyId) || FAMILY_ID;
+    if (document.getElementById('paRoot')) return null;
 
     var root = document.createElement('div');
     root.id = 'paRoot';
