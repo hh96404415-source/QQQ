@@ -1650,6 +1650,7 @@
     function qaPost(body, cb) {
       var payload = { action: body.action };
       for (var k in body) if (k !== 'action') payload[k] = body[k];
+      try { if (!('session' in payload)) { var _sess = localStorage.getItem('dsh_sess'); if (_sess) payload.session = _sess; } } catch (e) {}
       fetch(qaCfg.url, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },

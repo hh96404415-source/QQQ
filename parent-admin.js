@@ -24,10 +24,19 @@
     return { url: o.url || GAS_URL };
   }
 
+  function psess() {
+    try {
+      var o = JSON.parse(localStorage.getItem('dsh_parent_sess') || 'null');
+      return (o && o.session) ? o.session : '';
+    } catch (e) { return ''; }
+  }
+
   function post(action, params, cb) {
     var c = cfg();
     var body = { action: action };
     for (var k in params) if (params[k] !== undefined) body[k] = params[k];
+    var s = psess();
+    if (s && !('session' in body)) body.session = s;
     fetch(c.url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },

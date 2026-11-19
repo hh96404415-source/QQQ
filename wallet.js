@@ -24,8 +24,14 @@
     return { url: o.url || GAS_URL };
   }
 
+  function sess() {
+    try { return localStorage.getItem('dsh_sess') || ''; } catch (e) { return ''; }
+  }
+
   function post(body, cb) {
     var c = cfg();
+    var s = sess();
+    if (s && !('session' in body)) body.session = s;
     fetch(c.url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },

@@ -247,7 +247,7 @@
     }catch(e){ return null; }
   }
   function saveSess(f){
-    try{ localStorage.setItem(KEY, JSON.stringify({id:f.id, name:f.name||'', t:Date.now()})); }catch(e){}
+    try{ localStorage.setItem(KEY, JSON.stringify({id:f.id, name:f.name||'', session:f.session||'', t:Date.now()})); }catch(e){}
   }
   function paint(){ dots.forEach(function(d,i){ d.className=i<buf.length?'on':''; }); }
   function show(){

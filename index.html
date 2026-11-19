@@ -301,6 +301,7 @@
   }
 
   function done(st) {
+    try { if (st && st.session) localStorage.setItem('dsh_sess', st.session); } catch (e) {}
     Player.bind(st);
     pushLogin(st);
     location.href = 'community.html';
