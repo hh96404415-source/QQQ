@@ -102,7 +102,8 @@
   @keyframes sbPop{0%{transform:scale(1)}42%{transform:scale(1.45)}100%{transform:scale(1)}}
   /* 答對瞬間的大字獎勵 */
   #reward{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%);z-index:70;pointer-events:none;
-    font-size:38px;font-weight:900;color:#fde047;white-space:nowrap;
+    font-size:30px;font-weight:900;color:#fde047;line-height:1.28;text-align:center;
+    white-space:normal;max-width:min(86vw,440px);
     -webkit-text-stroke:2px #7c2d12;paint-order:stroke fill;
     text-shadow:0 6px 22px rgba(0,0,0,.9),0 0 34px rgba(253,224,71,.55);opacity:0}
   /* 小孩要看得懂：大字停住約 1.8 秒才慢慢散，總長 2.6 秒 */
@@ -114,10 +115,13 @@
   body.pageOut{animation:pageOut .22s ease forwards}
   @keyframes pageOut{from{opacity:1}to{opacity:0}}
 
-  #reward.show{animation:rewardPop 3s cubic-bezier(.2,.9,.3,1) forwards}
+  #reward>span{display:block;white-space:nowrap}
+  #reward .rL1{font-size:21px;color:#fbbf24;letter-spacing:.5px}
+  #reward .rL2{font-size:32px;color:#fde047}
+  #reward.show{animation:rewardPop 2.2s cubic-bezier(.2,.9,.3,1) forwards}
   @keyframes rewardPop{
     0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
-    8%{opacity:1;transform:translate(-50%,-50%) scale(1.3)}
+    8%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}
     16%{transform:translate(-50%,-50%) scale(1)}
     72%{opacity:1;transform:translate(-50%,-56%) scale(1)}
     100%{opacity:0;transform:translate(-50%,-74%) scale(.95)}
@@ -313,7 +317,7 @@
   .dmg{position:absolute;font-weight:900;font-size:34px;color:#fde047;z-index:9;
     -webkit-text-stroke:3px #7c2d12;paint-order:stroke fill;
     text-shadow:0 4px 12px rgba(0,0,0,.9),0 0 22px rgba(253,224,71,.7);
-    transform:translate(-50%,-50%);pointer-events:none;animation:dmgUp 2.8s ease-out forwards}
+    transform:translate(-50%,-50%);pointer-events:none;animation:dmgUp 1.5s ease-out forwards}
   .dmg.crit{font-size:46px;color:#fff1a8;-webkit-text-stroke:3px #7c0d00;
     text-shadow:0 5px 14px rgba(0,0,0,.95),0 0 30px rgba(255,140,40,.95),0 0 55px rgba(253,224,71,.7)}
   /* 傷害數字：先放大停住（約 1.9 秒）再往上飄走，小孩才有時間看 */
@@ -321,8 +325,8 @@
     0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}
     6%{opacity:1;transform:translate(-50%,-60%) scale(1.4)}
     12%{transform:translate(-50%,-62%) scale(1.05)}
-    78%{opacity:1;transform:translate(-50%,-86%) scale(1)}
-    100%{opacity:0;transform:translate(-50%,-118%) scale(.95)}
+    72%{opacity:1;transform:translate(-50%,-80%) scale(1)}
+    100%{opacity:0;transform:translate(-50%,-104%) scale(.95)}
   }
   /* 絕招大字：經典 9999 爆擊 */
   .ult{position:absolute;font-weight:900;font-size:54px;color:#fff44f;z-index:10;
@@ -880,19 +884,35 @@
       /* 獎勵字要獨占天空帶：先把寵物的對話泡泡收掉，避免兩層字疊在一起 */
       var bs = document.querySelectorAll('#arena .petsay, #arena .bubble');
       for (var bi = 0; bi < bs.length; bi++) bs[bi].remove();
-      rewardEl.textContent = text;
+      /* 兩行：上面小字講「為什麼 ×N」，下面大字講「拿到多少」 */
+      var _parts = String(text).split('　');
+      if (_parts.length >= 2) {
+        rewardEl.innerHTML = '<span class="rL1"></span><span class="rL2"></span>';
+        rewardEl.firstChild.textContent = _parts[0];
+        rewardEl.lastChild.textContent = _parts.slice(1).join('　');
+      } else {
+        rewardEl.textContent = text;
+      }
+      /* 天空帶只留一種字：把同時在播的 Juice 橫幅收掉 */
+      var _jb = document.getElementById('juiceBanner');
+      if (_jb) _jb.classList.remove('on');
       /* 彈在寵物正上方的天空帶，並夾在競技場內（窄螢幕不會切掉） */
       var pr = petImg ? petImg.getBoundingClientRect() : null;
       var ar = arenaEl ? arenaEl.getBoundingClientRect() : null;
+      if (ar) {
+        /* 字寬上限跟著競技場走：窄螢幕時 440px 會比競技場還寬，硬撐就會切掉 */
+        rewardEl.style.maxWidth = Math.max(180, Math.round(ar.width - 40)) + 'px';
+      }
       if (pr && ar) {
-        var half = rewardEl.offsetWidth / 2 + 2;
-        var cx = pr.left + pr.width / 2;
+        var half = rewardEl.offsetWidth * 0.53 + 6;   /* 0.53 = 放大峰值 1.06 / 2，避免彈一下超出競技場 */
+        /* 這是「你拿到了什麼」的全域訊息 → 擺競技場正中，不要貼著左邊的寵物 */
+        var cx = ar.left + ar.width / 2;
         cx = Math.max(ar.left + half, Math.min(ar.right - half, cx));
         rewardEl.style.left = cx + 'px';
-        rewardEl.style.top = (ar.top + ar.height * 0.17) + 'px';
+        rewardEl.style.top = (ar.top + ar.height * 0.30) + 'px';
       }
       rewardEl.classList.remove('show'); void rewardEl.offsetWidth; rewardEl.classList.add('show');
-      setTimeout(function(){ rewardEl.classList.remove('show'); }, 3000);
+      setTimeout(function(){ rewardEl.classList.remove('show'); }, 1600);
     }
     /* 這一趟的收成：回社區時要讓牠「帶回家」 */
     var BACK_KEY = 'dsh_back';
@@ -2894,7 +2914,7 @@
       d.className = 'dmg' + (crit ? ' crit' : ''); d.textContent = text;
       d.style.left = x + 'px'; d.style.top = y + 'px';
       fxEl.appendChild(d);
-      setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 3000);
+      setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 1600);
     }
     function ring(x, y, color) {
       if (!fxEl) return;
@@ -3165,6 +3185,7 @@
 
     function attack(btn) {
       if (btn) btn.classList.add('correct');
+      var popText = '';       /* 獎勵大字：等打擊動作做完才彈，不要跟火花一起擠 */
       roundQ.push({ ok: true, ms: Date.now() - (qLogT0 || Date.now()) });
       var noReward = wrongCount >= 2;   /* 答錯 2 次：答對也不給星星/金幣，但一樣出招打怪、不卡進度 */
       /* 先把這題的金幣獎勵（含倍率）算出來：遠端題要連 earn 一起送 complete_set，伺服器才真的入帳 */
@@ -3210,19 +3231,21 @@
         coins += earn;
         stageCoins += earn;
         var _pop;
-        if (isEpic) _pop = '💥 會心一擊！ +' + earn + ' 金幣';
-        else if (isCrit) _pop = '⚡ 暴擊！ +' + earn + ' 金幣';
-        else if (lucky) _pop = '🍀 幸運題 ×2！ +' + earn + ' 金幣';
-        else if (feverOn) _pop = '🔥 Fever ×2！ +' + earn + ' 金幣';
-        else _pop = '+1⭐　+' + earn + ' 金幣';
-        if (isFirstWin) _pop = '🌅 今日首戰 ×2！ ' + _pop;
-        if (loot) _pop += '  🎁掉寶 +1⭐';
+        /* 一次只講一件事：最強的加成才顯示，其餘不疊字（畫面才呼吸得過來） */
+        var badge = '';
+        if (isFirstWin) badge = '🌅 首戰 ×2';
+        else if (isEpic) badge = '💥 會心 ×4';
+        else if (isCrit) badge = '⚡ 暴擊 ×2';
+        else if (lucky) badge = '🍀 幸運 ×2';
+        else if (feverOn) badge = '🔥 Fever ×2';
+        _pop = (badge ? badge + '　' : '') + '+1⭐　+' + earn + ' 金幣';
+        if (loot) _pop += '　🎁+1⭐';
         if (window.Juice) {
           if (isEpic || isCrit) window.Juice.fx('crit');
           if (isFirstWin) window.Juice.fx('firstWin');
           if (loot) window.Juice.fx('loot');
         }
-        rewardPop(_pop);
+        popText = _pop;      /* 不在這一刻彈，留到打擊之後（見下面的 820ms） */
         if (!q || q.type !== 'remote') {
           coinPending += earn;
           if (coinPending >= COINS_PER_Q * 3) flushLocalCoins();
@@ -3234,8 +3257,10 @@
       sfxRight(streak - 1);
       sfxSlash();
       haptic(14);
-      /* 等獎勵字收掉再講話，避免泡泡與「+1⭐」重疊 */
-      setTimeout(function () { petSay(streak >= 3 ? 'combo' : 'correct', { gap: 2600 }); }, 1250);
+      /* 節奏：有獎勵大字時寵物先不講話（畫面留白），沒有大字才講一句 */
+      if (!popText) setTimeout(function () { petSay(streak >= 3 ? 'combo' : 'correct', { gap: 2400 }); }, 900);
+      /* 打擊動作（約 300ms）做完，才讓獎勵大字進場；中間留一段空白呼吸 */
+      if (popText) setTimeout(function () { rewardPop(popText); }, 1450);
 
       var pt = arenaPoint(monImg);
       /* 攻擊數字：題目越難、打得越痛（每隻怪固定 3 下，所以分母是 3） */
@@ -3256,18 +3281,18 @@
         var isBossKill = (cur.s === 2);
         var winStars = WIN_STARS + (isBossKill ? 1 : 0);
         addStar(winStars);
-        rewardPop('🎉 +' + winStars + ' ⭐' + (isBossKill ? ' 👑BOSS' : ''));
+        setTimeout(function () { rewardPop('🎉 +' + winStars + ' ⭐' + (isBossKill ? ' 👑BOSS' : '')); }, 1100);
         fb.textContent = '🎉 打贏了！' + cur.m.n[cur.s - 1] + (isBossKill ? '（BOSS！）' : '') + ' 已收錄圖鑑 · +' + winStars + '⭐ 回家可以進化';
         /* 打贏的那一下不再放對話泡泡（會與「+2⭐」撞在一起並被競技場上緣切掉） */
         ultSlam();
         setTimeout(function () {
           flashHit(); shakeArena();
           hitStop(120); haptic([18, 46, 30]);
-          coinFly(pt.x, pt.y, 8);
+          coinFly(pt.x, pt.y, 6);
           if (comboEl) comboEl.classList.add('hidden');   /* 連對徽章讓位給 9999 */
           ultNum(pt.x, skyY(), Math.round(dmgTotal() * dmgMult));
-          burst(pt.x, pt.y, '#fde047', 24);
-          burst(pt.x, pt.y, '#fb923c', 16);
+          burst(pt.x, pt.y, '#fde047', 16);
+          burst(pt.x, pt.y, '#fb923c', 10);
           ring(pt.x, pt.y, '#fbbf24');
           killMonster(pt);
           sfxWinS();
@@ -3283,7 +3308,7 @@
           nextQ();
           fb.textContent = '新的怪物出現了！';
           setCombo();
-        }, 2900);
+        }, 3900);
         return;
       }
 
@@ -3293,15 +3318,15 @@
       setTimeout(function () {
         flashHit(); shakeArena(); hitMonster(); sfxHit();
         hitStop(80); haptic([10, 28, 16]);
-        coinFly(pt.x, pt.y, 3);
+        coinFly(pt.x, pt.y, 2);
         if (window.Juice) window.Juice.fx('coin');
         ring(pt.x, pt.y, '#fde047');
         dmgNum('−' + dmg + (dmgTag ? ' ' + dmgTag : ''), pt.x, pt.y - 60, dmgMult > 1);
-        burst(pt.x, pt.y, '#fde047', 10);
+        burst(pt.x, pt.y, '#fde047', 7);
         starFly();
       }, 320);
       /* 讓孩子有時間看到「剛剛答對得到什麼」：獎勵字停留後才換題 */
-      setTimeout(function () { nextQ(); }, 2100);
+      setTimeout(function () { nextQ(); }, 3300);
     }
 
     /* 答錯 */
