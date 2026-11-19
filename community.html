@@ -812,6 +812,8 @@
       if (n.gl) cryGlide(n.f0, n.f1, n.d, n.t, n.v, d);
       else setTimeout(function(){ beep(n.f, n.d, n.t, n.v); }, d);
     });
+    /* 每日任務：摸 5 次 */
+    try { bumpDaily('p'); } catch (e) {}
   }
 
   /* ── 粒子 ── */
@@ -922,6 +924,8 @@
       farmArea.appendChild(s);
       (function(x){ setTimeout(function(){ if (x.parentNode) x.parentNode.removeChild(x); }, 850); })(s);
     }
+    /* 每日任務：餵 3 次 */
+    try { bumpDaily('f'); } catch (e) {}
   }
 
   function sizeFarm(){
@@ -2657,6 +2661,71 @@
       wc.style.zIndex = '31';
     }
   }
+
+  /* ── 每日任務：全年齡段、只加成不懲罰，3 個小目標做完發金幣 ── */
+  var DAILY_KEY = 'dsh_daily';
+  var DAILY_TASKS = [
+    { k: 'q', icon: '⚔️', goal: 3 },
+    { k: 'f', icon: '⭐', goal: 3 },
+    { k: 'p', icon: '🤗', goal: 5 }
+  ];
+  function todayKey(){ var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function loadDaily(){
+    var o = { d: todayKey(), q: 0, f: 0, p: 0, done: false };
+    try { var j = JSON.parse(localStorage.getItem(DAILY_KEY) || 'null'); if (j && j.d === todayKey()) o = j; } catch (e) {}
+    return o;
+  }
+  function saveDaily(o){ try { localStorage.setItem(DAILY_KEY, JSON.stringify(o)); } catch (e) {} }
+  var dailyEl = null;
+  function bumpDaily(k){
+    var o = loadDaily(); if (o.done) return;
+    var t = null; for (var i = 0; i < DAILY_TASKS.length; i++) if (DAILY_TASKS[i].k === k) t = DAILY_TASKS[i];
+    if (!t) return;
+    o[k] = Math.min(t.goal, (o[k] || 0) + 1);
+    saveDaily(o); paintDaily(); checkDaily();
+  }
+  function paintDaily(){
+    if (!dailyEl) return;
+    var o = loadDaily();
+    DAILY_TASKS.forEach(function (t, i) {
+      var c = dailyEl.children[i]; if (!c) return;
+      var v = Math.min(t.goal, o[t.k] || 0);
+      c.textContent = t.icon + ' ' + v + '/' + t.goal;
+      c.classList.toggle('done', v >= t.goal);
+    });
+    dailyEl.classList.toggle('all', o.done);
+  }
+  function checkDaily(){
+    var o = loadDaily(); if (o.done) return;
+    for (var i = 0; i < DAILY_TASKS.length; i++) if ((o[DAILY_TASKS[i].k] || 0) < DAILY_TASKS[i].goal) return;
+    o.done = true; saveDaily(o); paintDaily();
+    if (window.Juice && Juice.confetti) Juice.confetti(30);
+    if (window.__petCheer) window.__petCheer('🎯 每日任務完成！');
+    if (window.Wallet && Wallet.earnBatch && Wallet.isReal && Wallet.isReal()) {
+      Wallet.earnBatch(50, 'daily', function (err, d) {
+        if (!err && d && d.ok) {
+          if (window.__petCheer) window.__petCheer('+50 金幣！');
+          if (Wallet.refresh) Wallet.refresh();
+        }
+      });
+    }
+  }
+  (function mountDaily(){
+    if (!farmArea) return;
+    var st = document.createElement('style');
+    st.textContent = '.dailyChip{position:absolute;display:flex;gap:5px;z-index:31;pointer-events:none}' +
+      '.dailyChip .dt{display:inline-flex;align-items:center;gap:3px;padding:4px 8px;border-radius:999px;' +
+      'background:rgba(15,23,42,.72);border:1px solid rgba(255,255,255,.14);color:#cbd5e1;font-size:11px;font-weight:800;white-space:nowrap}' +
+      '.dailyChip .dt.done{color:#fde047;border-color:rgba(253,224,71,.55)}' +
+      '.dailyChip.all .dt{color:#86efac;border-color:rgba(134,239,172,.55)}';
+    document.head.appendChild(st);
+    dailyEl = document.createElement('div');
+    dailyEl.className = 'dailyChip';
+    DAILY_TASKS.forEach(function (t) { var c = document.createElement('span'); c.className = 'dt'; dailyEl.appendChild(c); });
+    farmArea.appendChild(dailyEl);
+    dailyEl.style.top = '118px'; dailyEl.style.left = '10px';
+    paintDaily();
+  })();
 
   /* 新手引導：送完 2 顆蛋的第一次，帶孩子點一輪（只出現一次） */
   (function newbieGuide(){

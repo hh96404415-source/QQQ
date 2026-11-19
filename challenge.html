@@ -2407,6 +2407,13 @@
       stage++;
       try { localStorage.setItem(STAGE_KEY, String(stage)); } catch (e) {}
       paintStage();
+      /* 每日任務：打贏 3 關（跨頁寫 dsh_daily，社群頁統一結算） */
+      try {
+        var _dd = JSON.parse(localStorage.getItem('dsh_daily') || 'null') || {};
+        var _d = new Date(); var _tk = _d.getFullYear() + '-' + String(_d.getMonth() + 1).padStart(2, '0') + '-' + String(_d.getDate()).padStart(2, '0');
+        if (_dd.d !== _tk) _dd = { d: _tk, q: 0, f: 0, p: 0, done: false };
+        if (!_dd.done) { _dd.q = Math.min(3, (_dd.q || 0) + 1); localStorage.setItem('dsh_daily', JSON.stringify(_dd)); }
+      } catch (e) {}
       var done = stage - 1;
       /* 每 3 關＝一章：只放章節儀式（紫金框＋獎勵），不放過關儀式，
          避免兩張暗場疊加、金幣爆兩次、過章高潮被打斷 */
