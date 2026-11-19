@@ -107,7 +107,7 @@
       <span class="nm" id="hName">小明</span>
       <span class="gd" id="hGrade"></span>
       <button class="go" id="hGo" type="button">開始玩 →</button>
-      <span class="hint" style="margin-top:10px;font-size:12px;color:#64748b">這部機已經記住你，下次開頁不用再打數字</span>
+      <span class="hint" id="hHint" style="margin-top:10px;font-size:12px;color:#64748b">這部機已經記住你，下次開頁不用再打數字</span>
     </div>
   </section>
 
@@ -315,6 +315,16 @@
     document.getElementById('hGrade').textContent = m.tag || '';
     stepKey.classList.add('hidden');
     stepHello.classList.remove('hidden');
+    /* 只有開發者帳號才顯示「怎麼換人」——孩子帳號不出現任何提示（不教孩子解綁） */
+    try {
+      if (window.Player.isDev && Player.isDev()) {
+        var hh = document.getElementById('hHint');
+        if (hh) {
+          hh.style.color = '#94a3b8';
+          hh.textContent = '開發者帳號：長按上方「三 問」2.5 秒 → 輸入 999999 解除綁定，再用孩子 6 位 PIN 進入';
+        }
+      }
+    } catch (e) {}
     document.getElementById('hGo').addEventListener('click', function () {
       location.href = 'community.html';
     });
