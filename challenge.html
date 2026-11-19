@@ -1001,12 +1001,12 @@
           var a = rnd(1, 20), b = rnd(1, 20);
           if (a === b) b = a + 1;
           var big = Math.max(a, b), small = Math.min(a, b);
-          /* 選項一定要包含那兩個數，否則「哪個比較大」會出現比答案更大的數字 */
+          /* 干擾項一定要比 big 小（否則「哪個比較大」會出現比答案更大的數字） */
           var pool = [big, small];
-          var cand = [big + 1, big + 2, small + 1, small - 1, big - 1];
+          var cand = [big - 1, big - 2, small + 1, small - 1];
           for (var i = 0; i < cand.length && pool.length < 4; i++) {
             var v = cand[i];
-            if (v >= 1 && v <= 22 && pool.indexOf(v) < 0) pool.push(v);
+            if (v >= 1 && v < big && pool.indexOf(v) < 0) pool.push(v);
           }
           for (var j = pool.length - 1; j > 0; j--) { var k = rnd(0, j), t = pool[j]; pool[j] = pool[k]; pool[k] = t; }
           return { text: a + ' 和 ' + b + '，哪一個比較大？', answer: big, options: pool };
