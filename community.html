@@ -1236,6 +1236,8 @@
   function shopRenderTicket() {
     var tip = document.getElementById('shopTip');
     if (!shopGrid) return;
+    /* 這裡會被「開店」和「金幣回來」兩條路各呼叫一次，先清空才不會重複長卡片 */
+    shopGrid.innerHTML = '';
     if (!window.Wallet || !Wallet.isReal()) {
       shopGrid.innerHTML = '<div class="shopCard own" style="grid-column:1/-1">' +
         '<div class="nm">先登入孩子帳號</div><div class="sub">金幣與時間卷要登入後才有</div></div>';
@@ -1274,7 +1276,12 @@
           if (err || !d || !d.ok) {
             b.disabled = false;
             b.textContent = '兌換';
-            if (tip) tip.textContent = '❌ ' + ((d && d.error) || err || '兌換失敗');
+            var msg = (d && d.error) || err || '兌換失敗';
+            if (tip) {
+              tip.textContent = /登入/.test(String(msg))
+                ? '❌ 太久沒玩，要重新登入一次：回主畫面輸入你的 PIN（星星和金幣都還在）'
+                : ('❌ ' + msg);
+            }
             return;
           }
           shopCoins = (d.coins == null ? 0 : d.coins);
