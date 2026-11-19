@@ -1696,9 +1696,23 @@
       var from = p.stage;
       p.stage++;
       levelUpFx(p, from);
+      evolveCoinBonus(p);
       return true;
     }
     return false;
+  }
+  /* 進化後果：進化那一刻發一次性金幣獎勵（真實登入才有、走伺服器記帳） */
+  function evolveCoinBonus(p){
+    if (!window.Wallet || !window.Wallet.earnBatch || !window.Wallet.isReal) return;
+    if (!window.Wallet.isReal()) return;
+    var bonus = [0, 0, 30, 40, 50][p.stage] || 40;
+    window.Wallet.earnBatch(bonus, 'evolve', function (err, d) {
+      if (err) return;
+      if (d && d.ok) {
+        setTimeout(function(){ cheer(p, '+' + bonus + ' 金幣！'); }, 2200);
+        window.Wallet.refresh && window.Wallet.refresh();
+      }
+    });
   }
   /* 升級／孵化的儀式：全螢幕，強度對齊戰鬥特效 */
   function levelUpFx(p, fromStage){ ceremony(p, fromStage); }

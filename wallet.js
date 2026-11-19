@@ -72,6 +72,16 @@
     });
   }
 
+  /* 進化／遊戲事件給的一次性金幣獎勵（走 earnBatch，伺服器記帳） */
+  function earnBatch(n, source, cb) {
+    var u = uid();
+    if (!u) return cb('未登入');
+    post({ action: 'earnBatch', user_id: u, n: n, source: source || 'community' }, function (err, d) {
+      if (err) return cb(err);
+      cb(null, d);
+    });
+  }
+
   function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
     var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
@@ -162,6 +172,7 @@
   window.Wallet = {
     status: status,
     redeem: redeem,
+    earnBatch: earnBatch,
     refresh: refresh,
     mount: mount,
     uid: uid,

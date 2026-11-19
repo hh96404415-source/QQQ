@@ -2396,6 +2396,9 @@
       else { var u = unitById(curUnit); g = (u && u.g) ? u.g : 1; }
       var t = g >= 3 ? 264 : (g === 2 ? 168 : 102);
       if (curUnit && /word/.test(curUnit)) t = Math.round(t * 1.25);   /* 應用題再多一點 */
+      /* 進化後果：越高階的夥伴打得越痛（純顯示，不影響 3 下打死） */
+      var ps = (petInfo && typeof petInfo.s === 'number') ? petInfo.s : 1;
+      t = Math.round(t * (1 + ps * 0.12));   /* 幼獸 1.12× → 金龍 1.48× */
       return t;
     }
 
