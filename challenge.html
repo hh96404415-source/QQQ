@@ -702,6 +702,7 @@
       if (wasNew && window.Juice && window.Juice.banner) {
         var m0 = null; for (var i = 0; i < MONSTERS.length; i++) if (MONSTERS[i].k === k) m0 = MONSTERS[i];
         var nm = m0 ? m0.n[s - 1] : k;
+        if (window.Juice && window.Juice.fx) window.Juice.fx('dex');
         window.Juice.banner('📚 圖鑑 +1：' + nm + '！', { ms: 1200, target: arenaEl });
       }
       if (dexCount() === MONSTERS.length * 2) {
@@ -2602,7 +2603,7 @@
       setTimeout(function () { monImg.classList.remove('enter'); }, 700);
       /* 首領／異色登場的儀式：暗一下、鼓聲、橫幅 */
       if (isShiny && window.Juice) {
-        window.Juice.fx('boss');
+        window.Juice.fx('shiny');
         window.Juice.flash('rgba(251,191,36,.55)', 180);
         window.Juice.banner('✨ 異色怪物 出現！', { ms: 1800, target: arenaEl });
       } else if (isBoss && window.Juice) {
@@ -3049,6 +3050,7 @@
         /* 3／5／7 連對各給一次「Fever」：暖光 + 短橫幅，1 秒內收掉，不擋題目 */
         if (streak === 3 || streak === 5 || streak === 7) {
           fever(true);
+          if (window.Juice && window.Juice.fx) window.Juice.fx('fever');
           if (window.Juice && window.Juice.banner) {
             window.Juice.banner((streak >= 7 ? '⚡' : '🔥') + ' 連對 ' + streak + '！', { ms: 900 });
           }
@@ -3136,6 +3138,11 @@
         else _pop = '+1⭐　+' + earn + ' 金幣';
         if (isFirstWin) _pop = '🌅 今日首戰 ×2！ ' + _pop;
         if (loot) _pop += '  🎁掉寶 +1⭐';
+        if (window.Juice) {
+          if (isEpic || isCrit) window.Juice.fx('crit');
+          if (isFirstWin) window.Juice.fx('firstWin');
+          if (loot) window.Juice.fx('loot');
+        }
         rewardPop(_pop);
         if (!q || q.type !== 'remote') {
           coinPending += earn;

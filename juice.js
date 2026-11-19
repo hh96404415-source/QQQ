@@ -116,7 +116,45 @@
       noise({ dur: 0.5, freq: 300, gain: 0.07 });
     },
     page:   function () { tone({ f1: 320, f2: 880, type: 'sine', dur: 0.20, gain: 0.05 }); },
-    unlock: function () { tone({ f1: 700, f2: 1400, type: 'sine', dur: 0.16, gain: 0.05 }); }
+    unlock: function () { tone({ f1: 700, f2: 1400, type: 'sine', dur: 0.16, gain: 0.05 }); },
+    /* ── 事件音效（Day1）：掉寶／異色／Fever／首戰／圖鑑／進化／會心 ── */
+    loot:  function () {
+      tone({ f1: 1319, f2: 1760, type: 'triangle', dur: 0.10, gain: 0.06 });
+      tone({ f1: 1568, type: 'sine', dur: 0.11, gain: 0.05, at: 0.06 });
+      tone({ f1: 2093, type: 'sine', dur: 0.14, gain: 0.045, at: 0.13 });
+    },
+    shiny: function () {
+      [0, 4, 7, 12].forEach(function (semi, i) {
+        tone({ f1: 1046.5 * Math.pow(2, semi / 12), type: 'sine', dur: 0.22, gain: 0.055, at: i * 0.09 });
+      });
+      tone({ f1: 2093, f2: 2794, type: 'sine', dur: 0.30, gain: 0.04, at: 0.40 });
+    },
+    fever: function () {
+      noise({ dur: 0.26, freq: 2200, hp: true, gain: 0.05 });
+      tone({ f1: 320, f2: 1500, type: 'sawtooth', dur: 0.26, gain: 0.05, filter: 2400 });
+      tone({ f1: 1568, f2: 1976, type: 'triangle', dur: 0.16, gain: 0.07, at: 0.18 });
+    },
+    firstWin: function () {
+      [523.25, 659.25, 783.99].forEach(function (f, i) {
+        tone({ f1: f, type: 'sine', dur: 0.24, gain: 0.055, at: i * 0.10 });
+      });
+    },
+    dex:   function () {
+      tone({ f1: 880, type: 'square', dur: 0.06, gain: 0.05 });
+      tone({ f1: 1319, type: 'square', dur: 0.09, gain: 0.05, at: 0.06 });
+      tone({ f1: 1760, type: 'sine', dur: 0.12, gain: 0.045, at: 0.13 });
+    },
+    evolve: function () {
+      [0, 3, 5, 7, 10, 12].forEach(function (semi, i) {
+        tone({ f1: 392 * Math.pow(2, semi / 12), type: 'triangle', dur: 0.20, gain: 0.06, at: i * 0.11 });
+      });
+      tone({ f1: 1568, f2: 2093, type: 'sine', dur: 0.35, gain: 0.05, at: 0.72 });
+    },
+    crit:  function () {
+      tone({ f1: 1400, f2: 2600, type: 'sawtooth', dur: 0.09, gain: 0.07, filter: 2600 });
+      noise({ dur: 0.07, freq: 3200, hp: true, gain: 0.06 });
+      tone({ f1: 2093, type: 'triangle', dur: 0.16, gain: 0.06, at: 0.05 });
+    }
   };
 
   function fx(name, opt) {
