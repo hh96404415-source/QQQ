@@ -336,6 +336,27 @@
   #farmStars{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:6px;
     background:rgba(15,23,42,.78);border:1px solid rgba(255,255,255,.15);border-radius:999px;
     padding:5px 12px;font-size:14px;font-weight:900;color:#fbbf24;z-index:8}
+
+  /* ══════════ 頂部資訊列（星星／名字／金幣／模式／每日任務） ══════════ */
+  #hudTop{position:absolute;top:10px;left:12px;z-index:33;display:flex;flex-direction:column;
+    gap:8px;max-width:calc(100% - 250px);pointer-events:none}
+  #hudTop .hudRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  #hudTop > .hudRow > *{pointer-events:auto}
+  #hudTop > .hudRow > *{pointer-events:auto}
+  #hudTop #farmStars{font-size:17px;padding:8px 16px;min-height:44px;border-radius:999px;
+    background:rgba(15,23,42,.78);border:1px solid rgba(255,255,255,.16);line-height:1}
+  #hudTop #farmStars button{font-size:13px;padding:4px 10px}
+  #hudTop .whoChip .whoBtn{font-size:16px;min-height:44px;padding:8px 16px 8px 12px;
+    background:rgba(15,23,42,.78);border:1px solid rgba(255,255,255,.16)}
+  #hudTop .walletChip .wCoin,#hudTop .walletChip .wClock{font-size:16px;min-height:44px;
+    padding:8px 15px;background:rgba(15,23,42,.78);border:1px solid rgba(255,255,255,.16)}
+  #hudTop .walletChip .wCoin b{font-size:17px}
+  #hudTop .dailyChip{position:static;display:flex;gap:8px;pointer-events:none}
+  #hudTop .dailyChip .dt{font-size:15px;min-height:40px;padding:7px 13px;
+    background:rgba(15,23,42,.78);border:1px solid rgba(255,255,255,.16);border-radius:999px}
+  @media (max-width:760px), (orientation:portrait){
+    #hudTop{top:64px;left:10px;max-width:calc(100% - 20px)}
+  }
   #homeBtn{position:absolute;top:10px;right:68px;z-index:31;display:flex;align-items:center;
     justify-content:center;width:46px;height:46px;border-radius:14px;text-decoration:none;
     background:rgba(15,23,42,.72);border:1px solid rgba(255,255,255,.18);font-size:24px;line-height:1;
@@ -2689,11 +2710,39 @@
     }, 5000 + Math.random() * 6000);
   })();
 
+  /* ── 頂部資訊列：星星／名字／金幣＋模式／每日任務，兩排整齊排好 ── */
+  function layoutHud() {
+    if (!farmArea) return;
+    var hud = document.getElementById('hudTop');
+    if (!hud) {
+      hud = document.createElement('div');
+      hud.id = 'hudTop';
+      hud.innerHTML = '<div class="hudRow" id="hudRow1"></div><div class="hudRow" id="hudRow2"></div>';
+      farmArea.appendChild(hud);
+    }
+    var r1 = document.getElementById('hudRow1');
+    var r2 = document.getElementById('hudRow2');
+    var put = function (el, box) {
+      if (!el || !box) return;
+      if (el.parentNode !== box) box.appendChild(el);
+      el.style.position = 'static';
+      el.style.top = 'auto';
+      el.style.left = 'auto';
+      el.style.zIndex = '';
+    };
+    put(document.getElementById('farmStars'), r1);
+    put(document.getElementById('whoChip'), r1);
+    put(document.getElementById('walletChip'), r1);
+    put(document.querySelector('.dailyChip'), r2);
+    /* 第二排有東西才顯示（沒登入就沒有每日任務以外的內容） */
+    if (r2) r2.style.display = r2.children.length ? '' : 'none';
+  }
+  window.__layoutHud = layoutHud;
+
   /* 現在是哪一位小朋友：貼在農場左上角（星星下面） */
   if (window.Player && farmArea) {
     window.Player.mount(farmArea);
-    var wc = document.getElementById('whoChip');
-    if (wc) { wc.style.position = 'absolute'; wc.style.top = '52px'; wc.style.left = '10px'; wc.style.zIndex = '31'; wc.classList.add('alignLeft'); }
+    layoutHud();
     /* 孩子的名字從登入來，寵物迎接／道晚安／贏的時候會叫 */
     try {
       var _p = window.Player.bound();
@@ -2706,13 +2755,8 @@
 
   /* 金幣錢包＋時間卷商店＋倒數：貼在娛樂時間下面 */
   if (window.Wallet && farmArea) {
-    var wc = window.Wallet.mount(farmArea);
-    if (wc) {
-      wc.style.position = 'absolute';
-      wc.style.top = '82px';
-      wc.style.left = '10px';
-      wc.style.zIndex = '31';
-    }
+    window.Wallet.mount(farmArea);
+    layoutHud();
   }
 
   /* ── 每日任務：全年齡段、只加成不懲罰，3 個小目標做完發金幣 ── */
@@ -2766,9 +2810,9 @@
   (function mountDaily(){
     if (!farmArea) return;
     var st = document.createElement('style');
-    st.textContent = '.dailyChip{position:absolute;display:flex;gap:5px;z-index:31;pointer-events:none}' +
-      '.dailyChip .dt{display:inline-flex;align-items:center;gap:3px;padding:4px 8px;border-radius:999px;' +
-      'background:rgba(15,23,42,.72);border:1px solid rgba(255,255,255,.14);color:#cbd5e1;font-size:11px;font-weight:800;white-space:nowrap}' +
+    st.textContent = '.dailyChip{display:flex;gap:8px;pointer-events:none}' +
+      '.dailyChip .dt{display:inline-flex;align-items:center;gap:4px;padding:7px 13px;border-radius:999px;' +
+      'background:rgba(15,23,42,.78);border:1px solid rgba(255,255,255,.16);color:#cbd5e1;font-size:15px;font-weight:800;white-space:nowrap}' +
       '.dailyChip .dt.done{color:#fde047;border-color:rgba(253,224,71,.55)}' +
       '.dailyChip.all .dt{color:#86efac;border-color:rgba(134,239,172,.55)}';
     document.head.appendChild(st);
@@ -2776,8 +2820,8 @@
     dailyEl.className = 'dailyChip';
     DAILY_TASKS.forEach(function (t) { var c = document.createElement('span'); c.className = 'dt'; dailyEl.appendChild(c); });
     farmArea.appendChild(dailyEl);
-    dailyEl.style.top = '118px'; dailyEl.style.left = '10px';
     paintDaily();
+    layoutHud();
   })();
 
   /* 新手引導：送完 2 顆蛋的第一次，帶孩子點一輪（只出現一次） */
