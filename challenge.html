@@ -253,7 +253,10 @@
   #dexMask.show{display:flex}
   #dexPanel{width:min(780px,96vw);max-height:88vh;overflow:auto;background:linear-gradient(160deg,#16213a,#0b1220);
     border:2px solid rgba(251,191,36,.35);border-radius:20px;padding:14px}
-  #dexPanel h2{margin:0 0 10px;font-size:17px;color:#fbbf24}
+  #dexPanel h2{margin:0 0 8px;font-size:17px;color:#fbbf24}
+  #dexBar{height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin:0 0 4px}
+  #dexBarFill{height:100%;width:0;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:999px;transition:width .4s}
+  #dexCount{font-size:12px;color:#94a3b8;font-weight:800;margin:0 0 12px}
   #dexGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
   .dexCell{background:rgba(30,41,59,.9);border:1px solid rgba(255,255,255,.1);border-radius:14px;
     padding:8px;text-align:center;min-height:116px;display:flex;flex-direction:column;align-items:center;
@@ -484,6 +487,8 @@
     <div id="dexPanel">
       <button id="dexClose">關閉</button>
       <h2>📚 怪物圖鑑</h2>
+      <div id="dexBar"><div id="dexBarFill"></div></div>
+      <div id="dexCount">已收集 0/16</div>
       <div id="dexGrid"></div>
     </div>
   </div>
@@ -2642,15 +2647,19 @@
     function renderDex() {
       var g = document.getElementById('dexGrid');
       g.innerHTML = '';
+      var total = MONSTERS.length * 2, gotN = 0;
       MONSTERS.forEach(function (m) {
         [1, 2].forEach(function (s) {
+          var have = got(m.k, s);
+          if (have) gotN++;
           var d = document.createElement('div');
-          d.className = 'dexCell' + (got(m.k, s) ? ' got' : '');
+          d.className = 'dexCell' + (have ? ' got' : '');
           var img = document.createElement('img');
           img.src = 'monsters/' + m.k + '/0' + s + '.webp';
           img.alt = m.n[s - 1];
-          var nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = m.n[s - 1];
-          var st = document.createElement('div'); st.className = 'st'; st.textContent = (s === 2 ? '首領' : '幼體');
+          /* 缺怪：名字藏成「???」，勾起好奇心 */
+          var nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = have ? m.n[s - 1] : '???';
+          var st = document.createElement('div'); st.className = 'st'; st.textContent = have ? (s === 2 ? '首領' : '幼體') : '🔍 去挑戰遇見它';
           if (isShiny(m.k, s)) {
             d.classList.add('shiny');
             st.textContent += ' · ✨異色';
@@ -2659,6 +2668,11 @@
           g.appendChild(d);
         });
       });
+      /* 收集進度條 */
+      var bar = document.getElementById('dexBarFill');
+      if (bar) bar.style.width = Math.round(gotN / total * 100) + '%';
+      var cnt = document.getElementById('dexCount');
+      if (cnt) cnt.textContent = gotN >= total ? '🏆 圖鑑全收集！你是怪物大師！' : ('已收集 ' + gotN + '/' + total + ' · 集滿有驚喜');
     }
 
     document.getElementById('dexBtn').addEventListener('click', function () {
