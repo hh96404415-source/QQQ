@@ -2853,10 +2853,11 @@
     ];
     var box = document.createElement('div');
     box.id = 'nbGuide';
-    box.style.cssText = 'position:absolute;left:50%;bottom:118px;transform:translateX(-50%);z-index:45;' +
-      'max-width:84%;padding:12px 18px;border-radius:16px;text-align:center;font-size:15px;font-weight:900;' +
-      'line-height:1.5;color:#fef3c7;background:rgba(15,23,42,.94);border:2px solid rgba(251,191,36,.72);' +
-      'box-shadow:0 10px 30px rgba(0,0,0,.45);pointer-events:none;transition:opacity .3s';
+    /* 放到天空帶（HUD 之下、寵物之上），不要壓住農場上的寵物 */
+    box.style.cssText = 'position:absolute;left:50%;top:116px;transform:translateX(-50%);z-index:45;' +
+      'max-width:78%;padding:10px 16px;border-radius:14px;text-align:center;font-size:14.5px;font-weight:900;' +
+      'line-height:1.45;color:#fef3c7;background:rgba(15,23,42,.92);border:2px solid rgba(251,191,36,.66);' +
+      'box-shadow:0 8px 22px rgba(0,0,0,.4);pointer-events:none;transition:opacity .3s';
     farmArea.appendChild(box);
     var i = 0;
     function next(){
@@ -2870,7 +2871,7 @@
       var k = i - 1;
       if (k === 3) { var sb = document.getElementById('shopBtn'); if (sb) { sb.style.transform = 'scale(1.25)'; setTimeout(function(){ sb.style.transform = ''; }, 1600); } }
       if (k === 0) { var c0 = petBarEl.children[0]; if (c0) { c0.style.transform = 'translateY(-6px) scale(1.12)'; setTimeout(function(){ c0.style.transform = ''; }, 1600); } }
-      setTimeout(next, 2800);
+      setTimeout(next, 2400);
     }
     setTimeout(next, 1500);
   })();

@@ -802,6 +802,14 @@
     var q = null;
     var qNum = 0, streak = 0;
     var wrongCount = 0;               /* 這一題答錯幾次（≥2 次就沒獎勵，但可一直答到對） */
+    var tapTimes = [];                 /* 這一題每次按錯的時間點（亂點偵測用） */
+    var spamCaught = false;            /* 這一題被判定「亂點」→ 答對也不給獎勵 */
+    var SPAM_TRIES = 3, SPAM_MS = 6000;/* 6 秒內按錯 3 次＝亂點（Settings 的 SPAM_TRIES／SPAM_SECONDS） */
+    try {
+      var _sc = JSON.parse(localStorage.getItem('dsh_cfg') || '{}');
+      if (_sc && +_sc.SPAM_TRIES > 0) SPAM_TRIES = +_sc.SPAM_TRIES;
+      if (_sc && +_sc.SPAM_SECONDS > 0) SPAM_MS = +_sc.SPAM_SECONDS * 1000;
+    } catch (e) {}
     var lucky = false;                /* 這一題是不是幸運題（8% 機率，答對金幣 ×2） */
     /* ── 難度旋鈕（不顯示給小孩）── */
     var RAMP_KEY = 'dsh_ramp';
@@ -2184,6 +2192,7 @@
     function paintQ() {
       var isHanzi = !!(q && q.type === 'hanzi');
       wrongCount = 0;   /* 新題目重置答錯計數 */
+      tapTimes = []; spamCaught = false;   /* 亂點偵測也一起重置 */
       qText.onclick = null;
       if (window.QAudio) { QAudio.stop(); QAudio.unmount(); }
       if (isHanzi) {
@@ -3187,7 +3196,7 @@
       if (btn) btn.classList.add('correct');
       var popText = '';       /* 獎勵大字：等打擊動作做完才彈，不要跟火花一起擠 */
       roundQ.push({ ok: true, ms: Date.now() - (qLogT0 || Date.now()) });
-      var noReward = wrongCount >= 2;   /* 答錯 2 次：答對也不給星星/金幣，但一樣出招打怪、不卡進度 */
+      var noReward = wrongCount >= 2 || spamCaught;   /* 答錯 2 次或被判定亂點：答對也不給星星/金幣，但一樣出招、不卡進度 */
       /* 先把這題的金幣獎勵（含倍率）算出來：遠端題要連 earn 一起送 complete_set，伺服器才真的入帳 */
       var isFirstWin = false, isEpic = false, isCrit = false, feverOn = false, earn = COINS_PER_Q;
       var _d = new Date();
@@ -3220,7 +3229,9 @@
       if (q && q.type === 'remote' && q.remoteId && window.QB) QB.markDone(q.remoteId);
       logAnswer(true);
       if (noReward) {
-        fb.textContent = '✅ 答對了！但答錯 2 次，這題沒有獎勵';
+        fb.textContent = spamCaught
+          ? '✅ 答對了！不過剛剛按得太快，這題沒有獎勵（慢慢想，想清楚再按）'
+          : '✅ 答對了！但答錯 2 次，這題沒有獎勵';
       } else {
         fb.textContent = '✅ 答對了！出招！ +1 ⭐';
         addStar();
@@ -3333,6 +3344,11 @@
     function missed(btn) {
       if (btn) btn.classList.add('wrong');
       wrongCount++;
+      /* 亂點偵測：短時間內連按錯 → 這題不給獎勵（不懲罰、不扣血，只是白做） */
+      var _now = Date.now();
+      tapTimes.push(_now);
+      tapTimes = tapTimes.filter(function (t) { return _now - t <= SPAM_MS; });
+      if (tapTimes.length >= SPAM_TRIES) spamCaught = true;
       roundQ.push({ ok: false, ms: Date.now() - (qLogT0 || Date.now()) });
       logAnswer(false);
       if (q && q.type === 'remote') {
