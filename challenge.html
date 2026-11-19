@@ -2751,6 +2751,16 @@
         start();
       }
     })();
+    /* 新手帶路：第一次挑戰的歡迎提示（社群導引 → 這裡接住，閉環） */
+    (function firstChallenge() {
+      try {
+        if (localStorage.getItem('dsh_challenge_intro')) return;
+        localStorage.setItem('dsh_challenge_intro', '1');
+        setTimeout(function () {
+          if (window.Juice && Juice.banner) Juice.banner('👋 答對一題 +25 金幣！連對 3 題 🔥Fever', { ms: 3800 });
+        }, 900);
+      } catch (e) {}
+    })();
     /* 連續天數：跨日 +1，同一天不重複加，斷一天歸零；連續 2 天起每次開場亮一下 */
     (function dailyStreak() {
       try {
