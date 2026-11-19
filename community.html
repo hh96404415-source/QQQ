@@ -352,6 +352,14 @@
     padding:5px 12px;font-size:14px;font-weight:900;color:#fbbf24;z-index:8}
 
   /* ══════════ 頂部資訊列（星星／名字／金幣／模式／每日任務） ══════════ */
+
+  /* ── 畫面過渡：進頁淡入、跳頁前淡出（不要一刀切） ── */
+  html{background:#0b1220}
+  body{animation:pageIn .32s ease both}
+  @keyframes pageIn{from{opacity:0}to{opacity:1}}
+  body.pageOut{animation:pageOut .22s ease forwards}
+  @keyframes pageOut{from{opacity:1}to{opacity:0}}
+
   #hudTop{position:absolute;top:10px;left:12px;z-index:33;display:flex;flex-direction:column;
     gap:8px;max-width:calc(100% - 250px);pointer-events:none}
   #hudTop .hudRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
@@ -3046,6 +3054,24 @@ window.addEventListener('load', function () {
   if (!window.Motion) return;
   try { window.Motion.farm(document.getElementById('farmArea')); } catch (e) {}
 });
+</script>
+
+<script>
+/* 畫面過渡：所有站內 .html 連結先淡出再跳頁，不要一刀切 */
+(function(){
+  if (window.__fadeNav) return; window.__fadeNav = 1;
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    var a = t && t.closest ? t.closest('a[href]') : null;
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    if (!/\.html(\?|#|$)/.test(href)) return;
+    if (a.target === '_blank' || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    document.body.classList.add('pageOut');
+    setTimeout(function(){ location.href = href; }, 190);
+  }, true);
+})();
 </script>
 </body>
 </html>
