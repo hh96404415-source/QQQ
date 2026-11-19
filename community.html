@@ -69,6 +69,8 @@
     cursor:pointer;transition:filter .2s;will-change:transform,left,top;transform-origin:center bottom}
   .pet::before{content:'';position:absolute;left:50%;bottom:-3px;transform:translateX(-50%);
     width:64%;height:12px;border-radius:50%;background:rgba(0,0,0,.25);filter:blur(3px);z-index:0}
+  /* 精靈圖包一層：翻轉只翻「圖」，頭上的氣泡／進化 chip 文字才不會跟著變鏡像 */
+  .pet .sprite{position:absolute;inset:0;transform-origin:50% 100%;transition:transform .18s}
   .pet img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;
     position:relative;z-index:1;animation:petBreathe 2.8s ease-in-out infinite;
     transform-origin:50% 100%;
@@ -995,9 +997,11 @@
   function makePet(i){
     var el = document.createElement('div');
     el.className='pet';
+    var sprite = document.createElement('div'); sprite.className='sprite';
     var img = document.createElement('img');
     img.alt='';
-    el.appendChild(img);
+    sprite.appendChild(img);
+    el.appendChild(sprite);
     var bubble = document.createElement('div'); bubble.className='bubble';
     el.appendChild(bubble);
     var chip = document.createElement('div'); chip.className='evolchip';
@@ -1009,7 +1013,7 @@
       inFarm:false, owned:false,
       x:0, y:0, tx:0, ty:0, wait:0, face:1, nextBlink:0, idleTalk: 12000 + Math.random()*15000,
       hue: i*54,
-      el:el, img:img, bubble:bubble, chip:chip
+      el:el, sprite:sprite, img:img, bubble:bubble, chip:chip
     };
     img.src = formImg(p, 0);
     el.addEventListener('click', function(){
@@ -2366,7 +2370,15 @@
       var yPct = p.y / fh * 100;
       var t = Math.max(0, Math.min(1, (yPct - 58) / 30));
       var sc = (0.82 + 0.18 * t) * (STAGE_GROW[p.stage] || 1);
-      p.el.style.transform = 'scale(' + sc.toFixed(3) + ')' + ((p.face < 0) ? ' scaleX(-1)' : '');
+      p.el.style.transform = 'scale(' + sc.toFixed(3) + ')';
+      /* 只翻圖，不翻文字（氣泡／進化 chip 要正著看） */
+      if (p.sprite){
+        var wantFlip = p.face < 0;
+        if (p.flipApplied !== wantFlip){
+          p.flipApplied = wantFlip;
+          p.sprite.style.transform = wantFlip ? 'scaleX(-1)' : '';
+        }
+      }
       var hueStr = (p.stage === 0 && p.hue) ? 'hue-rotate('+p.hue+'deg) ' : '';
       /* 情緒姿勢：難過變灰、肚子餓褪色、無聊微微偏色（每幀套，避免被景深濾鏡蓋掉） */
       var moodStr = '';
