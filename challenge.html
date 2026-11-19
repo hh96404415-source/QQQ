@@ -382,14 +382,22 @@
   /* 過章儀式：比過關更強（紫金框、多一層光暈） */
   #chapClear{position:fixed;inset:0;z-index:9995;display:flex;align-items:center;justify-content:center;
     opacity:0;visibility:hidden;pointer-events:none;transition:opacity .3s}
-  #chapClear.on{opacity:1;visibility:visible}
+  #chapClear.on{opacity:1;visibility:visible;pointer-events:auto}
+  /* 過章卡不自動消失：孩子自己按「下一關」或「回農場」 */
+  #chapClear .chapBtns{display:flex;gap:12px;justify-content:center;margin-top:20px}
+  #chapClear .chapBtns button{appearance:none;cursor:pointer;font-family:inherit;font-weight:900;
+    font-size:17px;padding:13px 24px;border-radius:16px;border:0;transition:transform .12s}
+  #chapClear .chapBtns button:active{transform:scale(.95)}
+  #chapClear .chapBtns .primary{background:linear-gradient(180deg,#fde047,#f59e0b);color:#3b1d03;
+    box-shadow:0 6px 0 rgba(146,64,14,.5),0 10px 22px rgba(251,191,36,.35)}
+  #chapClear .chapBtns .ghost{background:rgba(99,102,241,.28);color:#e0e7ff;border:2px solid rgba(165,180,252,.6)}
   #chapClear .scVeil{position:absolute;inset:0;
     background:radial-gradient(circle at 50% 46%,rgba(76,29,149,.97),rgba(3,6,15,.998))}
   #chapClear .scBox{position:relative;text-align:center;padding:30px 54px;border-radius:28px;
     background:linear-gradient(180deg,rgba(49,46,129,.96),rgba(15,23,42,.97));
     border:3px solid rgba(196,181,253,.85);
     box-shadow:0 0 70px rgba(139,92,246,.55),0 0 120px rgba(251,191,36,.35),inset 0 0 30px rgba(251,191,36,.12);
-    animation:scPop 1.6s ease-in-out infinite}
+    animation:scPop .6s ease-out 1}
   #chapClear .scKicker{font-size:13px;letter-spacing:.34em;font-weight:900;color:#ddd6fe;margin-bottom:6px}
   #chapClear .scTitle{font-size:clamp(30px,5.2vmin,50px);font-weight:900;color:#fef3c7;
     -webkit-text-stroke:2px #7c2d12;paint-order:stroke fill;text-shadow:0 6px 0 rgba(0,0,0,.35)}
@@ -512,6 +520,10 @@
       <div class="scTitle">第 <span id="chapNum">1</span> 章 完成！</div>
       <div class="scStars">⭐ ⭐ ⭐</div>
       <div class="scSub" id="chapGift">獎勵：+180 秒 · +3 顆星</div>
+      <div class="chapBtns">
+        <button type="button" class="primary" id="chapNext">下一關 ▶</button>
+        <button type="button" class="ghost" id="chapHome">🏠 回農場</button>
+      </div>
     </div>
   </div>
 
@@ -2487,7 +2499,16 @@
       coinBurst(BONUS_COIN);
       if (el) {
         el.classList.add('on');
-        setTimeout(function () { el.classList.remove('on'); }, 3800);
+        /* 不自動關：孩子看完獎勵，自己決定「下一關」還是「回農場」 */
+        var closeChap = function () { el.classList.remove('on'); };
+        var nx = document.getElementById('chapNext');
+        var hm = document.getElementById('chapHome');
+        if (nx) nx.onclick = function (ev) { ev.stopPropagation(); closeChap(); sfxTapS(); };
+        if (hm) hm.onclick = function (ev) {
+          ev.stopPropagation();
+          closeChap();
+          location.href = 'community.html';
+        };
       }
       if (window.Juice) {
         window.Juice.fx('level');
