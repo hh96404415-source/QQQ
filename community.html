@@ -5,6 +5,31 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>🐲 寵物社區</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.92em%22 font-size=%2292%22%3E%F0%9F%90%B2%3C/text%3E%3C/svg%3E">
+<script>
+/* 出錯不要只給一片空白：把錯誤顯示在畫面上（家長截圖就能回報）。不自動清資料。 */
+(function () {
+  function bar(msg) {
+    try {
+      var d = document.getElementById('__errBar');
+      if (!d) {
+        d = document.createElement('div');
+        d.id = '__errBar';
+        d.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99999;background:#7f1d1d;color:#fff;' +
+          'font:13px/1.6 system-ui;padding:10px 14px;white-space:pre-wrap;box-shadow:0 4px 18px rgba(0,0,0,.45)';
+        (document.body || document.documentElement).appendChild(d);
+      }
+      d.textContent = '⚠ 這一頁出錯了，請把這一行截圖給家長／工程師：\n' + msg;
+    } catch (e) {}
+  }
+  window.addEventListener('error', function (e) {
+    bar((e.message || '未知錯誤') + ' @ 行' + (e.lineno || '?') + ':' + (e.colno || '?'));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e && e.reason;
+    bar('async: ' + ((r && r.message) || String(r || '未知')));
+  });
+})();
+</script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;font-family:"Microsoft JhengHei","Segoe UI",sans-serif;overflow:hidden;background:#0f172a}
