@@ -945,17 +945,17 @@
     var glow=document.createElement('div'); glow.id='skyGlow'; farmArea.appendChild(glow);
     function paintSky(){
       var h = new Date().getHours();
-      var t=0, g=0;               /* tint 疊暗、glow 疊亮 */
+      var tn=0, g=0;              /* tn＝tint 疊暗、g＝glow 疊亮（別用 tint 當數字，會蓋掉 DOM） */
       if (h>=5 && h<9){           /* 清晨：微暖光 */
-        tint = .10; g = .10;
+        tn = .10; g = .10;
       } else if (h>=9 && h<16){   /* 白天：原色 */
-        tint = 0; g = 0;
+        tn = 0; g = 0;
       } else if (h>=16 && h<19){  /* 黃昏：橘金 */
-        tint = .16; g = .12;
+        tn = .16; g = .12;
       } else {                    /* 夜晚：藍暗，暖光火堆 */
-        tint = .42; g = .06;
+        tn = .42; g = .06;
       }
-      tint.style.opacity = String(tint);
+      tint.style.opacity = String(tn);
       tint.style.background = 'linear-gradient(180deg, rgba(30,41,80,'+(h>=16&&h<19?'.25':'.55')+') 0%, rgba(20,20,50,'+(h>=16&&h<19?'.1':'.5')+') 60%, rgba(10,10,30,'+(h>=16&&h<19?'.12':'.55')+') 100%)';
       glow.style.opacity = String(g);
       glow.style.background = (h>=16&&h<19)
