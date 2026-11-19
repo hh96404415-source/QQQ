@@ -91,6 +91,7 @@
     <button class="on" data-tab="fam">🏠 家庭 / 孩子</button>
     <button data-tab="cfg">⚙️ 系統參數</button>
     <button data-tab="blk">🛡 封印清單</button>
+    <button data-tab="qstat">📊 題庫健康度</button>
   </div>
 
   <div class="msg" id="msg"></div>
@@ -158,6 +159,20 @@
     <div class="card">
       <div class="fhead"><span class="fname">清單</span><span class="meta" id="blkCount"></span></div>
       <div id="blkList"></div>
+    </div>
+  </div>
+
+  <div id="viewQstat" style="display:none">
+    <div class="card">
+      <div class="fhead">
+        <span class="fname">📊 題庫健康度</span>
+        <span class="meta">從作答紀錄算「首次答對率」；越低的題越難／越可能有問題（樣本 ≥3 才列入）</span>
+      </div>
+      <div class="form">
+        <button class="btn" id="btnQstat">📊 統計最難題目</button>
+        <span class="meta" id="qstatInfo"></span>
+      </div>
+      <div id="qstatList" style="margin-top:10px"></div>
     </div>
   </div>
 
@@ -265,6 +280,29 @@
       document.getElementById('tCoin').textContent = d.totals.coins;
       document.getElementById('tSess').textContent = d.totals.active_sessions;
       renderFamilies();
+    });
+  }
+
+  var QSTAT = null;
+  function loadQstat(){
+    var info = document.getElementById('qstatInfo');
+    var list = document.getElementById('qstatList');
+    info.textContent = '統計中…';
+    post('devQuestionStats', { limit: 30 }, function(err, d){
+      if (err || !d || !d.ok){ info.textContent = (d && d.error) || '讀取失敗'; list.innerHTML = ''; return; }
+      QSTAT = d;
+      info.textContent = '樣本題數 ' + d.samples_considered + ' · 平均首次答對率 ' + d.avg_first_try_rate + '%';
+      if (!d.worst.length){ list.innerHTML = '<div class="empty">還沒有足夠的作答紀錄（每題要 ≥3 次）</div>'; return; }
+      list.innerHTML = '<div class="meta" style="margin-bottom:6px">最難的題（首次答對率越低越該看）：</div>' + d.worst.map(function(w){
+        var c = w.first_try_rate < 40 ? '#f87171' : (w.first_try_rate < 70 ? '#fbbf24' : '#94a3b8');
+        return '<div class="kid" style="align-items:flex-start">' +
+          '<span class="sub" style="color:' + c + ';font-weight:900">' + w.first_try_rate + '%</span>' +
+          '<span class="nm" style="font-size:13px">' + esc(w.text) + '</span>' +
+          '<span class="sub">' + esc(w.subject) + (w.level ? ' L' + esc(w.level) : '') +
+            ' · ' + w.attempts + ' 次 · 平均 ' + w.avg_tries + ' 次才對</span>' +
+          '<span class="sub">' + esc(w.q_id) + '</span>' +
+          '</div>';
+      }).join('');
     });
   }
 
@@ -665,15 +703,18 @@
       document.getElementById('viewFam').style.display = tab === 'fam' ? '' : 'none';
       document.getElementById('viewCfg').style.display = tab === 'cfg' ? '' : 'none';
       document.getElementById('viewBlk').style.display = tab === 'blk' ? '' : 'none';
+      document.getElementById('viewQstat').style.display = tab === 'qstat' ? '' : 'none';
       if (tab === 'cfg' && !CFG) loadCfg();
       if (tab === 'blk'){
         if (!DATA) { say('先等家庭清單載入…'); load(); setTimeout(function(){ if (DATA){ fillBlkFam(); loadBlk(0); } }, 1200); }
         else { fillBlkFam(); loadBlk(0); }
       }
+      if (tab === 'qstat' && !QSTAT) loadQstat();
     });
   }
 
   document.getElementById('btnReload').addEventListener('click', function(){ load(); });
+  document.getElementById('btnQstat').addEventListener('click', function(){ loadQstat(); });
 
   /* ── 啟動 ── */
   try {
