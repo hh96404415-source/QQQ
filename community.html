@@ -672,7 +672,8 @@
     {id:'fire_lion',      name:'火獅',   glow:'#f59e0b', names:['火紋蛋','火苗獅','火鬃獅','烈焰獅','焚天獅皇']},
     {id:'sea_turtle',     name:'海龜',   glow:'#14b8a6', names:['海泡蛋','海泡龜','珊瑚龜','礁岩龜','滄海龜神']},
     {id:'pegasus',        name:'天馬',   glow:'#7dd3fc', names:['羽翼蛋','小翼馬','羽翼馬','天翔馬','聖光飛馬']},
-    {id:'galaxy_panther', name:'星豹',   glow:'#818cf8', names:['星斑蛋','星斑貓','星尾貓','星紋豹','星河豹王']}
+    {id:'galaxy_panther', name:'星豹',   glow:'#818cf8', names:['星斑蛋','星斑貓','星尾貓','星紋豹','星河豹王']},
+    {id:'thunder_bird',  name:'雷鳥',   glow:'#facc15', names:['雷羽蛋','雷羽雛','雷翼鳥','雷鳴鳥','九天雷鳥']}
   ];
   var STAGE_NAMES = ['蛋','幼獸','成獸','龍','金龍'];
   var FORMS = [
@@ -682,7 +683,7 @@
     {name:'龍',   next:120,      pairs:8  },
     {name:'金龍', next:Infinity, pairs:10 }
   ];
-  var NAMES = ['阿蛋','豆豆','圓圓','啾啾','毛毛','布布','樂樂','米米','糖糖','小星'];
+  var NAMES = ['阿蛋','豆豆','圓圓','啾啾','毛毛','布布','樂樂','米米','糖糖','小星','波波'];
   var FARM_MAX = 3;
   var HATCH_AT = 10;
   /* 越長越大：蛋 → 金龍，體型倍率（小孩最愛「我的變大了」） */
@@ -772,6 +773,46 @@
   function sfxFeed(){ beep(420, .08, 'square', .07); setTimeout(function(){ beep(630, .12, 'square', .06); }, 80); }
   function sfxTap(){ beep(320, .05, 'sine', .06); }
   function sfxNeed(){ beep(700, .07, 'sine', .05); setTimeout(function(){ beep(900, .09, 'sine', .04); }, 70); }
+
+  /* ── 寵物叫聲：每種物種一段合成叫聲（點牠時播放，Web Audio 合成、不用音檔）── */
+  function cryGlide(f0, f1, dur, type, vol, delay){
+    if (window.SND && !window.SND.on()) return;
+    var a = ac(); if (!a) return;
+    setTimeout(function(){
+      try{
+        var o = a.createOscillator(), g = a.createGain();
+        o.type = type || 'sine';
+        o.frequency.setValueAtTime(Math.max(20, f0), a.currentTime);
+        o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), a.currentTime + dur);
+        g.gain.setValueAtTime(vol || 0.1, a.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0008, a.currentTime + dur);
+        o.connect(g); g.connect(a.destination);
+        o.start(); o.stop(a.currentTime + dur + 0.02);
+      }catch(e){}
+    }, delay || 0);
+  }
+  var PET_CRIES = {
+    fire_dragon:   [{f:170,d:.22,t:'sawtooth',v:.14},{f:120,d:.32,t:'sawtooth',v:.12,dt:180}],
+    bamboo_panda:  [{f:420,d:.1,t:'sine',v:.09},{f:540,d:.14,t:'sine',v:.08,dt:90}],
+    water_whale:   [{gl:1,f0:200,f1:620,d:.5,t:'sine',v:.12},{gl:1,f0:620,f1:260,d:.5,t:'sine',v:.1,dt:480}],
+    thunder_cat:   [{f:880,d:.07,t:'square',v:.09},{f:1240,d:.08,t:'square',v:.08,dt:70},{f:660,d:.07,t:'square',v:.08,dt:150}],
+    star_unicorn:  [{f:880,d:.1,t:'triangle',v:.1},{f:1320,d:.12,t:'triangle',v:.09,dt:100},{f:1760,d:.16,t:'triangle',v:.08,dt:200}],
+    forest_deer:   [{f:520,d:.14,t:'sine',v:.1},{f:430,d:.18,t:'sine',v:.08,dt:140}],
+    fire_lion:     [{f:130,d:.24,t:'sawtooth',v:.15},{f:95,d:.36,t:'sawtooth',v:.13,dt:200}],
+    sea_turtle:    [{f:200,d:.22,t:'sine',v:.11},{f:150,d:.34,t:'sine',v:.09,dt:220}],
+    pegasus:       [{gl:1,f0:600,f1:920,d:.22,t:'triangle',v:.1},{gl:1,f0:920,f1:480,d:.24,t:'triangle',v:.08,dt:200}],
+    galaxy_panther:[{f:340,d:.1,t:'sine',v:.1},{f:250,d:.16,t:'sine',v:.08,dt:100}],
+    thunder_bird:  [{f:700,d:.08,t:'square',v:.09},{f:1050,d:.09,t:'square',v:.08,dt:70},{f:520,d:.08,t:'square',v:.08,dt:150}]
+  };
+  function petCry(species){
+    var id = (SPECIES[species] && SPECIES[species].id) || 'fire_dragon';
+    var seq = PET_CRIES[id] || PET_CRIES.fire_dragon;
+    seq.forEach(function(n){
+      var d = n.dt || 0;
+      if (n.gl) cryGlide(n.f0, n.f1, n.d, n.t, n.v, d);
+      else setTimeout(function(){ beep(n.f, n.d, n.t, n.v); }, d);
+    });
+  }
 
   /* ── 粒子 ── */
   function sparkBurst(el){
@@ -946,12 +987,13 @@
       el.classList.add('tap');
       setTimeout(function(){ el.classList.remove('tap'); }, 340);
       sfxTap();
+      petCry(p.species);
       openPanel(i);
     });
     farmArea.appendChild(el);
     return p;
   }
-  for (var i=0;i<10;i++){ pets.push(makePet(i)); }
+  for (var i=0;i<SPECIES.length;i++){ pets.push(makePet(i)); }
 
   /* ══════════ 社區設施 ══════════
      星星是唯一貨幣：餵食要花、設施也要花，但設施是「看得見的王國在長大」。 */
@@ -1117,7 +1159,7 @@
 
 
   /* ══════════════════ 星星商店 ══════════════════ */
-  var EGG_PRICE = [24, 24, 28, 34, 46, 30, 34, 34, 46, 60];   /* 依 SPECIES 順序 */
+  var EGG_PRICE = [24, 24, 28, 34, 46, 30, 34, 34, 46, 60, 40];   /* 依 SPECIES 順序 */
   var shopEl = document.getElementById('shop');
   var shopGrid = document.getElementById('shopGrid');
   var shopTab = 'egg';
@@ -1478,6 +1520,7 @@
   function selectPet(id){
     sel = id;
     renderPetBar();
+    petCry(pets[id].species);
     openPanel(id);
     /* 選中的那隻自動捲到中間（寵物一多也不會找不到） */
     var chip = petBarEl.querySelector('.chip[data-sel]');
