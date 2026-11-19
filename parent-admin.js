@@ -16,19 +16,17 @@
    ────────────────────────────────────────────────────────────── */
 (function () {
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec';
-  var TOKEN = 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
   var FAMILY_ID = 1;
 
   function cfg() {
     var o = {};
     try { o = JSON.parse(localStorage.getItem('dsh_qa') || '{}') || {}; } catch (e) {}
-    var token = (o.token && o.token !== 'CHANGE_ME_TO_A_RANDOM_LONG_STRING') ? o.token : TOKEN;
-    return { url: o.url || GAS_URL, token: token };
+    return { url: o.url || GAS_URL };
   }
 
   function post(action, params, cb) {
     var c = cfg();
-    var body = { token: c.token, action: action };
+    var body = { action: action };
     for (var k in params) if (params[k] !== undefined) body[k] = params[k];
     fetch(c.url, {
       method: 'POST',

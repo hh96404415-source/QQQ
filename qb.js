@@ -9,7 +9,6 @@
   var FB_BASE = 'https://qqquest-2e36a-default-rtdb.asia-southeast1.firebasedatabase.app';
   var FB = FB_BASE + '/bank/v1';
   var GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec';
-  var TOKEN_DEFAULT = 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
 
   var CACHE_KEY = 'dsh_qb_v1';
   var DONE_KEY = 'dsh_ans_done';      // 本機鏡像（離線用）
@@ -51,7 +50,7 @@
   function gasCfg() {
     var c = {};
     try { c = JSON.parse(localStorage.getItem('dsh_qa') || '{}') || {}; } catch (e) { c = {}; }
-    return { url: c.url || GAS_URL_DEFAULT, token: c.token || TOKEN_DEFAULT };
+    return { url: c.url || GAS_URL_DEFAULT };
   }
 
   function getJson(url, cb) {
@@ -143,7 +142,7 @@
       if (cb) cb(ok);
     };
     x.onerror = function () { pending = batch.concat(pending); if (cb) cb(false); };
-    x.send(JSON.stringify({ token: cfg.token, action: 'doneAdd', user_id: Number(uid), qids: batch }));
+    x.send(JSON.stringify({ action: 'doneAdd', user_id: Number(uid), qids: batch }));
   }
 
   function markDone(qid) {

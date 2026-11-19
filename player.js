@@ -170,8 +170,7 @@
      · 回社區前：立刻推一次
      ───────────────────────────────────────────────────────────── */
   var GAS_DEFAULT = {
-    url: 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec',
-    token: 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC'
+    url: 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec'
   };
   var SYNC_KEYS = ['dsh_stars', 'dsh_pet', 'dsh_pick', 'dsh_hw_done', 'dsh_time', 'dsh_time_cap', 'dsh_ans_log', 'dsh_fac'];
   var pushTimer = null, pushing = false;
@@ -179,13 +178,12 @@
   function gasCfg() {
     var c = {};
     try { c = JSON.parse(localStorage.getItem('dsh_qa') || '{}') || {}; } catch (e) { c = {}; }
-    var token = c.token && c.token !== 'CHANGE_ME_TO_A_RANDOM_LONG_STRING' ? c.token : GAS_DEFAULT.token;
-    return { url: c.url || GAS_DEFAULT.url, token: token };
+    return { url: c.url || GAS_DEFAULT.url };
   }
 
   function post(body, cb) {
     var g = gasCfg();
-    var payload = JSON.stringify({ token: g.token, action: body.action, user_id: body.user_id, state: body.state });
+    var payload = JSON.stringify({ action: body.action, user_id: body.user_id, state: body.state });
     fetch(g.url, {
       method: 'POST', redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },

@@ -230,15 +230,12 @@
    不再依賴「這台裝置剛好有小孩登入」，也不在本機自設 PIN。 */
 (function(){
   var GAS_URL='https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec';
-  var TOKEN='IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
   var KEY='dsh_parent_sess', DAY=86400000;
   var lock=document.getElementById('lock'), pad=document.getElementById('lockPad');
   var dots=[].slice.call(document.querySelectorAll('#lockDots i'));
   var err=document.getElementById('lockErr'), hint=document.getElementById('lockHint');
   var skip=document.getElementById('lockSkip');
   var buf='', busy=false;
-  // 開發者通道：輸滿 8 位 == 這個碼 → 直接進開發者後台（已在同一 origin 種 session，不用再打一次）
-  var DEV_PIN='51440469';
 
   window.PARENT_RESULT=null;
   window.PARENT_ON_LOGIN=null;
@@ -263,7 +260,7 @@
     fetch(GAS_URL,{
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify(Object.assign({token:TOKEN}, body)),
+      body:JSON.stringify(body),
       redirect:'follow'
     }).then(function(r){ return r.json(); }).then(function(d){ cb(null,d); })
       .catch(function(e){ cb(e,null); });
@@ -273,9 +270,18 @@
     busy=true; err.textContent=''; hint.textContent='驗證中…';
     post({action:'parentLogin', pin:buf}, function(er,d){
       if(er||!d||!d.ok){
-        busy=false; buf=''; paint();
-        hint.textContent='輸入這個家庭的家長 PIN（8 位）';
-        err.textContent=(d&&d.error)||(er&&String(er))||'PIN 不對';
+        // 不是家長 PIN → 試開發者 PIN（GAS devOverview 只在 PIN 對時回 ok）
+        post({action:'devOverview', dev_pin:buf}, function(er2,d2){
+          busy=false;
+          if(er2||!d2||!d2.ok){
+            buf=''; paint();
+            hint.textContent='輸入這個家庭的家長 PIN（8 位）';
+            err.textContent=(d&&d.error)||(er&&String(er))||'PIN 不對';
+            return;
+          }
+          try{ sessionStorage.setItem('dsh_dev_pin',buf); sessionStorage.setItem('dsh_dev_ok','1'); }catch(e){}
+          location.href='dev.html';
+        });
         return;
       }
       saveSess(d.family||{});
@@ -293,10 +299,6 @@
       if(buf.length>=8) return;
       buf+=k; paint();
       if(buf.length===8){
-        if(buf===DEV_PIN){
-          try{ sessionStorage.setItem('dsh_dev_ok','1'); }catch(e){}
-          location.href='dev.html'; return;
-        }
         setTimeout(done,120);
       }
     });

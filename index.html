@@ -142,7 +142,6 @@
   var LOG_KEY = 'dsh__login_log';
   var QA_KEY = 'dsh_qa';
   var DEFAULT_GAS = 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec';
-  var DEFAULT_TOKEN = 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
 
   var stepHello = document.getElementById('stepHello');
   var stepKey = document.getElementById('stepKey');
@@ -158,14 +157,13 @@
   function gasCfg() {
     var o = {};
     try { o = JSON.parse(localStorage.getItem(QA_KEY) || '{}'); } catch (e) {}
-    /* 網址可以臨時用 ?gas=<新網址>&token=<新token> 覆寫（會被記住） */
+    /* 網址可以臨時用 ?gas=<新網址> 覆寫（會被記住） */
     var qs = new URLSearchParams(location.search);
     if (qs.get('gas')) {
       o.url = qs.get('gas');
-      if (qs.get('token')) o.token = qs.get('token');
-      try { localStorage.setItem(QA_KEY, JSON.stringify({ url: o.url, token: o.token || DEFAULT_TOKEN, uid: o.uid || 'kid01', pin: o.pin || '', on: true })); } catch (e) {}
+      try { localStorage.setItem(QA_KEY, JSON.stringify({ url: o.url, uid: o.uid || 'kid01', pin: o.pin || '', on: true })); } catch (e) {}
     }
-    return { url: o.url || DEFAULT_GAS, token: (o.token && o.token !== 'CHANGE_ME_TO_A_RANDOM_LONG_STRING') ? o.token : DEFAULT_TOKEN };
+    return { url: o.url || DEFAULT_GAS };
   }
 
   function gasHost() {
@@ -176,7 +174,6 @@
 
   function post(body) {
     var c = gasCfg();
-    body.token = c.token;
     return fetch(c.url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },

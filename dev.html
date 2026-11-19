@@ -176,9 +176,9 @@
 <script>
 (function(){
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec';
-  var TOKEN = 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
-  var DEV_PIN = '51440469';
   var SKEY = 'dsh_dev_ok';
+  var PINKEY = 'dsh_dev_pin';
+  var _pin = '';   // 剛輸入、待 GAS 驗證的 PIN（驗證通過才寫進 sessionStorage）
 
   var msgEl = document.getElementById('msg');
   var famList = document.getElementById('famList');
@@ -199,8 +199,9 @@
     var m = Math.floor(s/60), x = s%60;
     return (m>9?m:'0'+m) + ':' + (x>9?x:'0'+x);
   }
+  function devPin(){ try { return sessionStorage.getItem(PINKEY) || _pin; } catch(e){ return _pin; } }
   function post(action, params, cb){
-    var body = { token: TOKEN, action: action, dev_pin: DEV_PIN };
+    var body = { action: action, dev_pin: devPin() };
     if (params) for (var k in params) body[k] = params[k];
     fetch(GAS_URL, {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -227,22 +228,30 @@
     pad.appendChild(b);
   });
   function paint(){ dots.forEach(function(d,i){ d.className = i < buf.length ? 'on' : ''; }); }
+  var busy = false;
   function check(){
-    if (buf === DEV_PIN){
-      try { sessionStorage.setItem(SKEY,'1'); } catch(e){}
+    if (busy) return;
+    busy = true;
+    _pin = buf;                     // 用這次輸入的 PIN 去問 GAS（devOverview 只在 PIN 對時回 ok）
+    post('devOverview', null, function(err, d){
+      busy = false;
+      if (err || !d || !d.ok){
+        lockErr.textContent = (d && d.error) || 'PIN 不對';
+        buf = ''; paint();
+        return;
+      }
+      try { sessionStorage.setItem(PINKEY, buf); sessionStorage.setItem(SKEY,'1'); } catch(e){}
       lock.classList.remove('on');
       load();
-    } else {
-      lockErr.textContent = 'PIN 不對';
-      buf = ''; paint();
-    }
+    });
   }
   function showLock(){
     buf = ''; lockErr.textContent = ''; paint();
     lock.classList.add('on');
   }
   document.getElementById('btnLock').addEventListener('click', function(){
-    try { sessionStorage.removeItem(SKEY); } catch(e){}
+    try { sessionStorage.removeItem(SKEY); sessionStorage.removeItem(PINKEY); } catch(e){}
+    _pin = '';
     showLock();
   });
 

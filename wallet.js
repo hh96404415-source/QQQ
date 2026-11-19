@@ -13,7 +13,6 @@
    ────────────────────────────────────────────────────────────── */
 (function () {
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec';
-  var TOKEN = 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
   var FACE = [15, 30, 60];
   var COIN_PER_MIN = 5;
 
@@ -22,13 +21,11 @@
   function cfg() {
     var o = {};
     try { o = JSON.parse(localStorage.getItem('dsh_qa') || '{}') || {}; } catch (e) {}
-    var token = (o.token && o.token !== 'CHANGE_ME_TO_A_RANDOM_LONG_STRING') ? o.token : TOKEN;
-    return { url: o.url || GAS_URL, token: token };
+    return { url: o.url || GAS_URL };
   }
 
   function post(body, cb) {
     var c = cfg();
-    body.token = c.token;
     fetch(c.url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },

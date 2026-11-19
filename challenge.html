@@ -1626,11 +1626,8 @@
     var qaCfg = (function () {
       try { return JSON.parse(localStorage.getItem(QA_KEY) || '{}') || {}; } catch (e) { return {}; }
     })();
-    /* 舊的預設 token 已經換掉：留著會一直 401，直接換成新的 */
-    if (qaCfg && qaCfg.token === 'CHANGE_ME_TO_A_RANDOM_LONG_STRING') qaCfg.token = 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
     /* 家裡那一套後端的預設值（家長不用手動填，孩子登入就自動接上） */
     var QA_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbydbycnfQsKkirktxFhKOB9p847SlW3e7Jd8oudLykEgkh_zp4ATPde4XIc476JcWNl/exec';
-    var QA_TOKEN_DEFAULT = 'IidSHWtXoAU4RfyDZrlhYeTQq6gxFm5j7JkuVwGC';
     var qaPool = [];          /* 已取回、還沒出的題 */
     var qaPending = false;
     var qaLog = [];           /* 待回傳的作答（湊滿 3 題送 complete_set） */
@@ -1638,7 +1635,7 @@
     var qaT0 = 0;             /* 這一題的開始時間（算作答秒數） */
 
     function qaOn() {
-      return !!(qaCfg && qaCfg.on && qaCfg.url && qaCfg.token && qaCfg.uid);
+      return !!(qaCfg && qaCfg.on && qaCfg.url && qaCfg.uid);
     }
     function qaSave() {
       try { localStorage.setItem(QA_KEY, JSON.stringify(qaCfg)); } catch (e) {}
@@ -1651,7 +1648,7 @@
         : '目前：離線題庫（本地生成）';
     }
     function qaPost(body, cb) {
-      var payload = { action: body.action, token: qaCfg.token };
+      var payload = { action: body.action };
       for (var k in body) if (k !== 'action') payload[k] = body[k];
       fetch(qaCfg.url, {
         method: 'POST',
@@ -2068,11 +2065,10 @@
       });
       mask.addEventListener('click', function (e) { if (e.target === mask) mask.classList.remove('show'); });
 
-      /* 家用一鍵連線：把已知的 Web App 網址與預設 token 填好並直接啟用
+      /* 家用一鍵連線：把已知的 Web App 網址填好並直接啟用
          孩子 ID 不再寫死（以前是 'kid01'，會把作答記到不存在的帳號），改成目前登入的孩子 */
       var QA_HOME = {
         url: QA_URL_DEFAULT,
-        token: QA_TOKEN_DEFAULT,
         uid: '',
         pin: ''
       };
@@ -2082,7 +2078,6 @@
       }
       document.getElementById('qaAuto').addEventListener('click', function () {
         elUrl.value = QA_HOME.url;
-        if (!elTok.value) elTok.value = QA_HOME.token;
         if (!elUid.value) elUid.value = qaHomeUid();
         readInputs();
         qaCfg.on = true; qaBad = 0; qaPool = []; qaLog = [];
@@ -2091,7 +2086,7 @@
         qaPost({ action: 'get_questions', user_id: qaCfg.uid, level: unitById(curUnit).g }, function (err, d) {
           if (err) {
             qaCfg.on = false; qaSave();
-            say('連不上：' + err.message + '\n（若你改過 GAS 的 TOKEN，請把新的貼到 Token 欄）', false);
+            say('連不上：' + err.message, false);
             return;
           }
           var n = (d.questions || []).length;
@@ -2103,7 +2098,7 @@
 
       document.getElementById('qaTest').addEventListener('click', function () {
         readInputs();
-        if (!qaCfg.url || !qaCfg.token || !qaCfg.uid) { say('三個欄位都要填：網址、Token、孩子 ID', false); return; }
+        if (!qaCfg.url || !qaCfg.uid) { say('網址與孩子 ID 都要填', false); return; }
         say('連線中…', true);
         qaPost({ action: 'get_questions', user_id: qaCfg.uid, level: unitById(curUnit).g }, function (err, d) {
           if (err) { say('連不上：' + err.message + '\n（檢查網址是否 /exec 結尾、Web App 權限是否「任何人」）', false); return; }
@@ -2113,7 +2108,7 @@
       });
       document.getElementById('qaSave').addEventListener('click', function () {
         readInputs();
-        if (!qaCfg.url || !qaCfg.token || !qaCfg.uid) { say('三個欄位都要填', false); return; }
+        if (!qaCfg.url || !qaCfg.uid) { say('網址與孩子 ID 都要填', false); return; }
         qaCfg.on = true; qaBad = 0; qaPool = []; qaLog = [];
         qaSave();
         say('✅ 已啟用，下一題開始由題庫出題', true);
@@ -2687,7 +2682,6 @@
       if (!/^\d+$/.test(uid)) return;                 /* 示範帳號／未登入：維持離線題庫 */
       if (qaCfg.on && String(qaCfg.uid) === uid) return;
       qaCfg.url = qaCfg.url || QA_URL_DEFAULT;
-      qaCfg.token = qaCfg.token || QA_TOKEN_DEFAULT;
       qaCfg.uid = uid;
       qaCfg.on = true;
       qaBad = 0;
