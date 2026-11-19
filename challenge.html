@@ -330,6 +330,9 @@
   #hpGhost{position:absolute;left:0;top:0;bottom:0;width:100%;background:#fca5a5;opacity:.55;
     border-radius:99px;transition:width .45s ease-out .18s}
   #hpfill{position:relative;z-index:2;transition:width .12s ease-out}
+  #hpfill.boss{background:linear-gradient(90deg,#f43f5e,#f97316);box-shadow:0 0 16px rgba(249,115,22,.85)}
+  #hpbar.boss{transform:scale(1.06)}
+  #hpbar{transition:transform .22s}
   .opt{transition:transform .12s, box-shadow .12s, background .12s}
   .opt:active:not(:disabled){transform:scale(.95)}
   .opt:not(:disabled):hover{transform:translateY(-2px);
@@ -2593,6 +2596,8 @@
         : (hue ? 'hue-rotate(' + hue + 'deg) saturate(1.18) brightness(1.04)' : '');
       monImg.style.display = '';
       monImg.classList.toggle('boss', s === 2);
+      hp.classList.toggle('boss', s === 2);
+      if (hp.parentElement) hp.parentElement.classList.toggle('boss', s === 2);
       monTag.textContent = (s === 2 ? '👑 BOSS · ' : '') + m.n[s - 1] + (isShiny ? ' ✨異色' : '');
       cur.shiny = isShiny;
       hpPct = 100;
@@ -2609,7 +2614,16 @@
       } else if (isBoss && window.Juice) {
         window.Juice.fx('boss');
         window.Juice.flash('rgba(120,20,10,.55)', 140);
+        shakeArena();
         window.Juice.banner('👑 BOSS 出現！', { ms: 1500, target: arenaEl });
+        if (monImg.animate) {
+          monImg.getAnimations().forEach(function (a) { a.cancel(); });
+          monImg.animate([
+            { transform: 'scale(1.7) translateY(-46px)', opacity: 0 },
+            { transform: 'scale(1.18) translateY(0)', opacity: 1, offset: .5 },
+            { transform: 'scale(1) translateY(0)', opacity: 1 }
+          ], { duration: 540, easing: 'cubic-bezier(.2,.9,.3,1.2)' });
+        }
       } else if (window.Juice && battles > 1) {
         window.Juice.fx('tap');
       }
@@ -3174,9 +3188,11 @@
         recordWin();
         SESSION.w++;
         flushLocalCoins();          /* 打贏先結清本地題的金幣 */
-        addStar(WIN_STARS);
-        rewardPop('🎉 +' + WIN_STARS + ' ⭐');
-        fb.textContent = '🎉 打贏了！' + cur.m.n[cur.s - 1] + ' 已收錄圖鑑 · +' + WIN_STARS + '⭐ 回家可以進化';
+        var isBossKill = (cur.s === 2);
+        var winStars = WIN_STARS + (isBossKill ? 1 : 0);
+        addStar(winStars);
+        rewardPop('🎉 +' + winStars + ' ⭐' + (isBossKill ? ' 👑BOSS' : ''));
+        fb.textContent = '🎉 打贏了！' + cur.m.n[cur.s - 1] + (isBossKill ? '（BOSS！）' : '') + ' 已收錄圖鑑 · +' + winStars + '⭐ 回家可以進化';
         /* 打贏的那一下不再放對話泡泡（會與「+2⭐」撞在一起並被競技場上緣切掉） */
         ultSlam();
         setTimeout(function () {
@@ -3190,6 +3206,10 @@
           ring(pt.x, pt.y, '#fbbf24');
           killMonster(pt);
           sfxWinS();
+          if (cur.s === 2 && window.Juice) {
+            window.Juice.banner('👑 BOSS 擊破！', { ms: 1600, target: arenaEl });
+            window.Juice.confetti(44, { x: window.innerWidth / 2, y: window.innerHeight * 0.4 });
+          }
           if (evoMode) evolveWin();
           else if (cur.s === 2) stageClear();
         }, 500);
