@@ -302,6 +302,8 @@
     -webkit-text-stroke:3px #7c2d12;paint-order:stroke fill;
     text-shadow:0 4px 12px rgba(0,0,0,.9),0 0 22px rgba(253,224,71,.7);
     transform:translate(-50%,-50%);pointer-events:none;animation:dmgUp 1.2s ease-out forwards}
+  .dmg.crit{font-size:46px;color:#fff1a8;-webkit-text-stroke:3px #7c0d00;
+    text-shadow:0 5px 14px rgba(0,0,0,.95),0 0 30px rgba(255,140,40,.95),0 0 55px rgba(253,224,71,.7)}
   @keyframes dmgUp{
     0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}
     12%{opacity:1;transform:translate(-50%,-62%) scale(1.35)}
@@ -2811,10 +2813,10 @@
       arenaEl.classList.remove('shake'); void arenaEl.offsetWidth; arenaEl.classList.add('shake');
       setTimeout(function () { arenaEl.classList.remove('shake'); }, 400);
     }
-    function dmgNum(text, x, y) {
+    function dmgNum(text, x, y, crit) {
       if (!fxEl) return;
       var d = document.createElement('div');
-      d.className = 'dmg'; d.textContent = text;
+      d.className = 'dmg' + (crit ? ' crit' : ''); d.textContent = text;
       d.style.left = x + 'px'; d.style.top = y + 'px';
       fxEl.appendChild(d);
       setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 1300);
@@ -3108,6 +3110,14 @@
       } else {
         earn = 0;
       }
+      /* 攻擊力演出：準（一題就對＝痛擊）／連（Fever 連擊）／快（8 秒內＝隱藏會心）。
+         只放大傷害數字，怪物仍固定 3 下打死，不碰平衡 */
+      var dmgMult = 1, dmgTag = '';
+      if (!noReward) {
+        if (wrongCount === 0) { dmgMult *= 1.25; dmgTag = '💥痛擊'; }
+        if (feverOn) { dmgMult *= (1 + Math.min(0.5, (streak - 2) * 0.1)); dmgTag = '🔥連擊'; }
+        if ((Date.now() - qaT0) < 8000 && Math.random() < 0.3) { dmgMult *= 2; dmgTag = '⚡會心'; }
+      }
       if (q && q.type === 'hanzi' && q.ch) hwMark(q.ch);
       if (q && q.type === 'remote') qaLogAnswer(q, true, String(q.answer), Date.now() - qaT0, wrongCount + 1, earn);
       if (q && q.type === 'remote' && q.remoteId && window.QB) QB.markDone(q.remoteId);
@@ -3148,7 +3158,7 @@
 
       var pt = arenaPoint(monImg);
       /* 攻擊數字：題目越難、打得越痛（每隻怪固定 3 下，所以分母是 3） */
-      var dmg = Math.round(dmgTotal() / 3);
+      var dmg = Math.round(dmgTotal() / 3 * dmgMult);
       hitsOnCur++;
       SESSION.q++;
       hpPct = Math.max(0, 100 - hitsOnCur * 100 / 3);
@@ -3172,7 +3182,7 @@
           hitStop(120); haptic([18, 46, 30]);
           coinFly(pt.x, pt.y, 8);
           if (comboEl) comboEl.classList.add('hidden');   /* 連對徽章讓位給 9999 */
-          ultNum(pt.x, skyY(), dmgTotal());
+          ultNum(pt.x, skyY(), Math.round(dmgTotal() * dmgMult));
           burst(pt.x, pt.y, '#fde047', 24);
           burst(pt.x, pt.y, '#fb923c', 16);
           ring(pt.x, pt.y, '#fbbf24');
@@ -3199,7 +3209,7 @@
         coinFly(pt.x, pt.y, 3);
         if (window.Juice) window.Juice.fx('coin');
         ring(pt.x, pt.y, '#fde047');
-        dmgNum('−' + dmg, pt.x, pt.y - 60);
+        dmgNum('−' + dmg + (dmgTag ? ' ' + dmgTag : ''), pt.x, pt.y - 60, dmgMult > 1);
         burst(pt.x, pt.y, '#fde047', 10);
         starFly();
       }, 320);
