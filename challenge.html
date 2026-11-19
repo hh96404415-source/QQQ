@@ -1782,9 +1782,9 @@
     }
 
     /* 作答時記一筆；滿 3 題回傳，換星星／上網時間 */
-    function qaLogAnswer(q, correct, choice, ms, tries) {
+    function qaLogAnswer(q, correct, choice, ms, tries, earn) {
       if (!q || q.type !== 'remote' || !qaOn()) return;
-      qaLog.push({ q_id: q.remoteId, correct: !!correct, tries: tries || 1, elapsed_ms: ms || 0, choice_path: choice || '' });
+      qaLog.push({ q_id: q.remoteId, correct: !!correct, tries: tries || 1, elapsed_ms: ms || 0, choice_path: choice || '', earn: earn || 0 });
       if (qaLog.length < 3) return;
       var batch = qaLog.splice(0, 3);
       qaPost({ action: 'complete_set', user_id: qaCfg.uid, pin: qaCfg.pin || '', answers: batch }, function (err, d) {
@@ -3089,8 +3089,27 @@
       if (btn) btn.classList.add('correct');
       roundQ.push({ ok: true, ms: Date.now() - (qLogT0 || Date.now()) });
       var noReward = wrongCount >= 2;   /* 答錯 2 次：答對也不給星星/金幣，但一樣出招打怪、不卡進度 */
+      /* 先把這題的金幣獎勵（含倍率）算出來：遠端題要連 earn 一起送 complete_set，伺服器才真的入帳 */
+      var isFirstWin = false, isEpic = false, isCrit = false, feverOn = false, earn = COINS_PER_Q;
+      var _d = new Date();
+      var _today = _d.getFullYear() + '-' + ('0' + (_d.getMonth() + 1)).slice(-2) + '-' + ('0' + _d.getDate()).slice(-2);
+      if (!noReward) {
+        try { isFirstWin = localStorage.getItem('dsh_first_win') !== _today; } catch (e) {}
+        var _roll = Math.random();
+        isEpic = _roll < CRIT.epicChance;
+        isCrit = !isEpic && _roll < CRIT.epicChance + CRIT.chance;
+        if (isEpic) earn = Math.round(COINS_PER_Q * CRIT.epicMult);
+        else if (isCrit) earn = Math.round(COINS_PER_Q * CRIT.mult);
+        if (lucky) earn *= 2;
+        if (isFirstWin) earn *= 2;
+        feverOn = streak >= 3;   /* 連對中（Fever）：每一次答對金幣再 ×2，斷連就沒了 */
+        if (feverOn) earn *= 2;
+        if (isFirstWin) { try { localStorage.setItem('dsh_first_win', _today); } catch (e) {} }
+      } else {
+        earn = 0;
+      }
       if (q && q.type === 'hanzi' && q.ch) hwMark(q.ch);
-      if (q && q.type === 'remote') qaLogAnswer(q, true, String(q.answer), Date.now() - qaT0, wrongCount + 1);
+      if (q && q.type === 'remote') qaLogAnswer(q, true, String(q.answer), Date.now() - qaT0, wrongCount + 1, earn);
       if (q && q.type === 'remote' && q.remoteId && window.QB) QB.markDone(q.remoteId);
       logAnswer(true);
       if (noReward) {
@@ -3101,24 +3120,7 @@
         /* 掉寶：15% 額外掉 1 顆星（星星走存檔，真的入帳） */
         var loot = Math.random() < 0.15;
         if (loot) addStar(1);
-        /* 每日首戰：當天第一次答對，金幣 ×2（跨日自動重來） */
-        var _d = new Date();
-        var _today = _d.getFullYear() + '-' + ('0' + (_d.getMonth() + 1)).slice(-2) + '-' + ('0' + _d.getDate()).slice(-2);
-        var isFirstWin = false;
-        try { isFirstWin = localStorage.getItem('dsh_first_win') !== _today; } catch (e) {}
-        if (isFirstWin) { try { localStorage.setItem('dsh_first_win', _today); } catch (e) {} }
-        /* 暴擊：正常 +COINS_PER_Q；暴擊 ×2、會心 ×4，幸運題／每日首戰再各 ×2，全加進 coinPending（本地顯示與 earnBatch 一起入帳）
-           遠端題由 complete_set 入帳；本地題累積 3 題用 earnBatch 補一次，省 GAS 配額 */
-        var roll = Math.random();
-        var earn = COINS_PER_Q;
-        var isEpic = roll < CRIT.epicChance;
-        var isCrit = !isEpic && roll < CRIT.epicChance + CRIT.chance;
-        if (isEpic) earn = Math.round(COINS_PER_Q * CRIT.epicMult);
-        else if (isCrit) earn = Math.round(COINS_PER_Q * CRIT.mult);
-        if (lucky) earn *= 2;
-        if (isFirstWin) earn *= 2;
-        var feverOn = streak >= 3;   /* 連對中（Fever）：每一次答對金幣再 ×2，斷連就沒了 */
-        if (feverOn) earn *= 2;
+        /* 金幣獎勵已在上方算好（暴擊/幸運/首戰/Fever 全含在 earn）；遠端題已送 complete_set，本地題走 coinPending */
         coins += earn;
         stageCoins += earn;
         var _pop;
