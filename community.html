@@ -2625,7 +2625,8 @@
     /* 孩子的名字從登入來，寵物迎接／道晚安／贏的時候會叫 */
     try {
       var _p = window.Player.bound();
-      if (_p && _p.name && _p.name !== '未登入' && window.PetSay) window.PetSay.setKidName(_p.name);
+      var _kidName = _p && (_p.nick || _p.name);
+      if (_kidName && _kidName !== '未登入' && window.PetSay) window.PetSay.setKidName(_kidName);
     } catch (e) {}
   }
 
