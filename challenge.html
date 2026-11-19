@@ -680,12 +680,34 @@
     try { dex = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { dex = {}; }
     function got(k, s) { return !!(dex[k] && dex[k][s - 1]); }
     function isShiny(k, s) { return !!(dex[k] && dex[k][s - 1] === 2); }
+    function dexCount() {
+      var n = 0;
+      MONSTERS.forEach(function (m) { if (got(m.k, 1)) n++; if (got(m.k, 2)) n++; });
+      return n;
+    }
+    function paintDexBtn() {
+      var b = document.getElementById('dexBtn');
+      if (b) b.textContent = '📚 圖鑑 ' + dexCount() + '/' + (MONSTERS.length * 2);
+    }
     function mark(k, s, shiny) {
       if (!dex[k]) dex[k] = [0, 0];
       var v = dex[k][s - 1] || 0;
+      var wasNew = !v;
       if (shiny) dex[k][s - 1] = 2;
       else if (v !== 2) dex[k][s - 1] = 1;
       try { localStorage.setItem(KEY, JSON.stringify(dex)); } catch (e) {}
+      paintDexBtn();
+      if (wasNew && window.Juice && window.Juice.banner) {
+        var m0 = null; for (var i = 0; i < MONSTERS.length; i++) if (MONSTERS[i].k === k) m0 = MONSTERS[i];
+        var nm = m0 ? m0.n[s - 1] : k;
+        window.Juice.banner('📚 圖鑑 +1：' + nm + '！', { ms: 1200, target: arenaEl });
+      }
+      if (dexCount() === MONSTERS.length * 2) {
+        setTimeout(function () {
+          if (window.Juice && window.Juice.banner) window.Juice.banner('🏆 圖鑑全收集！你是怪物大師！', { ms: 2600, target: arenaEl });
+          if (window.Juice && window.Juice.confetti) window.Juice.confetti(60, { x: window.innerWidth / 2, y: window.innerHeight * 0.4 });
+        }, 1600);
+      }
     }
 
     /* 打贏怪＝贏一局：記在出場的寵物身上，社群頁會讀這筆紀錄解鎖進化 */
@@ -2629,6 +2651,7 @@
 
     paintStars();
     paintScoreTime();
+    paintDexBtn();
 
     /* 用社群頁選中的那隻寵物出場（沒有就用火苗龍幼獸當預設） */
     var STAGE_NAMES = ['蛋', '幼獸', '成獸', '龍', '金龍'];
@@ -2691,6 +2714,30 @@
       } else {
         start();
       }
+    })();
+    /* 連續天數：跨日 +1，同一天不重複加，斷一天歸零；連續 2 天起每次開場亮一下 */
+    (function dailyStreak() {
+      try {
+        var _d = new Date();
+        var _pad = function (n) { return (n < 10 ? '0' : '') + n; };
+        var _today = _d.getFullYear() + '-' + _pad(_d.getMonth() + 1) + '-' + _pad(_d.getDate());
+        var _yd = new Date(Date.now() - 86400000);
+        var _yesterday = _yd.getFullYear() + '-' + _pad(_yd.getMonth() + 1) + '-' + _pad(_yd.getDate());
+        var _s = { last: _today, n: 1 };
+        try {
+          var _raw = JSON.parse(localStorage.getItem('dsh_day_streak') || 'null');
+          if (_raw && _raw.last) {
+            if (_raw.last === _today) _s = _raw;
+            else if (_raw.last === _yesterday) _s = { last: _today, n: (_raw.n || 0) + 1 };
+          }
+        } catch (e) {}
+        try { localStorage.setItem('dsh_day_streak', JSON.stringify(_s)); } catch (e) {}
+        if (_s.n >= 2 && window.Juice && window.Juice.banner) {
+          setTimeout(function () {
+            window.Juice.banner('🔥 連續第 ' + _s.n + ' 天！', { ms: 1800 });
+          }, 2200);
+        }
+      } catch (e) {}
     })();
     /* 金幣：頁面一進來先跟伺服器要餘額與每題金幣數 */
     (function () {
@@ -3070,12 +3117,15 @@
         else if (isCrit) earn = Math.round(COINS_PER_Q * CRIT.mult);
         if (lucky) earn *= 2;
         if (isFirstWin) earn *= 2;
+        var feverOn = streak >= 3;   /* 連對中（Fever）：每一次答對金幣再 ×2，斷連就沒了 */
+        if (feverOn) earn *= 2;
         coins += earn;
         stageCoins += earn;
         var _pop;
         if (isEpic) _pop = '💥 會心一擊！ +' + earn + ' 金幣';
         else if (isCrit) _pop = '⚡ 暴擊！ +' + earn + ' 金幣';
         else if (lucky) _pop = '🍀 幸運題 ×2！ +' + earn + ' 金幣';
+        else if (feverOn) _pop = '🔥 Fever ×2！ +' + earn + ' 金幣';
         else _pop = '+1⭐　+' + earn + ' 金幣';
         if (isFirstWin) _pop = '🌅 今日首戰 ×2！ ' + _pop;
         if (loot) _pop += '  🎁掉寶 +1⭐';
