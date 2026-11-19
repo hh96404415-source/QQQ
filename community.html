@@ -2313,7 +2313,12 @@
       var dx=p.tx-p.x, dy=p.ty-p.y;
       var dist=Math.sqrt(dx*dx+dy*dy);
       if (dist<4){
-        p.wait = 900 + Math.random()*2600;
+        /* 心情影響行為：難過走不動（等更久）、無聊坐不住（等更短）、肚子餓懶懶的 */
+        var waitMul = 1;
+        if (p.state === 'sad') waitMul = 1.8;
+        else if (p.state === 'bored') waitMul = 0.6;
+        else if (p.state === 'hungry') waitMul = 1.2;
+        p.wait = (900 + Math.random()*2600) * waitMul;
         /* 越長越大：大隻的留給牠更多空間，免得走出畫面 */
         var grow = STAGE_GROW[p.stage] || 1;
         var spanX = Math.max(40, fw - 140 - 70 * (grow - 1));
@@ -2321,6 +2326,10 @@
         p.ty = Math.round(fh*0.58 + Math.random()*Math.max(24, fh*0.28));
       } else {
         var speed=0.06*dt;
+        /* 心情影響速度：難過慢慢走、無聊到處竄、肚子餓走不快 */
+        if (p.state === 'sad') speed *= 0.5;
+        else if (p.state === 'bored') speed *= 1.25;
+        else if (p.state === 'hungry') speed *= 0.85;
         p.x += dx/dist*Math.min(speed,dist);
         p.y += dy/dist*Math.min(speed,dist);
         /* 記住朝向：往左走就水平翻轉 */
