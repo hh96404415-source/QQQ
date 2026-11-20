@@ -50,7 +50,7 @@
      用 scale（獨立於 transform，不會被進場動畫蓋掉）翻向對方 */
   #petImg{scale:-1 1}
   #petImg.faceRight{scale:1 1}   /* 原圖本身就面向右的物種（火龍）不用翻 */
-  #monImg{scale:-1 1}
+  #monImg{scale:1 1}    /* 怪物：使用者圈選「面向右邊就對」→ 不鏡像 */
   #monster{width:150px;height:150px;font-size:92px;display:flex;align-items:center;justify-content:center;
     filter:drop-shadow(0 8px 12px rgba(0,0,0,.5))}
   #vs{font-size:22px;font-weight:900;color:#fbbf24;text-shadow:0 2px 8px rgba(0,0,0,.7);padding-bottom:64px}
@@ -2779,7 +2779,8 @@
     if (!petInfo || petInfo.s === 0) petInfo = { k: 'fire_dragon', s: 1, n: '火苗龍', no: 1 };
     petImg.src = 'pets/' + petInfo.k + '/0' + (petInfo.s + 1) + '_' + STAGE_NAMES[petInfo.s] + '.webp';
     /* 原圖面向右的物種：不鏡像（其餘一律鏡像成「面向右邊的怪物」） */
-    var ART_FACE_RIGHT = { fire_dragon: 1 };
+    /* 使用者逐張圈選「原圖就對」的物種（不鏡像）：火龍 鹿 海龜 雷鳥 雷貓 水藍鯨 */
+    var ART_FACE_RIGHT = { fire_dragon: 1, forest_deer: 1, sea_turtle: 1, thunder_bird: 1, thunder_cat: 1, water_whale: 1 };
     petImg.classList.toggle('faceRight', !!ART_FACE_RIGHT[petInfo.k]);
     /* 越長越大：同一隻寵物在高階時上場更有氣勢 */
     var PET_GROW = [0.80, 0.90, 1.0, 1.12, 1.24];
