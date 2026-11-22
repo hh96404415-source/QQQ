@@ -78,13 +78,15 @@
   #monster{width:150px;height:150px;font-size:92px;display:flex;align-items:center;justify-content:center;
     filter:drop-shadow(0 8px 12px rgba(0,0,0,.5))}
   #vs{font-size:22px;font-weight:900;color:#fbbf24;text-shadow:0 2px 8px rgba(0,0,0,.7);padding-bottom:64px}
-  .tag{background:rgba(15,23,42,.88);border:1px solid rgba(255,255,255,.15);border-radius:999px;
-    padding:3px 12px;font-size:12px;font-weight:800;color:#fbbf24}
+  .tag{background:rgba(15,23,42,.9);border:1px solid rgba(255,255,255,.18);border-radius:999px;
+    padding:4px 14px;font-size:15px;font-weight:900;color:#fbbf24;letter-spacing:.02em}
+  #stageChip .rn{font-size:12px;font-weight:800;color:#93c5fd;letter-spacing:0}
   #hpbar{position:absolute;left:18px;right:18px;bottom:10px;height:8px;border-radius:999px;background:#1e293b;overflow:hidden}
   #hpfill{height:100%;width:100%;background:linear-gradient(90deg,#ef4444,#f87171);border-radius:999px}
 
   /* 第幾關 */
   #stageChip{position:absolute;top:10px;left:10px;z-index:7;
+    display:flex;align-items:center;gap:5px;
     font-size:13px;font-weight:900;color:#0f172a;background:linear-gradient(180deg,#fde68a,#fbbf24);
     padding:5px 13px;border-radius:999px;box-shadow:0 5px 14px rgba(0,0,0,.35);pointer-events:none}
   #stageChip.boss{background:linear-gradient(180deg,#fca5a5,#ef4444);color:#fff7ed;
@@ -480,10 +482,10 @@
 <body>
 <div id="app">
   <div id="topbar">
-    <a id="backBtn" href="community.html">‹ 回社區</a>
+    <a id="backBtn" href="community.html" title="回社區" aria-label="回社區">‹</a>
     <a id="homeBtn" href="index.html" title="回登入頁">🏠</a>
-    <h1>⚔️ 挑戰頁</h1>
-    <button id="dexBtn">📚 圖鑑</button>
+    <h1 title="挑戰頁">⚔️</h1>
+    <button id="dexBtn" title="圖鑑">📚</button>
     <div id="stars">⭐ 0</div>
   </div>
   <div id="reward"></div>
@@ -499,9 +501,9 @@
         <div id="tod"></div>
         <div id="fgBand"></div>
         <div id="ambient"></div>
-        <div id="stageChip">第 <span id="stageNow">1</span> 關</div>
+        <div id="stageChip">⚑<span id="stageNow">1</span></div>
     <div id="chapPips"><i></i><i></i><i></i><b>1/3</b></div>
-        <div id="combo" class="hidden">🔥 連對 2</div>
+        <div id="combo" class="hidden">🔥2</div>
         <div id="fighters">
           <div class="fighter">
             <img id="petImg" src="pets/fire_dragon/02_幼獸.webp" alt="寵物">
@@ -522,7 +524,7 @@
       <!-- 下：題目 -->
       <div id="quiz">
         <div id="quizCard">
-          <button id="unitBtn">一年級 · 10 以內加法 ▾</button>
+          <button id="unitBtn">P1 · 10以內加法 ▾</button>
           <div id="qMeta">第 1 題</div>
           <div id="qPips"><i></i><i></i><i></i></div>
           <div id="qRow">
@@ -535,7 +537,7 @@
             <button class="opt">8</button>
             <button class="opt">9</button>
           </div>
-          <div id="feedback">答對出招 · 答錯擋一擋</div>
+          <div id="feedback"></div>
         </div>
       </div>
     </div>
@@ -548,14 +550,14 @@
         <div class="sb time"><span class="sbIcon">⏱</span><span class="sbNum" id="sbTime">—</span><span class="sbUnit">遊玩</span></div>
       </div>
       <div id="padHead">
-        <b>✍️ 手寫板</b>
-        <span id="padState">用手指寫答案</span>
-        <button class="padBtn" id="padUndo">↶ 復原</button>
-        <button class="padBtn" id="padClear">✕ 清除</button>
+        <b>✍️</b>
+        <span id="padState"></span>
+        <button class="padBtn" id="padUndo" title="復原" aria-label="復原">↶</button>
+        <button class="padBtn" id="padClear" title="清除" aria-label="清除">🗑</button>
       </div>
       <div id="padBody">
         <canvas id="padCanvas"></canvas>
-        <div id="padHint">用手指寫答案<br>數學算式 / 中文寫字</div>
+        <div id="padHint">✍️</div>
         <div id="hzWrap" class="hidden">
           <div id="hzBox">
             <div id="hzSvg"></div>
@@ -596,7 +598,7 @@
       <div class="scKicker">CHAPTER CLEAR</div>
       <div class="scTitle">第 <span id="chapNum">1</span> 章 完成！</div>
       <div class="scStars">⭐ ⭐ ⭐</div>
-      <div class="scSub" id="chapGift">獎勵：+180 秒 · +3 顆星</div>
+      <div class="scSub" id="chapGift">+180💰　+3⭐</div>
       <div class="chapBtns">
         <button type="button" class="primary" id="chapNext">下一關 ▶</button>
         <button type="button" class="ghost" id="chapHome">🏠 回農場</button>
@@ -714,7 +716,7 @@
       ctx.save(); ctx.setTransform(1,0,0,1,0,0);
       ctx.clearRect(0,0,c.width,c.height);
       ctx.restore();
-      if (st) st.textContent = '用手指寫答案';
+      if (st) st.textContent = '';
     }
     document.getElementById('padClear').addEventListener('click', clearPad);
     document.getElementById('padUndo').addEventListener('click', function(){
@@ -796,7 +798,7 @@
     }
     function paintDexBtn() {
       var b = document.getElementById('dexBtn');
-      if (b) b.textContent = '📚 圖鑑 ' + dexCount() + '/' + (MONSTERS.length * 2);
+      if (b) b.textContent = '📚 ' + dexCount() + '/' + (MONSTERS.length * 2);
     }
     function mark(k, s, shiny) {
       if (!dex[k]) dex[k] = [0, 0];
@@ -1749,7 +1751,7 @@
     function gradeName(g) { return g === 1 ? '一年級' : g === 2 ? '二年級' : '三年級'; }
     function paintUnitBtn() {
       var u = unitById(curUnit);
-      unitBtn.textContent = (u.subj === 'en' ? '英文' : gradeName(u.g)) + ' · ' + u.name + ' ▾';
+      unitBtn.textContent = (u.subj === 'en' ? 'EN' : ('P' + u.g)) + ' · ' + u.name + ' ▾';
     }
 
     /* ══════════ 題庫連線（GAS） ══════════
@@ -2303,9 +2305,9 @@
         lucky = Math.random() < 0.08;   /* 幸運題：金幣 ×2，題目卡亮金邊 */
         qText.classList.toggle('lucky', lucky);
         var _qc = document.getElementById('quizCard'); if (_qc) _qc.classList.toggle('luckyGlow', lucky);
-        fb.textContent = lucky ? '🍀 幸運題！答對金幣 ×2' : '答對出招 · 答錯擋一擋';
+        fb.textContent = lucky ? '🍀 💰×2' : '';
       }
-      if (qMeta) qMeta.textContent = '第 ' + qNum + ' 題' + (isHanzi ? ' · 寫字' : '') + (q && q.type === 'remote' ? ' · 題庫' : '') + (lucky ? ' · 🍀幸運' : '') + (streak ? ' · 連對 ' + streak : '');
+      if (qMeta) qMeta.textContent = (isHanzi ? '✍️' : '') + (q && q.type === 'remote' ? '📚' : '') + (lucky ? '🍀' : '') + (streak >= 3 ? '🔥' + streak : '');
       /* 題目語音：只有題庫題有預錄音檔（本地生成題沒有），沒有就收起朗讀鈕 */
       if (window.QAudio) {
         if (isHanzi && q && q.ch) {
@@ -2328,7 +2330,7 @@
       opts.forEach(function (b) { b.style.display = 'none'; });
       qText.className = '';
       qText.textContent = '準備題目中…';
-      if (qMeta) qMeta.textContent = '第 ' + qNum + ' 題';
+      if (qMeta) qMeta.textContent = '';
       fb.textContent = '正在跟題庫拿題目';
       var tries = 0;
       (function attempt() {
@@ -2507,9 +2509,9 @@
       padCanvasEl.classList.remove('hidden');
       padHintEl.classList.remove('hidden');
       hzWrapEl.parentElement.style.background = '';
-      if (padHeadB) padHeadB.textContent = '✍️ 手寫板';
+      if (padHeadB) padHeadB.textContent = '✍️';
       var padStateEl2 = document.getElementById('padState');
-      if (padStateEl2) padStateEl2.textContent = '用手指寫答案';
+      if (padStateEl2) padStateEl2.textContent = '';
       if (padUndoEl) padUndoEl.style.display = '';
       if (padClearEl) padClearEl.style.display = '';
     }
@@ -2555,7 +2557,7 @@
       var n = document.getElementById('scNum');
       var earnEl = document.getElementById('scEarn');
       if (n) n.textContent = stage - 1;
-      if (earnEl) earnEl.textContent = '本關 +' + stageCoins + ' 金幣';
+      if (earnEl) earnEl.textContent = '本關 +' + stageCoins + '💰';
       /* 尾題懸念：Boss 倒數，讓孩子想「再一關就到 Boss」而不肯停 */
       var teaseEl = document.getElementById('scTease');
       var toBoss = 3 - (done % 3);
@@ -2601,7 +2603,7 @@
       var gift = document.getElementById('chapGift');
       var BONUS_COIN = 100, BONUS_STAR = 3;
       if (num) num.textContent = ch;
-      if (gift) gift.textContent = '獎勵：+' + BONUS_COIN + ' 金幣 · +' + BONUS_STAR + ' 顆星';
+      if (gift) gift.textContent = '+' + BONUS_COIN + '💰　+' + BONUS_STAR + '⭐';
       addStar(BONUS_STAR);
       /* 章節獎金走同一條入帳路徑：畫面先加，再由 flushLocalCoins 補進帳本 */
       coins += BONUS_COIN;
@@ -2660,8 +2662,8 @@
       if (!chip) return;
       var rnd = ((Math.max(1, battles) - 1) % 3) + 1;
       var boss = rnd === 3;
-      chip.innerHTML = '第 <span id="stageNow">' + stage + '</span> 關 · ' +
-        '<span id="roundNow">' + rnd + '</span>/3 局' + (boss ? ' 👑' : '');
+      chip.innerHTML = '⚑<span id="stageNow">' + stage + '</span>' + (boss ? '👑' : '') +
+        '<span id="roundNow" class="rn">' + rnd + '/3</span>';
       chip.classList.toggle('boss', boss);
       /* 章節三顆怪：打過的亮金、現在這隻亮藍 */
       var cp = document.getElementById('chapPips');
@@ -3019,7 +3021,7 @@
         if (localStorage.getItem('dsh_challenge_intro')) return;
         localStorage.setItem('dsh_challenge_intro', '1');
         setTimeout(function () {
-          if (window.Juice && Juice.banner) Juice.banner('👋 答對一題 +25 金幣！連對 3 題 🔥Fever', { ms: 3800 });
+          if (window.Juice && Juice.banner) Juice.banner('👋 每題 +25💰　🔥連3題有加成', { ms: 3200 });
         }, 900);
       } catch (e) {}
     })();
@@ -3351,7 +3353,7 @@
     function setCombo() {
       if (!comboEl) return;
       if (streak >= 2) {
-        comboEl.textContent = (streak >= 5 ? '⚡' : '🔥') + ' 連對 ' + streak;
+        comboEl.textContent = (streak >= 5 ? '⚡' : '🔥') + streak;
         comboEl.classList.remove('hidden');
         comboEl.classList.toggle('c3', streak >= 3 && streak < 5);
         comboEl.classList.toggle('c5', streak >= 5 && streak < 7);
@@ -3362,7 +3364,7 @@
           fever(true);
           if (window.Juice && window.Juice.fx) window.Juice.fx('fever');
           if (window.Juice && window.Juice.banner) {
-            window.Juice.banner((streak >= 7 ? '⚡' : '🔥') + ' 連對 ' + streak + '！', { ms: 900 });
+            window.Juice.banner((streak >= 7 ? '⚡' : '🔥') + streak + '！', { ms: 800 });
           }
         }
       } else {
@@ -3422,9 +3424,9 @@
          只放大傷害數字，怪物仍固定 3 下打死，不碰平衡 */
       var dmgMult = 1, dmgTag = '';
       if (!noReward) {
-        if (wrongCount === 0) { dmgMult *= 1.25; dmgTag = '💥痛擊'; }
+        if (wrongCount === 0) { dmgMult *= 1.25; dmgTag = '💥'; }
         if (feverOn) { dmgMult *= (1 + Math.min(0.5, (streak - 2) * 0.1)); dmgTag = '🔥連擊'; }
-        if ((Date.now() - qaT0) < 8000 && Math.random() < 0.3) { dmgMult *= 2; dmgTag = '⚡會心'; }
+        if ((Date.now() - qaT0) < 8000 && Math.random() < 0.3) { dmgMult *= 2; dmgTag = '⚡'; }
       }
       if (q && q.type === 'hanzi' && q.ch) hwMark(q.ch);
       if (q && q.type === 'remote') qaLogAnswer(q, true, String(q.answer), Date.now() - qaT0, wrongCount + 1, earn);
@@ -3432,10 +3434,10 @@
       logAnswer(true);
       if (noReward) {
         fb.textContent = spamCaught
-          ? '✅ 答對了！不過剛剛按得太快，這題沒有獎勵（慢慢想，想清楚再按）'
-          : '✅ 答對了！但答錯 2 次，這題沒有獎勵';
+          ? '⏱ 太快　無獎勵'
+          : '✖✖ 無獎勵';
       } else {
-        fb.textContent = '✅ 答對了！出招！ +1 ⭐';
+        fb.textContent = '✅ +1 ⭐';
         addStar();
         /* 掉寶：15% 額外掉 1 顆星（星星走存檔，真的入帳） */
         var loot = Math.random() < 0.15;
@@ -3446,12 +3448,12 @@
         var _pop;
         /* 一次只講一件事：最強的加成才顯示，其餘不疊字（畫面才呼吸得過來） */
         var badge = '';
-        if (isFirstWin) badge = '🌅 首戰 ×2';
-        else if (isEpic) badge = '💥 會心 ×4';
-        else if (isCrit) badge = '⚡ 暴擊 ×2';
-        else if (lucky) badge = '🍀 幸運 ×2';
-        else if (feverOn) badge = '🔥 Fever ×2';
-        _pop = (badge ? badge + '　' : '') + '+1⭐　+' + earn + ' 金幣';
+        if (isFirstWin) badge = '🌅×2';
+        else if (isEpic) badge = '💥×4';
+        else if (isCrit) badge = '⚡×2';
+        else if (lucky) badge = '🍀×2';
+        else if (feverOn) badge = '🔥×2';
+        _pop = (badge ? badge + '　' : '') + '+1⭐　+' + earn + '💰';
         if (loot) _pop += '　🎁+1⭐';
         if (window.Juice) {
           if (isEpic || isCrit) window.Juice.fx('crit');
@@ -3570,7 +3572,7 @@
         if (q.options[k] === q.answer && opts[k]) opts[k].classList.add('reveal');
       }
       var noReward = wrongCount >= 2;
-      fb.textContent = '❌ 答案是 ' + q.answer + '，要記住喔！' + (noReward ? '（答錯 2 次了，這題沒獎勵）' : '再試一次');
+      fb.textContent = '❌ ' + q.answer + (noReward ? '　✖✖' : '');
       if (Math.random() < 0.55) petSay('wrong', { gap: 4000 });
       if (monImg && monImg.animate) {
         monsterRush();
