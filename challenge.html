@@ -786,7 +786,13 @@
                 part: { k: 'sand', color: '#fde68a', n: 18, size: 3 } } },
       ocean:  { name: '深海', color: '#22d3ee', bg: ['images/bg_bt_ocean1.webp', 'images/bg_bt_ocean2.webp'],
         mood: { tone: 'rgba(60,200,220,.20)', g1: 'rgba(16,60,72,.52)', g2: 'rgba(4,18,26,.95)',
-                part: { k: 'bubble', color: '#a5f3fc', n: 16, size: 6 } } }
+                part: { k: 'bubble', color: '#a5f3fc', n: 16, size: 6 } } },
+      candy:  { name: '糖果', color: '#f472b6', bg: ['images/bg_bt_candy1.webp', 'images/bg_bt_candy2.webp'],
+        mood: { tone: 'rgba(255,170,220,.24)', g1: 'rgba(120,60,110,.42)', g2: 'rgba(40,14,34,.92)',
+                part: { k: 'spark', color: '#fbcfe8', n: 15, size: 4 } } },
+      sky:    { name: '雲端', color: '#a5b4fc', bg: ['images/bg_bt_sky1.webp', 'images/bg_bt_sky2.webp'],
+        mood: { tone: 'rgba(200,215,255,.22)', g1: 'rgba(70,90,140,.40)', g2: 'rgba(14,20,44,.92)',
+                part: { k: 'firefly', color: '#e0e7ff', n: 14, size: 4 } } }
     };
     /* r：稀有度（0＝常見，遇見率高；1＝稀有，遇見率低）。只影響「遇見誰」，不影響獎勵 */
     var MONSTERS = [
@@ -813,7 +819,12 @@
       { k: 'cactus', n: ['仙人掌怪', '仙人掌王'], e: 'desert', r: 0 },
       { k: 'sandworm', n: ['沙蟲', '沙王蟲'], e: 'desert', r: 1 },
       { k: 'octopus', n: ['小章魚', '深海章魚王'], e: 'ocean', r: 0 },
-      { k: 'angler', n: ['燈籠魚', '深海燈籠王'], e: 'ocean', r: 1 }
+      { k: 'angler', n: ['燈籠魚', '深海燈籠王'], e: 'ocean', r: 1 },
+      /* 第四批（C2）：糖果、天空 → 26 隻 × 2 型＝圖鑑 52 格 */
+      { k: 'gummy', n: ['軟糖熊', '軟糖王'], e: 'candy', r: 0 },
+      { k: 'cupcake', n: ['杯子蛋糕', '甜點女王'], e: 'candy', r: 1 },
+      { k: 'cloud_sheep', n: ['雲朵羊', '雲朵羊王'], e: 'sky', r: 0 },
+      { k: 'star_bird', n: ['星星鳥', '星鳥之王'], e: 'sky', r: 1 }
     ];
     var KEY = 'dsh_monster_dex';
     var dex = {};
