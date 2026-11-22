@@ -1,12 +1,10 @@
-/* motion.js — 讓畫面「不是死圖」：雲飄、光斑、鳥飛、草動、設施微動、UI 呼吸
+/* motion.js — 讓畫面「不是死圖」：雲飄、光斑、草動、設施微動、UI 呼吸
    全部只用 transform / opacity，跑在合成層，不會拖慢答題。 */
 (function () {
   var CSS = "\
 @keyframes mbDrift{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(120px,0,0)}}\
 @keyframes mbDrift2{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(-90px,0,0)}}\
 @keyframes mbRay{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}\
-@keyframes mbBird{0%{transform:translate3d(-8vw,0,0) scaleX(1);opacity:0}\
-  8%{opacity:.9}92%{opacity:.9}100%{transform:translate3d(108vw,-26px,0) scaleX(1);opacity:0}}\
 @keyframes mbMote{0%{transform:translate3d(0,0,0) scale(.7);opacity:0}\
   20%{opacity:.85}100%{transform:translate3d(18px,-70px,0) scale(1.1);opacity:0}}\
 @keyframes mbSway{0%,100%{transform:rotate(-1.6deg) translateY(0)}50%{transform:rotate(1.6deg) translateY(-1px)}}\
@@ -21,7 +19,6 @@
   background:conic-gradient(from 200deg,rgba(255,255,255,0) 0deg,rgba(255,255,255,.10) 12deg,\
   rgba(255,255,255,0) 26deg,rgba(255,255,255,0) 190deg,rgba(255,255,255,.08) 202deg,\
   rgba(255,255,255,0) 216deg);animation:mbRay 90s linear infinite;mix-blend-mode:screen;opacity:.45}\
-.ambBird{position:absolute;font-size:15px;animation:mbBird linear infinite;opacity:0}\
 .ambMote{position:absolute;width:4px;height:4px;border-radius:50%;background:rgba(255,246,190,.9);\
   box-shadow:0 0 6px rgba(255,236,150,.9);animation:mbMote linear infinite}\
 .fac.sway img.fico,.fac.sway .fico{animation:mbSway 7s ease-in-out infinite;transform-origin:50% 100%}\
@@ -31,7 +28,6 @@
 .shopCard{animation:mbBob 6s ease-in-out infinite}\
 .shopCard:nth-child(2n){animation-delay:-2s}\
 .shopCard:nth-child(3n){animation-delay:-3.4s}\
-#btnStar{animation:mbGlow 3.2s ease-in-out infinite}\
 #petBar .chip img{transition:transform .18s}\
 #petBar .chip:hover img{transform:translateY(-2px) scale(1.05)}\
 @media (prefers-reduced-motion:reduce){.ambWrap{display:none}\
@@ -51,7 +47,7 @@
   function sky(host, opt) {
     if (!host || host.querySelector('.ambWrap')) return;
     style();
-    var o = Object.assign({ clouds: 3, birds: 2, motes: 7, ray: true }, opt || {});
+    var o = Object.assign({ clouds: 3, motes: 7, ray: true }, opt || {});
     var w = document.createElement('div');
     w.className = 'ambWrap';
     w.style.zIndex = '1';
@@ -75,15 +71,6 @@
       c.style.animationName = Math.random() > 0.5 ? 'mbDrift' : 'mbDrift2';
       w.appendChild(c);
     }
-    for (var b = 0; b < o.birds; b++) {
-      var bird = document.createElement('div');
-      bird.className = 'ambBird';
-      bird.textContent = '🐦';
-      bird.style.top = (8 + Math.random() * 18) + '%';
-      bird.style.animationDuration = (26 + Math.random() * 22) + 's';
-      bird.style.animationDelay = (-Math.random() * 30) + 's';
-      w.appendChild(bird);
-    }
     for (var m = 0; m < o.motes; m++) {
       var mo = document.createElement('div');
       mo.className = 'ambMote';
@@ -98,8 +85,8 @@
 
   window.Motion = {
     sky: sky,
-    farm: function (host) { sky(host, { clouds: 3, birds: 0, motes: 10, ray: true }); },
-    arena: function (host) { sky(host, { clouds: 2, birds: 0, motes: 6, ray: true }); },
+    farm: function (host) { sky(host, { clouds: 3, motes: 10, ray: true }); },
+    arena: function (host) { sky(host, { clouds: 2, motes: 6, ray: true }); },
     /* 給設施上動態類別 */
     tag: function (el, kind) {
       style();

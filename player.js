@@ -183,11 +183,15 @@
 
   function post(body, cb) {
     var g = gasCfg();
-    var payload = JSON.stringify({ action: body.action, user_id: body.user_id, state: body.state });
+    var payload = { action: body.action, user_id: body.user_id, state: body.state };
+    /* 帶上孩子 session，state_get/state_put 要靠它驗身分 */
+    var s = null;
+    try { s = localStorage.getItem('dsh_sess') || ''; } catch (e) {}
+    if (s) payload.session = s;
     fetch(g.url, {
       method: 'POST', redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: payload
+      body: JSON.stringify(payload)
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (d && d.ok) cb(null, d); else cb((d && d.error) || '存檔失敗', d);
     }).catch(function () { cb('連不上'); });
