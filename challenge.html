@@ -38,9 +38,17 @@
   #arenaOverlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(9,16,30,.18),rgba(9,16,30,.72))}
   /* 章節「氣候」：色調分級 + 地面帶 + 環境粒子（每家族不同，一章一套） */
   #grade{position:absolute;inset:0;pointer-events:none;mix-blend-mode:soft-light;transition:background .8s ease}
-  #groundBand{position:absolute;left:-6%;right:-6%;bottom:0;height:31%;pointer-events:none;
+  #groundBand{position:absolute;left:-6%;right:-6%;bottom:0;height:19%;pointer-events:none;
     background:linear-gradient(180deg,rgba(0,0,0,0) 0%,var(--g1,rgba(22,44,24,.52)) 40%,var(--g2,rgba(6,12,8,.94)) 100%);
     -webkit-mask-image:linear-gradient(180deg,transparent,#000 46%);mask-image:linear-gradient(180deg,transparent,#000 46%)}
+  /* 真的前景帶（透明 webp，每家族一張）＋時段色調 */
+  #fgBand{position:absolute;left:-4%;right:-4%;bottom:0;height:26%;pointer-events:none;opacity:.98;
+    background-position:center bottom;background-size:cover;background-repeat:no-repeat;
+    -webkit-mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.55) 30%,#000 62%);
+    mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.55) 30%,#000 62%)}
+  #tod{position:absolute;inset:0;pointer-events:none;mix-blend-mode:soft-light;transition:background .9s ease}
+  #arena.walking #fgBand{animation:fgPan .78s ease-in-out}
+  @keyframes fgPan{from{transform:translateX(0)}to{transform:translateX(-66px)}}
   #groundBand::after{content:'';position:absolute;left:0;right:0;bottom:0;height:48%;opacity:.55;
     background:repeating-linear-gradient(96deg,rgba(255,255,255,.05) 0 2px,transparent 2px 8px)}
   #ambient{position:absolute;inset:0;pointer-events:none;overflow:hidden}
@@ -488,6 +496,8 @@
         <div id="arenaOverlay"></div>
         <div id="grade"></div>
         <div id="groundBand"></div>
+        <div id="tod"></div>
+        <div id="fgBand"></div>
         <div id="ambient"></div>
         <div id="stageChip">第 <span id="stageNow">1</span> 關</div>
     <div id="chapPips"><i></i><i></i><i></i><b>1/3</b></div>
@@ -748,19 +758,19 @@
   (function () {
     /* 五種屬性：每種一個主色，戰鬥背景跟著出場怪物走 */
     var ELEMS = {
-      forest: { name: '森林', color: '#22c55e', bg: ['images/bg_bt_forest1.webp', 'images/bg_bt_forest2.webp'],
+      forest: { name: '森林', color: '#22c55e', bg: ['images/bg_wide_forest1.webp', 'images/bg_wide_forest2.webp'],
         mood: { tone: 'rgba(150,220,140,.16)', g1: 'rgba(28,58,30,.55)', g2: 'rgba(7,16,9,.94)',
                 part: { k: 'firefly', color: '#d9f99d', n: 11, size: 5 } } },
-      lava:   { name: '熔岩', color: '#f97316', bg: ['images/bg_bt_lava1.webp', 'images/bg_bt_lava2.webp'],
+      lava:   { name: '熔岩', color: '#f97316', bg: ['images/bg_wide_lava1.webp', 'images/bg_wide_lava2.webp'],
         mood: { tone: 'rgba(255,120,40,.20)', g1: 'rgba(74,30,18,.58)', g2: 'rgba(26,10,8,.95)',
                 part: { k: 'ember', color: '#fdba74', n: 16, size: 4 } } },
-      ice:    { name: '冰原', color: '#38bdf8', bg: ['images/bg_bt_ice1.webp', 'images/bg_bt_ice2.webp'],
+      ice:    { name: '冰原', color: '#38bdf8', bg: ['images/bg_wide_ice1.webp', 'images/bg_wide_ice2.webp'],
         mood: { tone: 'rgba(120,200,255,.18)', g1: 'rgba(70,120,150,.45)', g2: 'rgba(10,26,40,.92)',
                 part: { k: 'snow', color: '#ffffff', n: 20, size: 4 } } },
-      ghost:  { name: '幽靈', color: '#a855f7', bg: ['images/bg_bt_ghost1.webp', 'images/bg_bt_ghost2.webp'],
+      ghost:  { name: '幽靈', color: '#a855f7', bg: ['images/bg_wide_ghost1.webp', 'images/bg_wide_ghost2.webp'],
         mood: { tone: 'rgba(150,90,230,.20)', g1: 'rgba(46,34,72,.55)', g2: 'rgba(14,10,26,.95)',
                 part: { k: 'fog', color: '#d8b4fe', n: 9, size: 26 } } },
-      tech:   { name: '機械', color: '#60a5fa', bg: ['images/bg_bt_tech1.webp', 'images/bg_bt_tech2.webp'],
+      tech:   { name: '機械', color: '#60a5fa', bg: ['images/bg_wide_tech1.webp', 'images/bg_wide_tech2.webp'],
         mood: { tone: 'rgba(70,160,255,.18)', g1: 'rgba(28,44,62,.58)', g2: 'rgba(8,14,22,.95)',
                 part: { k: 'spark', color: '#93c5fd', n: 13, size: 4 } } }
     };
@@ -2704,6 +2714,9 @@
         if (m.g1) gb.style.setProperty('--g1', m.g1);
         if (m.g2) gb.style.setProperty('--g2', m.g2);
       }
+      var fg = document.getElementById('fgBand');
+      if (fg) fg.style.backgroundImage = 'url("images/fg_' + key + '.webp")';
+      applyTod();
       var box = document.getElementById('ambient');
       if (!box) return;
       box.innerHTML = '';
@@ -2728,6 +2741,21 @@
           (Math.random() * dur).toFixed(2) + 's infinite';
         box.appendChild(d);
       }
+    }
+
+    /* 一章一個時段（清晨→白天→黃昏→夜晚 循環）：同一張場景，氣溫完全不同的感覺 */
+    var TODS = [
+      { c: 'rgba(255,196,150,.24)' },
+      { c: 'rgba(255,255,255,.06)' },
+      { c: 'rgba(255,130,70,.26)' },
+      { c: 'rgba(48,78,178,.32)' }
+    ];
+    function applyTod() {
+      var el = document.getElementById('tod');
+      if (!el) return;
+      var idx = Math.floor((battles - 1) / 3) % TODS.length;
+      if (idx < 0) idx = 0;
+      el.style.background = TODS[idx].c;
     }
 
     function applyBattleBg(src) {
@@ -2838,6 +2866,9 @@
         : (hue ? 'hue-rotate(' + hue + 'deg) saturate(1.18) brightness(1.04)' : '');
       monImg.style.display = '';
       monImg.classList.toggle('boss', s === 2);
+      /* 同一章三隻：第 1 隻 150、第 2 隻 164（看得出是更強的同一批）、BOSS 190（CSS） */
+      if (s === 2) { monImg.style.width = ''; monImg.style.height = ''; }
+      else { var _ms = (roundInChap === 2 ? 164 : 150) + 'px'; monImg.style.width = _ms; monImg.style.height = _ms; }
       hp.classList.toggle('boss', s === 2);
       if (hp.parentElement) hp.parentElement.classList.toggle('boss', s === 2);
       monTag.textContent = (s === 2 ? '👑 BOSS · ' : '') + m.n[s - 1] + (isShiny ? ' ✨異色' : '');
