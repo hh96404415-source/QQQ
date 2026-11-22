@@ -39,7 +39,14 @@
     background:rgba(255,255,255,.05);color:#cbd5e1;border:1px solid rgba(255,255,255,.14)}
   #kidPick button.on{background:rgba(34,197,94,.18);color:#86efac;border-color:rgba(34,197,94,.55)}
 
-  #wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:26px 22px 90px}
+  #mainTabs{position:sticky;top:62px;z-index:9;display:flex;gap:8px;max-width:960px;margin:0 auto;
+            padding:12px 22px 0}
+  .mainTab{font:inherit;font-size:14.5px;font-weight:900;padding:10px 20px;border-radius:999px;cursor:pointer;
+            background:rgba(255,255,255,.06);color:#cbd5e1;border:1px solid rgba(255,255,255,.14)}
+  .mainTab.on{background:rgba(251,191,36,.16);color:#fbbf24;border-color:rgba(251,191,36,.55)}
+  .mainTab:active{transform:translateY(1px)}
+
+  #wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:18px 22px 90px}
 
   .card{background:rgba(17,26,43,.88);border:1px solid rgba(255,255,255,.09);border-radius:18px;
         padding:20px 22px;margin-bottom:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
@@ -104,12 +111,6 @@
   #timeNote{margin-top:12px;font-size:13px;color:#94a3b8;line-height:1.7;
             padding-top:12px;border-top:1px dashed rgba(255,255,255,.12)}
 
-  /* 資料來源標籤 */
-  .srcTag{font-size:12px;font-weight:900;padding:4px 12px;border-radius:999px;cursor:pointer;
-          border:1px solid rgba(255,255,255,.18);white-space:nowrap}
-  .srcTag.real{background:rgba(34,197,94,.2);color:#86efac;border-color:rgba(34,197,94,.5)}
-  .srcTag.demo{background:rgba(168,85,247,.22);color:#e9d5ff;border-color:rgba(168,85,247,.55)}
-
   /* 最近七天長條 */
   #week7{display:flex;gap:8px;align-items:flex-end;margin-top:14px;padding-top:14px;
          border-top:1px dashed rgba(255,255,255,.1)}
@@ -164,8 +165,7 @@
 <div id="top">
   <a id="homeBtn" href="index.html" title="回登入頁">🏠</a>
   <h1>📖 家長頁</h1>
-  <span class="sub">本週學習報告</span>
-  <span id="srcTag" class="srcTag demo">示範數據</span>
+  <span class="sub">學習報告 · 家庭管理</span>
   <div id="who">
     <span class="whoBtn on" id="whoName">—</span>
   </div>
@@ -173,7 +173,13 @@
 </div>
 <div id="kidPick"></div>
 
+<div id="mainTabs">
+  <button class="mainTab on" data-view="report">📊 學習報告</button>
+  <button class="mainTab" data-view="manage">⚙️ 家庭管理</button>
+</div>
+
 <div id="wrap">
+  <div id="viewReport">
   <section class="card">
     <div class="kicker">A · 一句總結</div>
     <div id="big"></div>
@@ -211,15 +217,18 @@
     </div>
     <div class="honest" id="timeNote"></div>
   </section>
+  </div>
 
+  <div id="viewManage" style="display:none">
   <section class="card" id="adminCard">
     <div class="kicker">F · 家庭管理</div>
     <h2>封印 · 成員 · 金幣 · 裝置</h2>
     <div id="adminMount"></div>
   </section>
+  </div>
 </div>
 
-<div id="foot">示範模式 · 歷史數據為模擬生成；你在小孩那邊做的題會即時計入</div>
+<div id="foot">實際紀錄 · 只計小朋友自己的答題，數據不夠就照講</div>
 
 <script src="player.js"></script>
 <script src="time.js"></script>
@@ -402,132 +411,7 @@ function verdictOf_(rate, sec, n) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   2. 示範數據（跟 GAS 的 demoRows_ 一樣：確定性偽隨機，不寫入任何地方）
-   ══════════════════════════════════════════════════════════════ */
-var DEMO_PROFILE = {
-  demo_a: {
-    label: '穩定進步型', grade: 'P2', name: '陳小明',
-    perDay: [14, 19], rateFrom: 58, rateTo: 80,
-    weak: ['M.SUB', 'C.FORM', 'E.SPELL'], weakW: 3,
-    audioRate: 0.40, spamRate: 0.02, awayRate: 0.05,
-    active: ['M.ADD', 'M.SUB', 'C.MW', 'C.SENT', 'C.FORM', 'E.VOCAB', 'E.SPELL'],
-    base: { 'M.ADD': .86, 'M.SUB': .58, 'M.COMP': .82, 'M.WORD': .76,
-            'C.MW': .88, 'C.SENT': .78, 'C.FORM': .55, 'C.VOCAB': .82,
-            'E.VOCAB': .80, 'E.SENT': .74, 'E.LETTER': .90, 'E.SPELL': .56 }
-  },
-  demo_b: {
-    label: '卡關型', grade: 'P2', name: '李美欣',
-    perDay: [9, 13], rateFrom: 68, rateTo: 60,
-    weak: ['M.WORD', 'C.SENT', 'M.ADD'], weakW: 1,
-    audioRate: 0.85, spamRate: 0.12, awayRate: 0.18,
-    active: ['M.ADD', 'M.WORD', 'C.MW', 'C.SENT', 'C.FORM', 'E.SENT', 'E.SPELL'],
-    base: { 'M.ADD': .22, 'M.SUB': .86, 'M.COMP': .80, 'M.WORD': .17,
-            'C.MW': .92, 'C.SENT': .30, 'C.FORM': .90, 'C.VOCAB': .80,
-            'E.VOCAB': .80, 'E.SENT': .88, 'E.LETTER': .88, 'E.SPELL': .89 }
-  }
-};
-var DEMO_SKILLS = [
-  ['M.ADD', 'Math', 1], ['M.SUB', 'Math', 1], ['M.COMP', 'Math', 1], ['M.WORD', 'Math', 2],
-  ['C.MW', 'Chinese', 1], ['C.SENT', 'Chinese', 1], ['C.FORM', 'Chinese', 1], ['C.VOCAB', 'Chinese', 1],
-  ['E.VOCAB', 'English', 1], ['E.SENT', 'English', 1], ['E.LETTER', 'English', 1], ['E.SPELL', 'English', 1]
-];
-
-function lcg_(seed) {
-  var st = (seed >>> 0) || 1;
-  return function () {
-    st = (st * 1664525 + 1013904223) >>> 0;
-    return st / 4294967296;
-  };
-}
-
-function demoRows_(uid, now) {
-  var pf = DEMO_PROFILE[uid] || DEMO_PROFILE.demo_a;
-  var seed = 7;
-  for (var i = 0; i < uid.length; i++) seed = (seed * 31 + uid.charCodeAt(i)) >>> 0;
-  var rnd = lcg_(seed);
-
-  /* 加權抽技能：弱項會出現得密啲（跟真實使用一樣，錯開嘅題會再出） */
-  var pool = [];
-  DEMO_SKILLS.forEach(function (s) {
-    if (pf.active && pf.active.indexOf(s[0]) < 0) return;
-    var w = pf.weak.indexOf(s[0]) >= 0 ? pf.weakW : 1;
-    for (var i = 0; i < Math.round(w * 10); i++) pool.push(s);
-  });
-  var wMean = pool.reduce(function (a, s) { return a + pf.base[s[0]]; }, 0) / pool.length;
-
-  var rows = [];
-  var days = 14;
-  for (var d = days - 1; d >= 0; d--) {
-    var dayStart = now - d * 86400000;
-    var dow = new Date(dayStart).getDay();
-    var lo = pf.perDay[0], hi = pf.perDay[1];
-    var cnt = Math.round(lo + rnd() * (hi - lo));
-    if (dow === 0 || dow === 6) cnt = Math.max(3, Math.round(cnt * 0.7));
-
-    /* 每天有一個整體目標正確率，逐日由 rateFrom 走到 rateTo；
-       每個技能再按自己的底子縮放 —— 咁樣弱項就唔會因為抽樣而亂跳 */
-    var prog = (days - 1 - d) / (days - 1);
-    var dayRate = (pf.rateFrom + (pf.rateTo - pf.rateFrom) * prog) / 100;
-
-    for (var k = 0; k < cnt; k++) {
-      var pick = pool[Math.floor(rnd() * pool.length)];
-      var p = pf.base[pick[0]] * (dayRate / wMean);
-      if (p > 0.95) p = 0.95;
-      if (p < 0.05) p = 0.05;
-
-      var isWeak = pf.weak.indexOf(pick[0]) >= 0;
-      var baseSec = isWeak ? 22 : 14;
-      var el = Math.round((baseSec * (0.6 + rnd() * 0.9)) * 1000);
-
-      rows.push({
-        ts: dayStart + (16 * 3600 + k * 90) * 1000,
-        day: d,
-        skill: pick[0], subj: pick[1], p: p, el: el, key: rnd()
-      });
-    }
-  }
-
-  /* 逐個技能 × 逐日「按期望值」決定答對幾多題，而唔係逐題擲骰 ——
-     每技能一星期得幾題樣本，逐題擲骰會出現 0/6 或者 100% 呢種假極端。
-     用 carry 累加餘數，令 7 日窗口入面嘅比例跟得上當日目標。 */
-  var acc = {};
-  rows.sort(function (a, b) { return a.ts - b.ts; });
-  var byDay = {};
-  rows.forEach(function (r) {
-    var key = r.skill + '|' + r.day;
-    (byDay[key] = byDay[key] || []).push(r);
-  });
-  Object.keys(byDay).forEach(function (key) {
-    var list = byDay[key];
-    var sk = list[0].skill;
-    var expect = list.reduce(function (a, r) { return a + r.p; }, 0);
-    var carry = acc[sk] || 0;
-    var hit = Math.round(carry + expect);
-    acc[sk] = carry + expect - hit;
-    if (hit > list.length) hit = list.length;
-    list.slice().sort(function (a, b) { return a.key - b.key; })
-      .forEach(function (r, i) { r._first = i < hit; });
-  });
-
-  rows.forEach(function (r) {
-    var first = !!r._first;
-    var spam = rnd() < pf.spamRate;
-    var tries = first ? 1 : (1 + Math.floor(rnd() * 3));
-    r.first = first;
-    r.tries = tries;
-    r.correct = first ? 'Y' : (spam ? 'N' : (rnd() < 0.75 ? 'Y' : 'N'));
-    r.spam = spam;
-    if (spam) r.elapsed = 1500 + Math.round(rnd() * 2500);
-    else r.elapsed = r.el;
-    r.voice = rnd() < pf.audioRate;
-    r.away = rnd() < pf.awayRate ? (1 + Math.floor(rnd() * 2)) : 0;
-    delete r.p; delete r.key; delete r._first; delete r.el;
-  });
-  return rows;
-}
-
-/* ══════════════════════════════════════════════════════════════
-   3. 統計（跟 buildReport_ 同一套規則）
+   3. 統計工具
    ══════════════════════════════════════════════════════════════ */
 function median(a) {
   if (!a.length) return 0;
@@ -540,115 +424,51 @@ function dayKey(ts) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
-/* 把「剛剛真的玩過」的作答紀錄，換成同一個格式混入本週資料 */
-var LIVE_SKILL = {
-  p1_add10: 'M.ADD', p1_sub10: 'M.SUB', p1_add20: 'M.ADD', p1_sub20: 'M.SUB',
-  p1_cmp: 'M.COMP', p1_count: 'M.COMP', p1_word: 'M.WORD',
-  p2_add2d: 'M.ADD', p2_sub2d: 'M.SUB', p2_mul: 'M.MUL', p2_div: 'M.DIV',
-  p2_word: 'M.WORD', p2_money: 'M.WORD',
-  p3_add3d: 'M.ADD', p3_sub3d: 'M.SUB', p3_mul2x1: 'M.MUL', p3_div2x1: 'M.DIV',
-  p3_word: 'M.WORD', p3_clock: 'M.WORD', p3_frac: 'M.WORD',
-  p2_wordcmp: 'M.WORD', p3_wordavg: 'M.WORD',
-  e1_abc: 'E.LETTER', e1_word: 'E.VOCAB', e2_word: 'E.VOCAB', e3_sent: 'E.SENT',
-  hw: 'C.WRITE'
-};
-var LIVE_SUBJ = { M: 'Math' };
 
-/* ── 資料來源：real＝只用小孩真的答過的紀錄；demo＝示範數據 ── */
-var MODE = (function () {
-  var q = (location.search.match(/mode=(real|demo)/) || [])[1];
-  if (q) return q;
-  return liveRows().length ? 'real' : 'demo';
-})();
-function realCount() { return liveRows().length; }
-var SESSION_NAME = (window.Player && window.Player.name) ? window.Player.name() : '';
-
-function liveRows() {
-  var raw = [];
-  try { raw = JSON.parse(localStorage.getItem('dsh_ans_log') || '[]'); } catch (e) {}
-  return raw.map(function (a) {
-    var skill = a.k || LIVE_SKILL[a.u] || 'M.ADD';
-    return {
-      ts: a.t, skill: skill, subj: (skill.charAt(0) === 'C' ? 'Chinese' : 'Math'),
-      first: a.c === 1, tries: a.c === 1 ? 1 : 2,
-      correct: a.c === 1 ? 'Y' : 'N',
-      elapsed: a.ms, voice: false, away: 0, spam: false, live: true
-    };
+/* ── 資料來源：伺服器 Answers 聚合（跨裝置、清快取都準） ── */
+var REPORT_CACHE = null;
+function loadReport(uid) {
+  var uidStr = String(uid || '');
+  if (!/^\d+$/.test(uidStr) || !window.ParentAdmin || !window.ParentAdmin.post) {
+    paintEmpty('未綁定小朋友（或後端未連線）。綁定後這裡會顯示孩子的答題報告。');
+    return;
+  }
+  var big = document.getElementById('big');
+  if (big) big.innerHTML = '<span class="t">讀取報告中…</span>';
+  window.ParentAdmin.post('reportForParent', { family_id: FAMILY_ID, user_id: uidStr }, function (err, d) {
+    if (err || !d || !d.ok) { paintEmpty((d && d.error) || (err && String(err)) || '讀取失敗'); return; }
+    REPORT_CACHE = d;
+    renderReport(d);
   });
 }
-
-function buildReport(uid) {
-  var rows = (MODE === 'real')
-    ? liveRows().slice()
-    : demoRows_(uid, Date.now()).concat(liveRows());
-  var days = 7;
-  var win = rows.filter(function (r) { return r.ts >= Date.now() - days * 86400000; });
-  if (win.length < 6) {
-    days = 14;
-    win = rows.filter(function (r) { return r.ts >= Date.now() - days * 86400000; });
-  }
-
-  var bySkill = {}, daySet = {}, times = [], first = 0;
-  var careless = 0, wrong = 0, voiceN = 0, awayN = 0;
-  var fastWrong = 0;
-
-  win.forEach(function (r) {
-    times.push(r.elapsed);
-    if (r.first) first++;
-    if (!r.first) {
-      if (r.correct === 'Y' && r.tries <= 2) careless++;
-      if (r.correct !== 'Y') { wrong++; if (r.elapsed < 3000) fastWrong++; }
-    }
-    if (r.voice) voiceN++;
-    if (r.away > 0) awayN++;
-    daySet[dayKey(r.ts)] = 1;
-    var s = bySkill[r.skill] || (bySkill[r.skill] = { skill: r.skill, subject: r.subj, n: 0, first: 0, times: [] });
-    s.n++; if (r.first) s.first++; s.times.push(r.elapsed);
-  });
-
-  var n = win.length;
-  var rate = n ? Math.round(first / n * 100) : 0;
-  var medSec = n ? Math.round(median(times) / 100) / 10 : 0;
-
-  var list = Object.keys(bySkill).map(function (k) {
-    var s = bySkill[k];
-    var sr = Math.round(s.first / s.n * 100);
-    var sec = Math.round(median(s.times) / 100) / 10;
-    var rank = (sr >= 80 && sec > 20) ? 55 : sr;
-    return { skill: k, subject: s.subject, n: s.n, rate: sr, sec: sec, rank: rank,
-             tag: tagOf_(sr, sec, s.n),
-             act: ACT[k] || ACT_SUBJ[s.subject] || ACT_SUBJ.Math };
-  }).sort(function (a, b) {
-    var na = a.n >= 3 ? 2 : (a.n >= 2 ? 1 : 0);
-    var nb = b.n >= 3 ? 2 : (b.n >= 2 ? 1 : 0);
-    if (na !== nb) return nb - na;
-    if (a.rank !== b.rank) return a.rank - b.rank;
-    return b.n - a.n;
-  });
-
+function paintEmpty(msg) {
+  var e = function (id) { var el = document.getElementById(id); if (el) el.innerHTML = ''; };
+  e('big'); e('verdict'); e('stats'); e('week7'); e('workBody'); e('skills'); e('confList'); e('honest');
+  var big = document.getElementById('big');
+  if (big) big.innerHTML = '<span class="t">' + esc(msg) + '</span>';
+  var sk = document.getElementById('skills');
+  if (sk) sk.innerHTML = '<div class="why">未有足夠數據。</div>';
+}
+function enrichSkill(s) {
   return {
-    days: days, n: n, rate: rate, medSec: medSec,
-    mode: MODE, realTotal: realCount(),
-    daysActive: Math.min(Object.keys(daySet).length, days),
-    perDay: (function () {
-      var out = [];
-      for (var i = 6; i >= 0; i--) {
-        var t0 = new Date(); t0.setHours(0, 0, 0, 0);
-        var d0 = t0.getTime() - i * 86400000;
-        var d1 = d0 + 86400000;
-        out.push({ ts: d0, n: win.filter(function (r) { return r.ts >= d0 && r.ts < d1; }).length });
-      }
-      return out;
-    })(),
-    skills: list,
-    summary: {
-      careless: careless, wrong: wrong, away: awayN, fastWrong: fastWrong,
-      voicePct: n ? Math.round(voiceN / n * 100) : 0,
-      verdict: verdictOf_(rate, medSec, n)
-    }
+    skill: s.skill, subject: s.subject, n: s.n, rate: s.rate, sec: s.sec,
+    tag: tagOf_(s.rate, s.sec, s.n),
+    act: ACT[s.skill] || ACT_SUBJ[s.subject] || ACT_SUBJ.Math
   };
 }
-
+function sortedSkills(list) {
+  var a = (list || []).map(enrichSkill);
+  a.sort(function (x, y) {
+    var nx = x.n >= 3 ? 2 : (x.n >= 2 ? 1 : 0);
+    var ny = y.n >= 3 ? 2 : (y.n >= 2 ? 1 : 0);
+    if (nx !== ny) return ny - nx;
+    var rx = (x.rate >= 80 && x.sec > 20) ? 55 : x.rate;
+    var ry = (y.rate >= 80 && y.sec > 20) ? 55 : y.rate;
+    if (rx !== ry) return rx - ry;
+    return y.n - x.n;
+  });
+  return a;
+}
 /* ══════════════════════════════════════════════════════════════
    4. 畫面
    ══════════════════════════════════════════════════════════════ */
@@ -658,63 +478,43 @@ function esc(s) {
   });
 }
 
-function render(uid) {
-  var r = buildReport(uid);
-  var pf = DEMO_PROFILE[uid];
-
-  /* 資料來源標籤 */
-  var tag = document.getElementById('srcTag');
-  if (tag) {
-    tag.textContent = (r.mode === 'real')
-      ? '實際紀錄 · ' + r.n + ' 題'
-      : '示範數據（切去真實紀錄）';
-    tag.className = 'srcTag ' + (r.mode === 'real' ? 'real' : 'demo');
-  }
+function renderReport(r) {
+  var name = r.display_name || '小朋友';
 
   /* A */
   document.getElementById('big').innerHTML =
     '<span class="n">' + r.n + '</span><span class="t">題 · 本週（' + r.days + ' 日）</span>' +
     '<span class="n" style="margin-left:14px">' + r.rate + '%</span><span class="t">首答正確</span>';
-  document.getElementById('verdict').textContent = r.summary.verdict;
+  document.getElementById('verdict').textContent = verdictOf_(r.rate, r.medSec, r.n);
 
-  var statRows = (r.mode === 'real')
-    ? [
-        ['做題日數', r.daysActive, '日'],
-        ['中位用時', r.medSec, '秒'],
-        ['本週題數', r.n, '題'],
-        ['已寫字', (function () { try { return JSON.parse(localStorage.getItem('dsh_hw_done') || '[]').length; } catch (e) { return 0; } })(), '字']
-      ]
-    : [
-        ['做題日數', r.daysActive, '日'],
-        ['中位用時', r.medSec, '秒'],
-        ['語音依賴', r.summary.voicePct, '%'],
-        ['粗心（快答對）', r.summary.careless, '題']
-      ];
+  var statRows = [
+    ['做題日數', r.daysActive, '日'],
+    ['中位用時', r.medSec, '秒'],
+    ['本週題數', r.n, '題'],
+    ['粗心（第2次答對）', (r.summary && r.summary.careless) || 0, '題']
+  ];
   document.getElementById('stats').innerHTML = statRows.map(function (x) {
     return '<div class="stat"><div class="k">' + x[0] + '</div><div class="v">' + x[1] +
       '<small>' + x[2] + '</small></div></div>';
   }).join('');
 
-  /* 最近七天長條圖（真實模式才顯示） */
+  /* 最近七天長條圖 */
   var wk = document.getElementById('week7');
   if (wk) {
-    if (r.mode !== 'real') { wk.style.display = 'none'; }
-    else {
-      wk.style.display = '';
-      var mx = Math.max.apply(null, r.perDay.map(function (d) { return d.n; }).concat([1]));
-      var dayNames = ['日', '一', '二', '三', '四', '五', '六'];
-      wk.innerHTML = r.perDay.map(function (d) {
-        var h = Math.round(d.n / mx * 46);
-        var dow = dayNames[new Date(d.ts).getDay()];
-        return '<div class="bar"><div class="bd' + (d.n ? ' on' : '') + '" style="height:' +
-          (d.n ? Math.max(6, h) : 3) + 'px"></div><div class="bn">' + d.n + '</div>' +
-          '<div class="bl">' + dow + '</div></div>';
-      }).join('');
-    }
+    var mx = Math.max.apply(null, r.perDay.map(function (d) { return d.n; }).concat([1]));
+    var dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+    wk.innerHTML = r.perDay.map(function (d) {
+      var h = Math.round(d.n / mx * 46);
+      var dow = dayNames[new Date(d.ts).getDay()];
+      return '<div class="bar"><div class="bd' + (d.n ? ' on' : '') + '" style="height:' +
+        (d.n ? Math.max(6, h) : 3) + 'px"></div><div class="bn">' + d.n + '</div>' +
+        '<div class="bl">' + dow + '</div></div>';
+    }).join('');
   }
 
-  /* B：只給一件 —— 取「排最前的弱項」，沒有就給最慢的一項 */
-  var pick = r.skills.filter(function (s) { return s.tag !== '穩'; })[0] || r.skills[0];
+  /* B */
+  var sk = sortedSkills(r.skills);
+  var pick = sk.filter(function (s) { return s.tag !== '穩'; })[0] || sk[0];
   var wb = document.getElementById('workBody');
   if (!pick) {
     wb.innerHTML = '<div class="do">今週未有足夠數據，今晚照常練一組就好。</div>';
@@ -727,7 +527,7 @@ function render(uid) {
   }
 
   /* C */
-  var top = r.skills.slice(0, 3);
+  var top = sk.slice(0, 3);
   document.getElementById('skills').innerHTML = top.map(function (s, i) {
     return '<div class="sk">' +
       '<div class="idx">' + (i + 1) + '</div>' +
@@ -745,37 +545,24 @@ function render(uid) {
 
   /* D */
   var notes = [];
-  if (r.mode === 'real') {
-    if (r.n === 0) notes.push('呢位小朋友今個星期仲未開始做題 —— 先由「10 以內加法」開始，做 5 題就夠。');
-    else if (r.n < 6) notes.push('今週只有 ' + r.n + ' 題 —— 樣本太少，下面嘅結論只能當「方向」，唔好當「判決」。');
-    if (r.summary.wrong >= 2) notes.push('答錯 ' + r.summary.wrong + ' 題' + (r.summary.fastWrong ? '（其中 ' + r.summary.fastWrong + ' 題 3 秒內就答，多數係猜）' : '') + '：今晚陪佢慢慢讀一次題目。');
-    var weak = r.skills.filter(function (s) { return s.n >= 3 && s.rate < 60; })[0];
-    if (weak) notes.push('「' + (SKILL_NAME[weak.skill] || weak.subject) + '」' + weak.rate + '%（' + weak.n + ' 題）—— 呢個係最值得花時間嘅一項。');
-    if (r.daysActive >= 5) notes.push('一星期有 ' + r.daysActive + ' 日都有做，習慣已經成形，保持落去就夠。');
-    if (r.n >= 8 && r.medSec > 0 && r.medSec < 3) notes.push('中位用時只有 ' + r.medSec + ' 秒 —— 可能係亂按，亦可能係好熟；可以抽一題叫佢講出點計。');
-  } else {
-    if (r.n < 6) notes.push('今週只有 ' + r.n + ' 題 —— 樣本太少，下面嘅結論只能當「方向」，唔好當「判決」。');
-    if (r.summary.voicePct >= 70) notes.push('語音依賴 ' + r.summary.voicePct + '%：佢好多時係「聽」而唔係「讀」題目，要留意識字量。');
-    if (r.summary.careless >= 3) notes.push('粗心（答第二次就對）' + r.summary.careless + ' 題：多數係心急，唔係唔識。');
-    if (r.summary.away >= 3) notes.push('離座 ' + r.summary.away + ' 次：可能係題目太長或者環境太嘈。');
-  }
+  if (r.n === 0) notes.push('呢位小朋友今個星期仲未開始做題 —— 先由「10 以內加法」開始，做 5 題就夠。');
+  else if (r.n < 6) notes.push('今週只有 ' + r.n + ' 題 —— 樣本太少，下面嘅結論只能當「方向」，唔好當「判決」。');
+  if ((r.summary && r.summary.wrong || 0) >= 2) notes.push('答錯 ' + r.summary.wrong + ' 題' + (r.summary.fastWrong ? '（其中 ' + r.summary.fastWrong + ' 題 3 秒內就答，多數係猜）' : '') + '：今晚陪佢慢慢讀一次題目。');
+  var weak = sk.filter(function (s) { return s.n >= 3 && s.rate < 60; })[0];
+  if (weak) notes.push('「' + (SKILL_NAME[weak.skill] || weak.subject) + '」' + weak.rate + '%（' + weak.n + ' 題）—— 呢個係最值得花時間嘅一項。');
+  if (r.daysActive >= 5) notes.push('一星期有 ' + r.daysActive + ' 日都有做，習慣已經成形，保持落去就夠。');
+  if (r.n >= 8 && r.medSec > 0 && r.medSec < 3) notes.push('中位用時只有 ' + r.medSec + ' 秒 —— 可能係亂按，亦可能係好熟；可以抽一題叫佢講出點計。');
   document.getElementById('confList').innerHTML = notes.length
     ? notes.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('')
     : '<div class="none">✅ 今週樣本足夠，冇特別要提醒嘅偏差。</div>';
 
   var foot = document.getElementById('foot');
-  if (foot) {
-    foot.textContent = (r.mode === 'real')
-      ? '實際紀錄 · 只計 ' + (SESSION_NAME || '這位小朋友') + ' 自己的答題（共 ' + r.realTotal + ' 題）；數據不夠就照講'
-      : '示範模式 · 歷史數據為模擬生成；你在小孩那邊做的題會即時計入';
-  }
+  if (foot) foot.textContent = '實際紀錄 · 只計 ' + name + ' 自己的答題（共 ' + r.n + ' 題）；數據不夠就照講';
 
-  document.getElementById('honest').textContent = (r.mode === 'real')
-    ? '呢個報告只用「' + (SESSION_NAME || '小朋友') + '」真實答題紀錄計：' + r.n + ' 題、' + r.days + ' 日、共 ' + r.realTotal + ' 題紀錄。' +
-      '佢唔會評分、唔會排名、唔會同其他小朋友比較 —— 只係同佢自己上星期比。'
-    : '呢個報告只用「答題紀錄」計：' + r.n + ' 題、' + r.days + ' 日。' +
-      '佢唔會評分、唔會排名、唔會同其他小朋友比較 —— 只係同佢自己上星期比。' +
-      '數據有偏差就照講，唔會為咗好睇而修飾。';
+  document.getElementById('honest').textContent =
+    '呢個報告只用「' + name + '」真實答題紀錄計：' + r.n + ' 題、' + r.days + ' 日。' +
+    '佢唔會評分、唔會排名、唔會同其他小朋友比較 —— 只係同佢自己上星期比。' +
+    '數據有偏差就照講，唔會為咗好睇而修飾。';
 }
 
 /* ── 家庭 → 孩子：家長用家庭 PIN 登入後，才知道要顯示哪個孩子 ── */
@@ -812,7 +599,7 @@ function paintKids(){
 function pickKid(u){
   KID = u;
   paintWho(); paintKids();
-  render(String(u.id));
+  loadReport(String(u.id));
   renderTime();
 }
 function mountAdmin(){
@@ -826,7 +613,7 @@ function applyFamily(d){
   KIDS = d.users || [];
   KID = KIDS[0] || null;
   paintWho(); paintKids();
-  render(KID ? String(KID.id) : currentUid());
+  loadReport(KID ? String(KID.id) : currentUid());
   renderTime();
   mountAdmin();
   if (!KIDS.length && window.ParentAdmin && window.ParentAdmin.post) {
@@ -843,24 +630,27 @@ function applyFamily(d){
   }
 }
 
+/* 報告 / 管理 兩 tab */
+(function () {
+  var tabs = document.querySelectorAll('#mainTabs .mainTab');
+  function show(view) {
+    var vr = document.getElementById('viewReport');
+    var vm = document.getElementById('viewManage');
+    if (vr) vr.style.display = (view === 'report') ? '' : 'none';
+    if (vm) vm.style.display = (view === 'manage') ? '' : 'none';
+    tabs.forEach(function (t) { t.classList.toggle('on', t.getAttribute('data-view') === view); });
+  }
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { show(t.getAttribute('data-view')); });
+  });
+})();
+
 paintWho();
-render(currentUid());
+loadReport(currentUid());
 renderTime();
 
 window.PARENT_ON_LOGIN = applyFamily;
 if (window.PARENT_RESULT && window.PARENT_RESULT.ok) applyFamily(window.PARENT_RESULT);
-
-/* 點標籤切換「真實紀錄 / 示範數據」 */
-var srcTagEl = document.getElementById('srcTag');
-if (srcTagEl) srcTagEl.addEventListener('click', function () {
-  if (MODE === 'real') {
-    MODE = 'demo';
-  } else {
-    if (!realCount()) { alert('呢位小朋友仲未有真實答題紀錄，去挑戰頁玩幾題先。'); return; }
-    MODE = 'real';
-  }
-  render(currentUid());
-});
 
 /* E 娛樂時間（金幣 → 時間卷；以伺服器 myStatus 為準） */
 function mmss(sec){
@@ -892,9 +682,14 @@ function renderTime(){
       '<div class="stat"><div class="k">' + (free ? '正在使用' : '目前狀態') + '</div><div class="v">' +
         (free ? mmss(st.remaining_sec) : '🔒 學習模式') + '</div></div>';
     document.getElementById('capInput').value = d.today_cap || '';
+    var perQ = 25, perMin = 5;
+    if (REPORT_CACHE && REPORT_CACHE.config) {
+      perQ = Number(REPORT_CACHE.config.per_question) || 25;
+      perMin = Number(REPORT_CACHE.config.per_minute) || 5;
+    }
     if (note) note.textContent =
-      '規則：答對一題賺 ' + 25 + ' 金幣（難題更多）。5 金幣 = 1 分鐘娛樂，孩子自己用金幣換時間卷：'
-      + '15 分鐘 75 金幣、30 分鐘 150 金幣、60 分鐘 300 金幣；換了即刻開始計時，沒有存券。'
+      '規則：答對一題賺 ' + perQ + ' 金幣（難題更多）。' + perMin + ' 金幣 = 1 分鐘娛樂，孩子自己用金幣換時間卷：'
+      + '15 分鐘 ' + (15 * perMin) + ' 金幣、30 分鐘 ' + (30 * perMin) + ' 金幣、60 分鐘 ' + (60 * perMin) + ' 金幣；換了即刻開始計時，沒有存券。'
       + '每日上限 ' + (d.today_cap || 0) + ' 分鐘。星星只負責進化，不能換回時間。';
   });
 }
@@ -909,7 +704,7 @@ document.getElementById('capSave').addEventListener('click', function(){
   });
 });
 
-window.__report = { build: buildReport, rows: demoRows_, profile: DEMO_PROFILE };
+window.__report = { load: loadReport, render: renderReport };
 </script>
 </body>
 </html>
