@@ -924,7 +924,7 @@
     var tapTimes = [];                 /* 這一題每次按錯的時間點（亂點偵測用） */
     var spamCaught = false;            /* 這一題被判定「亂點」→ 答對也不給獎勵 */
     var SPAM_TRIES = 3, SPAM_MS = 6000;/* 6 秒內按錯 3 次＝亂點（Settings 的 SPAM_TRIES／SPAM_SECONDS） */
-    var WRONG_COOLDOWN_MS = 2000;      /* 答錯後選項鎖住 2 秒（冷卻，逼孩子慢下來想，可調） */
+    var WRONG_COOLDOWN_MS = 3500;      /* 答錯後選項鎖住 3.5 秒：夠他再看一次題、再聽一次語音（可調） */
     try {
       var _sc = JSON.parse(localStorage.getItem('dsh_cfg') || '{}');
       if (_sc && +_sc.SPAM_TRIES > 0) SPAM_TRIES = +_sc.SPAM_TRIES;
@@ -3640,7 +3640,7 @@
         if (q.options[k] === q.answer && opts[k]) opts[k].classList.add('reveal');
       }
       var noReward = wrongCount >= 2;
-      fb.textContent = '💡 ' + q.answer + (noReward ? '　💪 慢慢答，答對就有獎勵' : '') + '　🐢 休息一下～';
+      fb.textContent = '💡 ' + q.answer + (noReward ? '　💪 慢慢答，答對就有獎勵' : '') + '　🔊 再聽一次～';
       if (Math.random() < 0.55) petSay('wrong', { gap: 4000 });
       if (monImg && monImg.animate) {
         monsterRush();
@@ -3654,9 +3654,12 @@
       }
       var pt2 = arenaPoint(petImg);
       setTimeout(function () { burst(pt2.x, pt2.y, '#fca5a5', 8); }, 260);
-      /* 答錯冷卻：選項鎖住 WRONG_COOLDOWN_MS，讓孩子慢下來想（不懲罰，只是等一下） */
+      /* 答錯冷卻：選項鎖住 WRONG_COOLDOWN_MS，夠他再看一次題；期間自動重播題目語音，讓他「再聽一次」而不是空等 */
       optionsEl.classList.add('cooldown');
       var unlockAt = Date.now() + WRONG_COOLDOWN_MS;
+      if (window.QAudio) {
+        setTimeout(function () { if (window.QAudio) window.QAudio.play(); }, 350);
+      }
       setTimeout(function () {
         optionsEl.classList.remove('cooldown');
         opts.forEach(function (x) { x.disabled = false; });
