@@ -3084,13 +3084,18 @@
         start();
       }
     })();
-    /* 新手帶路：第一次挑戰的歡迎提示（社群導引 → 這裡接住，閉環） */
+    /* 新手帶路：第一次挑戰的歡迎提示（社群導引 → 這裡接住，閉環）
+       有新手路線（dsh_route==='fight'）時改成「第 1 步」口吻 */
     (function firstChallenge() {
       try {
         if (localStorage.getItem('dsh_challenge_intro')) return;
         localStorage.setItem('dsh_challenge_intro', '1');
+        var route = null;
+        try { route = localStorage.getItem('dsh_route'); } catch(e){}
         setTimeout(function () {
-          if (window.Juice && Juice.banner) Juice.banner('👋 每題 +25💰　🔥連3題有加成', { ms: 3200 });
+          if (window.Juice && Juice.banner) Juice.banner(route === 'fight'
+            ? '第 1 步｜答對 3 題，打贏一隻怪！每題 +25💰'
+            : '👋 每題 +25💰　🔥連3題有加成', { ms: 3400 });
         }, 900);
       } catch (e) {}
     })();
@@ -3563,9 +3568,23 @@
         flushLocalCoins();          /* 打贏先結清本地題的金幣 */
         var isBossKill = (cur.s === 2);
         var winStars = WIN_STARS + (isBossKill ? 1 : 0);
+        /* 新手路線：第一次打贏怪（dsh_route==='fight'）→ 額外送 +5⭐ +50💰，推進到「去商店」 */
+        var firstWin = false;
+        try { firstWin = localStorage.getItem('dsh_route') === 'fight'; } catch(e){}
+        if (firstWin) {
+          try { localStorage.setItem('dsh_route', 'shop'); } catch(e){}
+          winStars += 5;
+          if (qaOn()) {
+            qaPost({ action: 'earnBatch', user_id: qaCfg.uid, n: 50, source: 'tutorial' }, function (err, d) {
+              if (!err && d && d.ok && typeof d.coins === 'number') { serverCoins = d.coins; paintCoinsNow(); }
+            });
+          } else {
+            pendLocal += 50; paintCoinsNow();
+          }
+        }
         addStar(winStars);
-        setTimeout(function () { rewardPop('🎉 +' + winStars + ' ⭐' + (isBossKill ? ' 👑BOSS' : '')); }, 1100);
-        fb.textContent = '🎉 打贏了！' + cur.m.n[cur.s - 1] + (isBossKill ? '（BOSS！）' : '') + ' 已收錄圖鑑 · +' + winStars + '⭐ 回家可以進化';
+        setTimeout(function () { rewardPop('🎉 +' + winStars + ' ⭐' + (isBossKill ? ' 👑BOSS' : '') + (firstWin ? '　🎁 +50💰' : '')); }, 1100);
+        fb.textContent = '🎉 打贏了！' + cur.m.n[cur.s - 1] + (isBossKill ? '（BOSS！）' : '') + (firstWin ? '　🎁 新手獎勵 +5⭐ +50💰 · 回社區按 🛒 買時間卷' : '　已收錄圖鑑 · +' + winStars + '⭐ 回家可以進化');
         /* 打贏的那一下不再放對話泡泡（會與「+2⭐」撞在一起並被競技場上緣切掉） */
         ultSlam();
         setTimeout(function () {
