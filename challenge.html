@@ -3128,7 +3128,7 @@
       if (!qaOn()) return;
       qaPost({ action: 'myStatus', user_id: qaCfg.uid }, function (err, d) {
         if (err || !d || !d.ok) return;
-        if (typeof d.coins === 'number') { coins = d.coins; paintScoreTime(); }
+        if (typeof d.coins === 'number') { coins = d.coins; serverCoins = d.coins; paintScoreTime(); }
         var ss = d.session || {};
         playLeftSec = (ss.mode === 'free' && ss.remaining_sec > 0) ? ss.remaining_sec : 0;
         paintPlayTime();
