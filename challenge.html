@@ -300,6 +300,20 @@
   #hitFlash.on{animation:hitflash .22s ease-out}
   @keyframes hitflash{0%{opacity:.45}100%{opacity:0}}
   #arena.shake{animation:arenaShake .34s ease-in-out}
+  /* 打贏→往前走→遇到下一隻：寵物踏步、新怪從右邊走進來 */
+  #arena.walking #petImg{animation:walkBob .26s ease-in-out infinite}
+  @keyframes walkBob{0%,100%{translate:0 0}50%{translate:-3px -6px}}
+  #monImg.enterRight{animation:monEnterRight .55s cubic-bezier(.2,.9,.3,1.05) both}
+  @keyframes monEnterRight{from{transform:translateX(170px) scale(.84);opacity:0}
+    to{transform:translateX(0) scale(1);opacity:1}}
+  /* 一章＝三隻怪（第三隻是首領）：打過的變暗，讓「3 關 3 關」看得見 */
+  #chapPips{position:absolute;top:44px;left:10px;z-index:7;display:flex;gap:5px;align-items:center;
+    padding:4px 7px;border-radius:999px;background:rgba(2,6,23,.55);border:1px solid rgba(255,255,255,.10);
+    pointer-events:none}
+  #chapPips i{width:9px;height:9px;border-radius:50%;background:#475569;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+  #chapPips i.done{background:#fbbf24;box-shadow:0 0 8px rgba(251,191,36,.8)}
+  #chapPips i.now{background:#38bdf8;box-shadow:0 0 9px rgba(56,189,248,.9);transform:scale(1.2)}
+  #chapPips b{font-size:11px;color:#cbd5e1;margin-left:2px}
   @keyframes arenaShake{
     0%,100%{transform:translate(0,0)}
     15%{transform:translate(-7px,3px)}
@@ -457,6 +471,7 @@
       <div id="arena">
         <div id="arenaOverlay"></div>
         <div id="stageChip">第 <span id="stageNow">1</span> 關</div>
+    <div id="chapPips"><i></i><i></i><i></i><b>1/3</b></div>
         <div id="combo" class="hidden">🔥 連對 2</div>
         <div id="fighters">
           <div class="fighter">
@@ -2561,7 +2576,7 @@
         var closeChap = function () { el.classList.remove('on'); };
         var nx = document.getElementById('chapNext');
         var hm = document.getElementById('chapHome');
-        if (nx) nx.onclick = function (ev) { ev.stopPropagation(); closeChap(); sfxTapS(); };
+        if (nx) nx.onclick = function (ev) { ev.stopPropagation(); closeChap(); sfxTapS(); advanceBattle(); };
         if (hm) hm.onclick = function (ev) {
           ev.stopPropagation();
           closeChap();
@@ -2609,6 +2624,17 @@
       chip.innerHTML = '第 <span id="stageNow">' + stage + '</span> 關 · ' +
         '<span id="roundNow">' + rnd + '</span>/3 局' + (boss ? ' 👑' : '');
       chip.classList.toggle('boss', boss);
+      /* 章節三顆怪：打過的亮金、現在這隻亮藍 */
+      var cp = document.getElementById('chapPips');
+      if (cp) {
+        var dots = cp.querySelectorAll('i');
+        for (var i2 = 0; i2 < dots.length; i2++) {
+          dots[i2].classList.toggle('done', i2 < rnd - 1);
+          dots[i2].classList.toggle('now', i2 === rnd - 1);
+        }
+        var b2 = cp.querySelector('b');
+        if (b2) b2.textContent = rnd + '/3';
+      }
     }
 
     /* 一局 = 3 題：三個點 */
@@ -2622,14 +2648,21 @@
 
     /* 依出場怪物的屬性換戰鬥背景（圖還沒生成時就維持原本那張） */
     var bgSeq = {};
-    function paintBattleBg(m) {
+    /* 一章固定一個場景（同家族怪在同一個地方出沒），換章才換景 → 3 關 3 關的感覺 */
+    var chapterFamily = null, chapterBg = null, roundInChap = 1, walking = false;
+
+    function pickBattleBg(m) {
       var el = ELEMS[m.e];
-      if (!el || !arenaEl) return;
+      if (!el) return null;
       var list = el.bg || [];
-      if (!list.length) return;
+      if (!list.length) return null;
       var i = (bgSeq[m.e] || 0) % list.length;
       bgSeq[m.e] = i + 1;
-      var src = list[i];
+      if (arenaEl) arenaEl.style.setProperty('--elem', el.color);
+      return list[i];
+    }
+    function applyBattleBg(src) {
+      if (!arenaEl || !src) return;
       var probe = new Image();
       probe.onload = function () {
         arenaEl.style.backgroundImage = 'url("' + src + '")';
@@ -2637,7 +2670,44 @@
         arenaEl.style.backgroundSize = 'cover';
       };
       probe.src = src;
-      arenaEl.style.setProperty('--elem', el.color);
+    }
+
+    /* 打贏後「往前走」：背景往左滑（＝往前行進）＋寵物踏步，走到定點才讓新怪從右邊進來 */
+    function walkIn(cb) {
+      if (!arenaEl) { if (cb) cb(); return; }
+      if (walking) { if (cb) cb(); return; }
+      walking = true;
+      arenaEl.classList.add('walking');
+      var t0 = performance.now(), DUR = 780;
+      function step(now) {
+        var k = Math.min(1, (now - t0) / DUR);
+        var e = k < .5 ? 2 * k * k : -1 + (4 - 2 * k) * k;      /* easeInOutQuad */
+        arenaEl.style.backgroundPosition = (50 - 24 * e) + '% 55%';
+        if (k < 1) requestAnimationFrame(step);
+        else {
+          arenaEl.style.backgroundPosition = 'center 55%';
+          arenaEl.classList.remove('walking');
+          walking = false;
+          if (cb) cb();
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    /* 換下一隻：先決定怪與（換章時的）場景，走過去，再讓怪從右邊進場 */
+    function advanceBattle() {
+      pick();
+      monImg.style.opacity = '0';
+      walkIn(function () {
+        monImg.style.opacity = '';
+        monImg.classList.remove('enterRight');
+        void monImg.offsetWidth;
+        monImg.classList.add('enterRight');
+        setTimeout(function () { monImg.classList.remove('enterRight'); }, 600);
+        nextQ();
+        fb.textContent = '新的怪物出現了！';
+        setCombo();
+      });
     }
 
     function pick() {
@@ -2661,6 +2731,8 @@
       roundQ = [];
       battles++;
       hitsOnCur = 0;
+      roundInChap = ((battles - 1) % 3) + 1;              /* 這一章的第 1/2/3 隻 */
+      if (roundInChap === 1) { chapterFamily = null; chapterBg = null; }   /* 新章節：重選家族與場景 */
       paintRound();
       var isBoss = (battles % 3 === 0);
       var pool = MONSTERS.filter(function (m) { return m.k !== lastK; });
@@ -2672,12 +2744,16 @@
         if (fp.length) pool = fp;
       }
       if (!pool.length) pool = MONSTERS;
-      var m = pool[Math.floor(Math.random() * pool.length)];
+      /* 同一章節三隻＝同一個家族（第 3 隻換成首領型），看起來才像「同一批怪」 */
+      var m;
+      if (chapterFamily && roundInChap > 1) m = chapterFamily;
+      else { m = pool[Math.floor(Math.random() * pool.length)]; chapterFamily = m; }
       lastK = m.k;
       var s = isBoss ? 2 : 1;
       cur = { m: m, s: s };
       paintPips();
-      paintBattleBg(m);
+      if (!chapterBg) chapterBg = pickBattleBg(m);
+      applyBattleBg(chapterBg);
       /* 上一隻被打死的動畫有 fill:forwards，不取消的話新怪會停在透明 */
       if (monImg.getAnimations) monImg.getAnimations().forEach(function (a) { a.cancel(); });
       monImg.src = 'monsters/' + m.k + '/0' + s + '.webp';
@@ -2685,6 +2761,7 @@
       var isShiny = Math.random() < 0.01;
       var hue = 0;
       if (!isShiny && isBoss && Math.random() < 0.45) hue = HUES[Math.floor(Math.random() * HUES.length)];
+      else if (!isShiny && roundInChap === 2) hue = -14;   /* 同家族第二隻：輕微偏色，看得出是同一批 */
       monImg.style.filter = isShiny
         ? 'saturate(1.3) brightness(1.12) drop-shadow(0 0 16px rgba(251,191,36,.85))'
         : (hue ? 'hue-rotate(' + hue + 'deg) saturate(1.18) brightness(1.04)' : '');
@@ -3337,12 +3414,14 @@
           if (evoMode) evolveWin();
           else if (cur.s === 2) stageClear();
         }, 500);
+        /* 結算卡看完才「往前走」遇下一隻；BOSS 打完由章節卡片的「下一關 ▶」觸發，
+           避免卡片還開著、後面的場景就已經跳成下一關 */
         setTimeout(function () {
-          pick();
-          nextQ();
-          fb.textContent = '新的怪物出現了！';
-          setCombo();
-        }, 3900);
+          var cc = document.getElementById('chapClear');
+          var chapOn = !!(cc && cc.classList.contains('on'));
+          /* 章節卡片開著時不要換景（等孩子按「下一關 ▶」）；卡片沒開就自己往前走 */
+          if (!evoMode && !chapOn) advanceBattle();
+        }, 3500);
         return;
       }
 
