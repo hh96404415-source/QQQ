@@ -3503,8 +3503,8 @@
       logAnswer(true);
       if (noReward) {
         fb.textContent = spamCaught
-          ? '🐢 慢慢看清楚再按，答對就有獎勵～'
-          : '💪 再想一下，答對就有獎勵～';
+          ? '👁 我看見你亂按了，別作妖，想清楚再答'
+          : '👁 我全都知道，別作妖，想清楚再答';
       } else {
         fb.textContent = '✅ +1 ⭐';
         addStar();
@@ -3640,7 +3640,7 @@
         if (q.options[k] === q.answer && opts[k]) opts[k].classList.add('reveal');
       }
       var noReward = wrongCount >= 2;
-      fb.textContent = '💡 ' + q.answer + (noReward ? '　💪 慢慢答，答對就有獎勵' : '') + '　🔊 再聽一次～';
+      fb.textContent = '💡 ' + q.answer + (noReward ? '　👁 我看見了，別作妖' : '') + '　🔊 再聽一次';
       if (Math.random() < 0.55) petSay('wrong', { gap: 4000 });
       if (monImg && monImg.animate) {
         monsterRush();
