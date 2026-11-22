@@ -307,6 +307,10 @@
   #dexBarFill{height:100%;width:0;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:999px;transition:width .4s}
   #dexCount{font-size:12px;color:#94a3b8;font-weight:800;margin:0 0 12px}
   #dexGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .dexSec{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;
+    margin-top:6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.1)}
+  .dexSec b{font-size:13px;color:#fbbf24;letter-spacing:.04em}
+  .dexSec i{font-style:normal;font-size:12px;font-weight:900;color:#93c5fd}
   .dexCell{background:rgba(30,41,59,.9);border:1px solid rgba(255,255,255,.1);border-radius:14px;
     padding:8px;text-align:center;min-height:116px;display:flex;flex-direction:column;align-items:center;
     justify-content:center;gap:3px}
@@ -776,15 +780,27 @@
         mood: { tone: 'rgba(70,160,255,.18)', g1: 'rgba(28,44,62,.58)', g2: 'rgba(8,14,22,.95)',
                 part: { k: 'spark', color: '#93c5fd', n: 13, size: 4 } } }
     };
+    /* r：稀有度（0＝常見，遇見率高；1＝稀有，遇見率低）。只影響「遇見誰」，不影響獎勵 */
     var MONSTERS = [
-      { k: 'mud_blob', n: ['泥巴團', '皇冠泥王'], e: 'forest' },
-      { k: 'scorpion', n: ['小蠍', '頭巾蠍王'], e: 'lava' },
-      { k: 'piranha', n: ['張嘴小花', '向日葵女王'], e: 'forest' },
-      { k: 'snow', n: ['雪球', '彩虹冰棒雪人'], e: 'ice' },
-      { k: 'ghost', n: ['小幽靈', '皇冠雲靈'], e: 'ghost' },
-      { k: 'lava', n: ['熔岩球', '晶石熔岩人'], e: 'lava' },
-      { k: 'mushroom', n: ['紫傘菇', '國王蘑菇'], e: 'ghost' },
-      { k: 'robot', n: ['螺旋槳球', '城堡機器人'], e: 'tech' }
+      { k: 'mud_blob', n: ['泥巴團', '皇冠泥王'], e: 'forest', r: 0 },
+      { k: 'scorpion', n: ['小蠍', '頭巾蠍王'], e: 'lava', r: 0 },
+      { k: 'piranha', n: ['張嘴小花', '向日葵女王'], e: 'forest', r: 0 },
+      { k: 'snow', n: ['雪球', '彩虹冰棒雪人'], e: 'ice', r: 0 },
+      { k: 'ghost', n: ['小幽靈', '皇冠雲靈'], e: 'ghost', r: 1 },
+      { k: 'lava', n: ['熔岩球', '晶石熔岩人'], e: 'lava', r: 1 },
+      { k: 'mushroom', n: ['紫傘菇', '國王蘑菇'], e: 'ghost', r: 1 },
+      { k: 'robot', n: ['螺旋槳球', '城堡機器人'], e: 'tech', r: 1 },
+      /* 第二批（B）：每家族補 2 隻 → 18 隻 × 2 型＝圖鑑 36 格 */
+      { k: 'spore', n: ['孢子菇', '巨傘菇王'], e: 'forest', r: 0 },
+      { k: 'bee', n: ['蜜蜜蜂', '蜂后女王'], e: 'forest', r: 0 },
+      { k: 'fire_lizard', n: ['火蜥蜴', '炎鱗龍'], e: 'lava', r: 0 },
+      { k: 'rock_turtle', n: ['岩甲龜', '熔岩龜王'], e: 'lava', r: 1 },
+      { k: 'penguin', n: ['冰企鵝', '冰晶帝企鵝'], e: 'ice', r: 0 },
+      { k: 'ice_wolf', n: ['霜牙狼', '霜牙狼王'], e: 'ice', r: 1 },
+      { k: 'lantern', n: ['燈籠鬼', '提燈鬼王'], e: 'ghost', r: 0 },
+      { k: 'mummy', n: ['小木乃伊', '法老王'], e: 'ghost', r: 1 },
+      { k: 'gear', n: ['齒輪蟲', '巨型機甲蟲'], e: 'tech', r: 0 },
+      { k: 'ufo', n: ['小飛碟', '母艦'], e: 'tech', r: 1 }
     ];
     var KEY = 'dsh_monster_dex';
     var dex = {};
@@ -2847,7 +2863,13 @@
       /* 同一章節三隻＝同一個家族（第 3 隻換成首領型），看起來才像「同一批怪」 */
       var m;
       if (chapterFamily && roundInChap > 1) m = chapterFamily;
-      else { m = pool[Math.floor(Math.random() * pool.length)]; chapterFamily = m; }
+      else {
+        /* 稀有度加權：常見 3 份、稀有 1 份 → 常見約 75%，稀有約 25% */
+        var bag = [];
+        pool.forEach(function (mm) { var w = (mm.r === 1) ? 1 : 3; for (var wi = 0; wi < w; wi++) bag.push(mm); });
+        m = bag[Math.floor(Math.random() * bag.length)] || pool[0];
+        chapterFamily = m;
+      }
       lastK = m.k;
       var s = isBoss ? 2 : 1;
       cur = { m: m, s: s };
@@ -2907,23 +2929,29 @@
     function renderDex() {
       var g = document.getElementById('dexGrid');
       g.innerHTML = '';
-      var total = MONSTERS.length * 2, gotN = 0;
-      MONSTERS.forEach(function (m) {
-        [1, 2].forEach(function (s) {
-          var have = got(m.k, s);
-          if (have) gotN++;
+      var total = MONSTERS.length * 2, gotN = 0, shinyN = 0;
+      var FORMS = [{ s: 1, label: '幼體' }, { s: 2, label: '首領' }];
+      FORMS.forEach(function (F) {
+        var have = MONSTERS.filter(function (m) { return got(m.k, F.s); }).length;
+        var head = document.createElement('div');
+        head.className = 'dexSec';
+        head.innerHTML = '<b>' + (F.s === 2 ? '👑 ' : '') + F.label + '</b><i>' + have + '/' + MONSTERS.length + '</i>';
+        g.appendChild(head);
+        MONSTERS.forEach(function (m) {
+          var s = F.s;
+          var has = got(m.k, s);
+          if (has) gotN++;
+          if (isShiny(m.k, s)) shinyN++;
           var d = document.createElement('div');
-          d.className = 'dexCell' + (have ? ' got' : '');
+          d.className = 'dexCell' + (has ? ' got' : '');
           var img = document.createElement('img');
           img.src = 'monsters/' + m.k + '/0' + s + '.webp';
           img.alt = m.n[s - 1];
           /* 缺怪：名字藏成「???」，勾起好奇心 */
-          var nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = have ? m.n[s - 1] : '???';
-          var st = document.createElement('div'); st.className = 'st'; st.textContent = have ? (s === 2 ? '首領' : '幼體') : '🔍 去挑戰遇見它';
-          if (isShiny(m.k, s)) {
-            d.classList.add('shiny');
-            st.textContent += ' · ✨異色';
-          }
+          var nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = has ? m.n[s - 1] : '???';
+          var st = document.createElement('div'); st.className = 'st';
+          st.textContent = has ? (m.r === 1 ? '💎' : '') : '🔍';
+          if (isShiny(m.k, s)) { d.classList.add('shiny'); st.textContent = '✨'; }
           d.appendChild(img); d.appendChild(nm); d.appendChild(st);
           g.appendChild(d);
         });
@@ -2932,7 +2960,7 @@
       var bar = document.getElementById('dexBarFill');
       if (bar) bar.style.width = Math.round(gotN / total * 100) + '%';
       var cnt = document.getElementById('dexCount');
-      if (cnt) cnt.textContent = gotN >= total ? '🏆 圖鑑全收集！你是怪物大師！' : ('已收集 ' + gotN + '/' + total + ' · 集滿有驚喜');
+      if (cnt) cnt.textContent = (gotN >= total ? '🏆 全收集！你係怪物大師！' : ('📚 ' + gotN + '/' + total)) + (shinyN ? ('　✨' + shinyN) : '');
     }
 
     document.getElementById('dexBtn').addEventListener('click', function () {
