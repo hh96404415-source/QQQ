@@ -358,6 +358,7 @@
     if (act === 'delkid') return delKid(uid);
     if (act === 'archivekid'){
       var cur = this.getAttribute('data-v') === '1';
+      if (cur && !window.confirm('封存這個孩子？封存後他登不進來（資料保留，可隨時復原）。')) return;
       this.disabled = true;
       post('devArchiveUser', { user_id: uid, archived: cur }, function(e, d){
         if (e || !d || !d.ok){ say((d && d.error) || '失敗', true); return; }
@@ -368,6 +369,7 @@
     }
     if (act === 'togglefam'){
       var v = this.getAttribute('data-v') === '1';
+      if (v && !window.confirm('停用這個家庭？停用後全家人（家長與孩子）都登不進來，要再按「啟用」才會恢復。')) return;
       this.disabled = true;
       post('devSetFamilyActive', { family_id: fid, active: !v }, function(e, d){
         if (e || !d || !d.ok){ say((d && d.error) || '失敗', true); return; }

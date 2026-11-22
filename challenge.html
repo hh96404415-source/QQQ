@@ -902,7 +902,8 @@
     var sbCoinsEl = document.getElementById('sbCoins');
     var coins = 0;
     var COINS_PER_Q = 25;
-    /* 答對暴擊：正常 +25；暴擊 15% ×2 = +50；會心 3% ×4 = +100。只動本地顯示與 coinPending，不碰後端記帳 */
+    /* 答對暴擊：正常 +25；暴擊 15% ×2 = +50；會心 3% ×4 = +100。
+       倍率會一併放進 earn 送 complete_set / earnBatch，伺服器真的按這個金額入帳（上限 8 倍） */
     var CRIT = { chance: .15, mult: 2, epicChance: .03, epicMult: 4 };
     var rewardEl = document.getElementById('reward');
     var unitBtn = document.getElementById('unitBtn');
@@ -1943,15 +1944,20 @@
       fill: qaFill,
       fetch: qaFetch
     };
-    /* 本地題的金幣：先加到畫面，再批次補進帳本（每 3 題一次） */
-    var coinPending = 0;
+    /* 金幣顯示＝伺服器已確認餘額 + 尚未確認的加成（remote／local 分開算）
+       → 畫面只會往上，不會「跳上去又縮回來」 */
+    var serverCoins = coins;      /* 最後一次伺服器回報的餘額 */
+    var pendRemote = 0;           /* 已送出 complete_set、等回應中的金幣 */
+    var pendLocal = 0;            /* 本地示範題累積、尚未 earnBatch 的金幣 */
+    function paintCoinsNow() { coins = serverCoins + pendRemote + pendLocal; paintScoreTime(); }
     function flushLocalCoins() {
-      if (!qaOn() || coinPending <= 0) return;
-      var n = coinPending;
-      coinPending = 0;
+      if (!qaOn() || pendLocal <= 0) return;
+      var n = pendLocal;
+      pendLocal = 0;
       qaPost({ action: 'earnBatch', user_id: qaCfg.uid, n: n, source: 'quiz-local' }, function (err, d) {
-        if (err || !d || !d.ok) { coinPending += n; return; }
-        if (typeof d.coins === 'number') { coins = d.coins; paintScoreTime(); }
+        if (err || !d || !d.ok) { pendLocal += n; paintCoinsNow(); return; }
+        if (typeof d.coins === 'number') { serverCoins = d.coins; }
+        paintCoinsNow();
       });
     }
 
@@ -1961,10 +1967,13 @@
       qaLog.push({ q_id: q.remoteId, correct: !!correct, tries: tries || 1, elapsed_ms: ms || 0, choice_path: choice || '', earn: earn || 0 });
       if (qaLog.length < 3) return;
       var batch = qaLog.splice(0, 3);
+      var sent = 0;
+      batch.forEach(function (b) { sent += (Number(b.earn) || 0); });
       qaPost({ action: 'complete_set', user_id: qaCfg.uid, pin: qaCfg.pin || '', answers: batch }, function (err, d) {
-        if (err || !d || !d.ok) return;
-        /* 以伺服器餘額為準（批次每題 +POINTS_PER_QUESTION）；未補帳的本地金幣要加回去，畫面才不會倒退 */
-        if (typeof d.coins === 'number') { coins = d.coins + coinPending; paintScoreTime(); }
+        if (err || !d || !d.ok) { pendRemote = Math.max(0, pendRemote - sent); paintCoinsNow(); return; }
+        if (typeof d.coins === 'number') { serverCoins = d.coins; }
+        pendRemote = Math.max(0, pendRemote - sent);
+        paintCoinsNow();
       });
     }
 
@@ -3516,10 +3525,9 @@
           if (loot) window.Juice.fx('loot');
         }
         popText = _pop;      /* 不在這一刻彈，留到打擊之後（見下面的 820ms） */
-        if (!q || q.type !== 'remote') {
-          coinPending += earn;
-          if (coinPending >= COINS_PER_Q * 3) flushLocalCoins();
-        }
+        /* 遠端題的金幣走 complete_set（pendRemote），本地題走 earnBatch（pendLocal） */
+        if (q && q.type === 'remote' && qaOn()) { pendRemote += earn; paintCoinsNow(); }
+        else { pendLocal += earn; if (pendLocal >= COINS_PER_Q * 3) flushLocalCoins(); paintCoinsNow(); }
       }
       paintScoreTime();
       streak++;

@@ -263,6 +263,7 @@
       for (var i = 0; i < dels.length; i++) {
         dels[i].addEventListener('click', function () {
           var id = this.getAttribute('data-del');
+          if (!window.confirm('刪除這條封印？刪除後這個網站就會恢復可用（可再新增回來）。')) return;
           this.disabled = true;
           post('delBlocklist', { blocklist_id: id }, function (e2, d2) {
             if (e2 || !d2 || !d2.ok) { setMsg((d2 && d2.error) || '刪除失敗', false); return; }
@@ -359,6 +360,7 @@
       for (var i = 0; i < rms.length; i++) {
         rms[i].addEventListener('click', function () {
           var id = this.getAttribute('data-rm');
+          if (!window.confirm('解除這台裝置的綁定？解除後它會被當成「未綁定裝置」預設封鎖，要重新用配對碼綁定。')) return;
           this.disabled = true;
           post('removeDevice', { device_id: id }, function (e2, d2) {
             if (e2 || !d2 || !d2.ok) { setMsg((d2 && d2.error) || '失敗', false); return; }
