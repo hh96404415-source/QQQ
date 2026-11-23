@@ -76,7 +76,8 @@
   function earnBatch(n, source, cb) {
     var u = uid();
     if (!u) return cb('未登入');
-    post({ action: 'earnBatch', user_id: u, n: n, source: source || 'community' }, function (err, d) {
+    var rid = 'w' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    post({ action: 'earnBatch', user_id: u, n: n, source: source || 'community', request_id: rid }, function (err, d) {
       if (err) return cb(err);
       cb(null, d);
     });

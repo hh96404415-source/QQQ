@@ -1953,19 +1953,55 @@
     var serverCoins = coins;      /* 最後一次伺服器回報的餘額 */
     var pendRemote = 0;           /* 已送出 complete_set、等回應中的金幣 */
     var pendLocal = 0;            /* 本地示範題累積、尚未 earnBatch 的金幣 */
+    var pendLocalRid = null;      /* flushLocalCoins 的重試 request_id（成功才清，斷線重試同一支） */
     function paintCoinsNow() { coins = serverCoins + pendRemote + pendLocal; paintScoreTime(); }
     function flushLocalCoins() {
       if (!qaOn() || pendLocal <= 0) return;
       var n = pendLocal;
       pendLocal = 0;
-      qaPost({ action: 'earnBatch', user_id: qaCfg.uid, n: n, source: 'quiz-local' }, function (err, d) {
-        if (err || !d || !d.ok) { pendLocal += n; paintCoinsNow(); return; }
+      if (!pendLocalRid) pendLocalRid = 'w' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+      var rid = pendLocalRid;
+      qaPost({ action: 'earnBatch', user_id: qaCfg.uid, n: n, source: 'quiz-local', request_id: rid }, function (err, d) {
+        if (err || !d || !d.ok) { pendLocal += n; paintCoinsNow(); return; }   /* 保留 rid，重試不雙倍 */
+        pendLocalRid = null;
         if (typeof d.coins === 'number') { serverCoins = d.coins; }
         paintCoinsNow();
       });
     }
 
-    /* 作答時記一筆；滿 3 題回傳，換星星／上網時間 */
+    /* 作答時記一筆；滿 3 題回傳，換星星／上網時間。
+       斷線不再丟答案：失敗的 batch 帶著同一個 session_id 進重試佇列（後端冪等，重送不重複入帳） */
+    var qaRetry = [];             /* 待送／待重試的 batch */
+    var qaRetryTimer = null;
+    var qaRetryBusy = false;
+    function pumpRetry() {
+      if (qaRetryBusy || qaRetry.length === 0) return;
+      var job = qaRetry[0];
+      qaRetryBusy = true;
+      qaPost({ action: 'complete_set', user_id: qaCfg.uid, pin: qaCfg.pin || '', session_id: job.sid, answers: job.answers }, function (err, d) {
+        qaRetryBusy = false;
+        if (err || !d || !d.ok) {
+          job.tries++;
+          if (job.tries >= 5) {
+            /* 重試 5 次都不通才放棄：撤回 pending 顯示（金幣確實沒入帳） */
+            qaRetry.shift();
+            pendRemote = Math.max(0, pendRemote - job.sent);
+            paintCoinsNow();
+          }
+          if (qaRetry.length) {
+            if (qaRetryTimer) clearTimeout(qaRetryTimer);
+            qaRetryTimer = setTimeout(function () { qaRetryTimer = null; pumpRetry(); }, 4000);
+          }
+          return;
+        }
+        /* 成功（或冪等命中：同 session_id 重送會回既有結果，不重複入帳） */
+        qaRetry.shift();
+        if (typeof d.coins === 'number') { serverCoins = d.coins; }
+        pendRemote = Math.max(0, pendRemote - job.sent);
+        paintCoinsNow();
+        pumpRetry();
+      });
+    }
     function qaLogAnswer(q, correct, choice, ms, tries, earn) {
       if (!q || q.type !== 'remote' || !qaOn()) return;
       qaLog.push({ q_id: q.remoteId, correct: !!correct, tries: tries || 1, elapsed_ms: ms || 0, choice_path: choice || '', earn: earn || 0 });
@@ -1973,12 +2009,9 @@
       var batch = qaLog.splice(0, 3);
       var sent = 0;
       batch.forEach(function (b) { sent += (Number(b.earn) || 0); });
-      qaPost({ action: 'complete_set', user_id: qaCfg.uid, pin: qaCfg.pin || '', answers: batch }, function (err, d) {
-        if (err || !d || !d.ok) { pendRemote = Math.max(0, pendRemote - sent); paintCoinsNow(); return; }
-        if (typeof d.coins === 'number') { serverCoins = d.coins; }
-        pendRemote = Math.max(0, pendRemote - sent);
-        paintCoinsNow();
-      });
+      var sid = 'c' + Date.now() + '_' + qaCfg.uid + '_' + Math.random().toString(36).slice(2, 8);
+      qaRetry.push({ sid: sid, answers: batch, sent: sent, tries: 0 });
+      pumpRetry();
     }
 
     /* 難度高的時候，把「a + b = ?」改寫成「a + __ = c」，數字不變但要想反過來 */
@@ -3575,7 +3608,8 @@
           try { localStorage.setItem('dsh_route', 'shop'); } catch(e){}
           winStars += 5;
           if (qaOn()) {
-            qaPost({ action: 'earnBatch', user_id: qaCfg.uid, n: 50, source: 'tutorial' }, function (err, d) {
+            var trid = 't' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+            qaPost({ action: 'earnBatch', user_id: qaCfg.uid, n: 50, source: 'tutorial', request_id: trid }, function (err, d) {
               if (!err && d && d.ok && typeof d.coins === 'number') { serverCoins = d.coins; paintCoinsNow(); }
             });
           } else {
