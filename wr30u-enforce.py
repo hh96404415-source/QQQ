@@ -36,8 +36,14 @@ import time
 import urllib.request
 import urllib.error
 
+# 讓 print 即時進 logread（procd 下 stdout 非 tty、預設 block buffer 會卡住看不見）
+try:
+    sys.stdout.reconfigure(line_buffering=True)
+except Exception:
+    pass
+
 # ---- 本檔版本（每次發布 bump；OTA 拿雲端 enforce_version 跟它比）----
-ENFORCE_VERSION = 2
+ENFORCE_VERSION = 3
 
 # ---- 預設值（無 /root/enforce-config.json 時的佔位；真實值只在 config.json）----
 _DEFAULTS = {
@@ -260,14 +266,21 @@ class Enforcer:
         if not ident:
             return
         found = self._find_client(ident)
-        data = {"filtering_enabled": enabled, "use_global_settings": False}
         if found and not found["auto"]:
+            # update 需要完整 clientJSON：name + ids + 開關（v0.107.80 拒收只帶開關的 data）
+            data = {
+                "name": found["name"],
+                "ids": ident,
+                "use_global_settings": False,
+                "filtering_enabled": enabled,
+            }
             self._ag_call("POST", "/clients/update",
                           {"name": found["name"], "data": data})
         else:
             name = "kid-" + (mac_l.replace(":", "")[-6:] if mac_l else str(ip))
             self._ag_call("POST", "/clients/add",
-                          {"name": name, "ids": ident, **data})
+                          {"name": name, "ids": ident,
+                           "filtering_enabled": enabled, "use_global_settings": False})
 
     # ---- 每秒執法 ----
     def enforce_once(self):
