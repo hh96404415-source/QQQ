@@ -37,7 +37,7 @@ import urllib.request
 import urllib.error
 
 # ---- 本檔版本（每次發布 bump；OTA 拿雲端 enforce_version 跟它比）----
-ENFORCE_VERSION = 1
+ENFORCE_VERSION = 2
 
 # ---- 預設值（無 /root/enforce-config.json 時的佔位；真實值只在 config.json）----
 _DEFAULTS = {
@@ -240,15 +240,16 @@ class Enforcer:
         resp = self._ag_call("GET", "/clients")
         if not resp:
             return None
-        for c in resp.get("clients", []):
-            ids = [str(i).lower() for i in c.get("ids", [])]
-            if any(x in ids for x in ident_list):
-                return {"name": c.get("name", ident_list[0]), "auto": False}
-        # auto_clients 不能直接 update，需先 add 成 persistent client
-        for c in resp.get("auto_clients", []):
-            ids = [str(i).lower() for i in c.get("ids", [])]
-            if any(x in ids for x in ident_list):
-                return {"name": c.get("name", "kid"), "auto": True}
+        low = [str(x).lower() for x in ident_list]
+        for c in (resp.get("clients") or []):
+            ids = [str(i).lower() for i in (c.get("ids") or [])]
+            if any(x in ids for x in low):
+                return {"name": c.get("name") or ident_list[0], "auto": False}
+        # auto_clients（ARP）只帶 ip、無 ids：用 ip 比對
+        for c in (resp.get("auto_clients") or []):
+            ip = str(c.get("ip") or "").lower()
+            if ip and ip in low:
+                return {"name": c.get("name") or "kid", "auto": True}
         return None
 
     def apply_filtering(self, mac, enabled, ip=None):
